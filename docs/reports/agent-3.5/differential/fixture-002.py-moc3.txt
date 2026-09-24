@@ -3,7 +3,7 @@
 Input:      fixture-002-artmesh-param.moc3
 Size:       1576 bytes
 Fingerprint: fnv1a64:eb5929dc573ac280
-Our commit: fcd5967
+Our commit: 5450faa
 
 Providers:
   ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok

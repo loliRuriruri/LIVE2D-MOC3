@@ -3,7 +3,7 @@
 Input:      relocated-002-b.moc3
 Size:       2856 bytes
 Fingerprint: fnv1a64:d8696430c2b674f4
-Our commit: fcd5967
+Our commit: 5450faa
 
 Providers:
   ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok

@@ -3,7 +3,7 @@
 Input:      fixture-010-v53.moc3
 Size:       3128 bytes
 Fingerprint: fnv1a64:7b7b48e0b2b16ea4
-Our commit: fcd5967
+Our commit: 5450faa
 
 Providers:
   ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok
