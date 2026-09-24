@@ -48,6 +48,37 @@ fn adapter_parses_our_fixture() {
     // UV counts are float counts (2 per UV pair) for the format-level fields.
     assert_eq!(snapshot.art_meshes[0].uv_count, 8);
     assert_eq!(snapshot.counts.get("uvs"), Some(&8));
+    // AGENT.4: binding/keyform evidence.
+    assert_eq!(snapshot.keyforms.bindings, 1);
+    assert_eq!(snapshot.keyforms.targets, 2);
+    assert_eq!(snapshot.keyforms.stored_forms, 4);
+    assert_eq!(snapshot.keyforms.part_forms, 2);
+    assert_eq!(snapshot.keyforms.art_mesh_forms, 2);
+    assert_eq!(
+        snapshot.keyforms.axis_keys,
+        vec!["binding:000000=-30,30".to_string()]
+    );
+    assert_eq!(snapshot.keyforms.axis_parameters.len(), 1);
+}
+
+#[test]
+fn keyform_evidence_compares_and_matches_a_mock_reference() {
+    let (ours, _, _) = ours_snapshot("keyform-003-2d-3x3.moc3");
+    assert_eq!(ours.keyforms.stored_forms, 18);
+    assert_eq!(ours.keyforms.dense_grids, 2);
+    let report = compare_with_mocks(&ours, &[("mock", MockMutation::Agree)]);
+    assert_eq!(
+        field(&report, "keyforms.stored_forms").status,
+        FieldStatus::Match
+    );
+    assert_eq!(
+        field(&report, "keyforms.axis_keys").status,
+        FieldStatus::Match
+    );
+    assert_eq!(
+        field(&report, "keyforms.dense_grids").status,
+        FieldStatus::Match
+    );
 }
 
 #[test]

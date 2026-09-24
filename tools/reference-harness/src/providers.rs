@@ -508,6 +508,9 @@ pub fn snapshot_from_model(
     // Hierarchy edges from the recovered project (display names only).
     snapshot.hierarchy_edges = project.map(edges_from_project).unwrap_or_default();
 
+    // AGENT.4: binding/keyform evidence.
+    snapshot.keyforms = keyform_summary(model, project);
+
     if let Some(project) = project {
         snapshot.diagnostics = project
             .diagnostics
@@ -749,6 +752,74 @@ fn read_capped(mut reader: impl Read, limit: usize) -> std::io::Result<ReadResul
         }
     }
     Ok((kept, exceeded))
+}
+
+/// Build the AGENT.4 binding/keyform evidence summary for our provider.
+pub fn keyform_summary(
+    model: &Live2DModel,
+    project: Option<&RecoveredProject>,
+) -> crate::snapshot::KeyformSummary {
+    let document = recovery_core::recover_keyforms(model, project);
+    let mut summary = crate::snapshot::KeyformSummary {
+        targets: document.statistics.targets as u64,
+        stored_forms: document.statistics.stored_keyforms,
+        bindings: document.statistics.bindings as u64,
+        axes: document.statistics.parameter_axes as u64,
+        dense_grids: document.statistics.dense_grids as u64,
+        sparse_grids: document.statistics.sparse_grids as u64,
+        unknown_layout_grids: document.statistics.unknown_layout_grids as u64,
+        unresolved: document.statistics.unresolved_entries as u64,
+        ..crate::snapshot::KeyformSummary::default()
+    };
+    for entry in &document.target_keyforms {
+        let (label, count) = match entry {
+            keyform_recovery::TargetKeyforms::Part(part) => ("part", part.keyforms.len()),
+            keyform_recovery::TargetKeyforms::WarpDeformer(warp) => ("warp", warp.keyforms.len()),
+            keyform_recovery::TargetKeyforms::RotationDeformer(rotation) => {
+                ("rotation", rotation.keyforms.len())
+            }
+            keyform_recovery::TargetKeyforms::ArtMesh(mesh) => ("art_mesh", mesh.keyforms.len()),
+        };
+        let count = count as u64;
+        match label {
+            "part" => summary.part_forms += count,
+            "warp" => summary.warp_forms += count,
+            "rotation" => summary.rotation_forms += count,
+            _ => summary.art_mesh_forms += count,
+        }
+        summary
+            .target_forms
+            .push(format!("{}:{}={count}", label, entry.target().id_text()));
+    }
+    summary.target_forms.sort();
+    for band in &document.binding_bands {
+        if band.axes.is_empty() || band.binding.as_str().is_empty() {
+            continue;
+        }
+        // Comparable form: raw stored keys per binding (py-moc3 exposes the
+        // same raw key arrays through keyform_binding.keys_begin/counts).
+        let values: Vec<String> = band
+            .axes
+            .iter()
+            .flat_map(|axis| axis.keys.iter().map(|key| format!("{key}")))
+            .collect();
+        summary
+            .axis_keys
+            .push(format!("{}={}", band.binding.as_str(), values.join(",")));
+        let parameters: Vec<String> = band
+            .axes
+            .iter()
+            .map(|axis| format!("{}[{}]", axis.parameter.as_str(), axis.stored_key_count))
+            .collect();
+        summary.axis_parameters.push(format!(
+            "{}={}",
+            band.binding.as_str(),
+            parameters.join(";")
+        ));
+    }
+    summary.axis_keys.sort();
+    summary.axis_parameters.sort();
+    summary
 }
 
 /// Build hierarchy edges from a recovered project (display names only).

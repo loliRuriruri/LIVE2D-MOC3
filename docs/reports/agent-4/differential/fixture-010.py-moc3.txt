@@ -1,0 +1,78 @@
+﻿=== DIFFERENTIAL REPORT ===
+
+Input:      fixture-010-v53.moc3
+Size:       3128 bytes
+Fingerprint: fnv1a64:7b7b48e0b2b16ea4
+Our commit: 12bc0c4
+
+Providers:
+  ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok
+  py-moc3 | subprocess 0.2.x (pip `py-moc3`) | commit 2fb112e11a | license MIT | ok
+
+Field groups:
+  art_meshes: MISMATCH 5/8
+  canvas: MISMATCH 0/5
+  counts: MISSING_REFERENCE 13/15
+  deformers: UNSUPPORTED_REFERENCE 0/1
+  endian: MATCH 1/1
+  hierarchy_edges: MATCH 1/1
+  keyforms: UNSUPPORTED_REFERENCE 9/15
+  moc3_version: MATCH 1/1
+  parameters: MATCH 4/4
+  parts: MATCH 2/2
+
+Disputed fields (8):
+  art_meshes.ArtMesh_Synthetic_00.index_count
+    ours: 6
+    py-moc3: 4
+    detail: py-moc3: 4
+    status: Disputed / action: manual evidence investigation
+  art_meshes.ArtMesh_Synthetic_00.uv_count
+    ours: 8
+    py-moc3: 12
+    detail: py-moc3: 12
+    status: Disputed / action: manual evidence investigation
+  art_meshes.ArtMesh_Synthetic_00.vertex_count
+    ours: 4
+    py-moc3: 6
+    detail: py-moc3: 6
+    status: Disputed / action: manual evidence investigation
+  canvas.height
+    ours: 600
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+  canvas.origin_x
+    ours: 400
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+  canvas.origin_y
+    ours: 300
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+  canvas.pixels_per_unit
+    ours: 1000
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+  canvas.width
+    ours: 800
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+
+Cross-Implementation Agreement
+------------------------------
+Comparable fields  53
+Agreement          36
+Disagreement       8
+Order-only         0
+Missing (ours)     0
+Missing (reference)1
+Unsupported        8
+Not comparable     0
+Unresolved         1
+
+These numbers are a cross-implementation comparison, not a recovery accuracy measurement.

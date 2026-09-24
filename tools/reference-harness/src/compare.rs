@@ -306,6 +306,41 @@ fn flatten(snapshot: &DifferentialSnapshot) -> BTreeMap<String, Value> {
                 .collect(),
         ),
     );
+
+    // AGENT.4: binding/keyform evidence (aggregates comparable across
+    // providers; grid-shape and per-target lists are ours-only).
+    let keyforms = &snapshot.keyforms;
+    for (name, value) in [
+        ("keyforms.targets", keyforms.targets),
+        ("keyforms.stored_forms", keyforms.stored_forms),
+        ("keyforms.bindings", keyforms.bindings),
+        ("keyforms.axes", keyforms.axes),
+        ("keyforms.part_forms", keyforms.part_forms),
+        ("keyforms.warp_forms", keyforms.warp_forms),
+        ("keyforms.rotation_forms", keyforms.rotation_forms),
+        ("keyforms.art_mesh_forms", keyforms.art_mesh_forms),
+        ("keyforms.dense_grids", keyforms.dense_grids),
+        ("keyforms.sparse_grids", keyforms.sparse_grids),
+        (
+            "keyforms.unknown_layout_grids",
+            keyforms.unknown_layout_grids,
+        ),
+        ("keyforms.unresolved", keyforms.unresolved),
+    ] {
+        fields.insert(name.to_string(), Value::Int(value as i64));
+    }
+    fields.insert(
+        "keyforms.axis_keys".to_string(),
+        Value::List(keyforms.axis_keys.clone()),
+    );
+    fields.insert(
+        "keyforms.axis_parameters".to_string(),
+        Value::List(keyforms.axis_parameters.clone()),
+    );
+    fields.insert(
+        "keyforms.target_forms".to_string(),
+        Value::List(keyforms.target_forms.clone()),
+    );
     fields
 }
 
@@ -568,6 +603,7 @@ mod tests {
             art_meshes: Vec::new(),
             hierarchy_edges: Vec::new(),
             diagnostics: Vec::new(),
+            keyforms: crate::snapshot::KeyformSummary::default(),
             unsupported,
         }
     }

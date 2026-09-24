@@ -1,0 +1,68 @@
+﻿=== DIFFERENTIAL REPORT ===
+
+Input:      relocated-002-b.moc3
+Size:       2856 bytes
+Fingerprint: fnv1a64:d8696430c2b674f4
+Our commit: 12bc0c4
+
+Providers:
+  ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok
+  py-moc3 | subprocess 0.2.x (pip `py-moc3`) | commit 2fb112e11a | license MIT | ok
+
+Field groups:
+  art_meshes: MISMATCH 0/15
+  canvas: MATCH 5/5
+  counts: MISSING_REFERENCE 13/15
+  deformers: UNSUPPORTED_REFERENCE 0/1
+  endian: MATCH 1/1
+  hierarchy_edges: MISMATCH 0/1
+  keyforms: MISMATCH 6/15
+  moc3_version: MATCH 1/1
+  parameters: MATCH 4/4
+  parts: MISMATCH 0/3
+
+Disputed fields (6):
+  art_meshes.ids
+    ours: [ArtMesh_Synthetic_00]
+    py-moc3: [c_00]
+    detail: py-moc3: [c_00]
+    status: Disputed / action: manual evidence investigation
+  hierarchy_edges
+    ours: [ArtMesh_Synthetic_00->Part_Synthetic_00(part)]
+    py-moc3: []
+    detail: py-moc3: []
+    status: Disputed / action: manual evidence investigation
+  keyforms.art_mesh_forms
+    ours: 2
+    py-moc3: 1
+    detail: py-moc3: 1
+    status: Disputed / action: manual evidence investigation
+  keyforms.part_forms
+    ours: 2
+    py-moc3: 0
+    detail: py-moc3: 0
+    status: Disputed / action: manual evidence investigation
+  keyforms.stored_forms
+    ours: 4
+    py-moc3: 1
+    detail: py-moc3: 1
+    status: Disputed / action: manual evidence investigation
+  parts.ids
+    ours: [Part_Synthetic_00]
+    py-moc3: []
+    detail: py-moc3: []
+    status: Disputed / action: manual evidence investigation
+
+Cross-Implementation Agreement
+------------------------------
+Comparable fields  61
+Agreement          30
+Disagreement       6
+Order-only         0
+Missing (ours)     8
+Missing (reference)9
+Unsupported        8
+Not comparable     0
+Unresolved         9
+
+These numbers are a cross-implementation comparison, not a recovery accuracy measurement.

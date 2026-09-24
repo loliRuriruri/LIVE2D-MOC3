@@ -115,6 +115,47 @@ pub struct EdgeSnapshot {
     pub relation: String,
 }
 
+/// Binding/keyform evidence (AGENT.4).
+///
+/// Aggregates are comparable across providers; the shape/ordering fields and
+/// per-target lists are ours-only evidence (references that do not model
+/// keyform grids report `MISSING_REFERENCE` for them).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct KeyformSummary {
+    /// Number of keyform target objects represented.
+    pub targets: u64,
+    /// Total stored forms across targets (glue excluded on both sides).
+    pub stored_forms: u64,
+    /// Number of binding bands.
+    pub bindings: u64,
+    /// Number of parameter axes across bands.
+    pub axes: u64,
+    /// Stored forms on part targets.
+    pub part_forms: u64,
+    /// Stored forms on warp deformer targets.
+    pub warp_forms: u64,
+    /// Stored forms on rotation deformer targets.
+    pub rotation_forms: u64,
+    /// Stored forms on art mesh targets.
+    pub art_mesh_forms: u64,
+    /// Grids classified dense (ours-only evidence).
+    pub dense_grids: u64,
+    /// Grids classified sparse (ours-only evidence).
+    pub sparse_grids: u64,
+    /// Grids with unknown layout (ours-only evidence).
+    pub unknown_layout_grids: u64,
+    /// Unresolved entries (ours-only evidence).
+    pub unresolved: u64,
+    /// Sorted `binding:<id>=key,key,...` axis evidence (comparable with the
+    /// py-moc3 raw key arrays; parameter names are not part of this form).
+    pub axis_keys: Vec<String>,
+    /// Sorted `binding:<id>=param,...` axis parameter evidence (ours-only).
+    pub axis_parameters: Vec<String>,
+    /// Sorted `kind:id=count` target form lists (ours-only evidence).
+    pub target_forms: Vec<String>,
+}
+
 /// Normalized provider view of one input file.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DifferentialSnapshot {
@@ -144,6 +185,10 @@ pub struct DifferentialSnapshot {
     pub hierarchy_edges: Vec<EdgeSnapshot>,
     /// Diagnostic codes (sorted).
     pub diagnostics: Vec<String>,
+    /// Binding/keyform evidence (AGENT.4); defaults to empty for providers
+    /// that cannot supply it.
+    #[serde(default)]
+    pub keyforms: KeyformSummary,
     /// Field groups this provider cannot supply, with reasons.
     pub unsupported: BTreeMap<String, String>,
 }
@@ -165,6 +210,7 @@ impl DifferentialSnapshot {
             art_meshes: Vec::new(),
             hierarchy_edges: Vec::new(),
             diagnostics: Vec::new(),
+            keyforms: KeyformSummary::default(),
             unsupported: BTreeMap::new(),
         }
     }

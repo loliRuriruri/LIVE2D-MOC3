@@ -1,0 +1,683 @@
+{
+  "input": {
+    "file_name": "relocated-002-b.moc3",
+    "size": 2856,
+    "fnv1a64": "d8696430c2b674f4"
+  },
+  "our_commit": "12bc0c4",
+  "providers": [
+    {
+      "name": "ours",
+      "metadata": {
+        "name": "ours",
+        "kind": "in_process",
+        "version": "0.1.0",
+        "commit": "worktree",
+        "license": "UNLICENSED (project decision pending)",
+        "repository": "local",
+        "production_dependency": false
+      },
+      "outcome": "ok",
+      "error": null
+    },
+    {
+      "name": "py-moc3",
+      "metadata": {
+        "name": "py-moc3",
+        "kind": "subprocess",
+        "version": "0.2.x (pip `py-moc3`)",
+        "commit": "2fb112e11a",
+        "license": "MIT",
+        "repository": "https://github.com/Ludentes/py-moc3",
+        "production_dependency": false
+      },
+      "outcome": "ok",
+      "error": null
+    }
+  ],
+  "fields": [
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.index_count",
+      "status": "MISSING_REFERENCE",
+      "ours": "6",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.mask_refs",
+      "status": "MISSING_REFERENCE",
+      "ours": "[]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.parent_deformer",
+      "status": "MISSING_REFERENCE",
+      "ours": "-",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.parent_part",
+      "status": "MISSING_REFERENCE",
+      "ours": "Part_Synthetic_00",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.texture",
+      "status": "MISSING_REFERENCE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.uv_count",
+      "status": "MISSING_REFERENCE",
+      "ours": "8",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.vertex_count",
+      "status": "MISSING_REFERENCE",
+      "ours": "4",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.index_count",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "4"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.mask_refs",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "[]"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.parent_deformer",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "-"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.parent_part",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": ""
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.texture",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.uv_count",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "12"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.c_00.vertex_count",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": "6"
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ids",
+      "status": "MISMATCH",
+      "ours": "[ArtMesh_Synthetic_00]",
+      "reference": {
+        "py-moc3": "[c_00]"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: [c_00]"
+      ]
+    },
+    {
+      "field": "canvas.height",
+      "status": "MATCH",
+      "ours": "600",
+      "reference": {
+        "py-moc3": "600"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "canvas.origin_x",
+      "status": "MATCH",
+      "ours": "400",
+      "reference": {
+        "py-moc3": "400"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "canvas.origin_y",
+      "status": "MATCH",
+      "ours": "300",
+      "reference": {
+        "py-moc3": "300"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "canvas.pixels_per_unit",
+      "status": "MATCH",
+      "ours": "1000",
+      "reference": {
+        "py-moc3": "1000"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "canvas.width",
+      "status": "MATCH",
+      "ours": "800",
+      "reference": {
+        "py-moc3": "800"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.art_meshes",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.deformers",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.drawable_masks",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.glue",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.keyform_bindings",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.keyform_positions",
+      "status": "MATCH",
+      "ours": "16",
+      "reference": {
+        "py-moc3": "16"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.keys",
+      "status": "MATCH",
+      "ours": "2",
+      "reference": {
+        "py-moc3": "2"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.parameter_bindings",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": null,
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "counts.parameters",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.parts",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.position_indices",
+      "status": "MATCH",
+      "ours": "6",
+      "reference": {
+        "py-moc3": "6"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.rotation_deformers",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.textures",
+      "status": "MISSING_REFERENCE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.uvs",
+      "status": "MATCH",
+      "ours": "8",
+      "reference": {
+        "py-moc3": "8"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "counts.warp_deformers",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "deformers.ids",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "[]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "endian",
+      "status": "MATCH",
+      "ours": "little",
+      "reference": {
+        "py-moc3": "little"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "hierarchy_edges",
+      "status": "MISMATCH",
+      "ours": "[ArtMesh_Synthetic_00->Part_Synthetic_00(part)]",
+      "reference": {
+        "py-moc3": "[]"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: []"
+      ]
+    },
+    {
+      "field": "keyforms.art_mesh_forms",
+      "status": "MISMATCH",
+      "ours": "2",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: 1"
+      ]
+    },
+    {
+      "field": "keyforms.axes",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "keyforms.axis_keys",
+      "status": "MATCH",
+      "ours": "[binding:000000=-30,30]",
+      "reference": {
+        "py-moc3": "[binding:000000=-30,30]"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "keyforms.axis_parameters",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "[binding:000000=ParamSynthetic_AngleX[2]]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.bindings",
+      "status": "MATCH",
+      "ours": "1",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "keyforms.dense_grids",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "2",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.part_forms",
+      "status": "MISMATCH",
+      "ours": "2",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: 0"
+      ]
+    },
+    {
+      "field": "keyforms.rotation_forms",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "keyforms.sparse_grids",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.stored_forms",
+      "status": "MISMATCH",
+      "ours": "4",
+      "reference": {
+        "py-moc3": "1"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: 1"
+      ]
+    },
+    {
+      "field": "keyforms.target_forms",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "[art_mesh:ArtMesh_Synthetic_00=2, part:Part_Synthetic_00=2]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.targets",
+      "status": "MATCH",
+      "ours": "2",
+      "reference": {
+        "py-moc3": "2"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "keyforms.unknown_layout_grids",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.unresolved",
+      "status": "UNSUPPORTED_REFERENCE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "UNSUPPORTED",
+      "details": []
+    },
+    {
+      "field": "keyforms.warp_forms",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "moc3_version",
+      "status": "MATCH",
+      "ours": "2",
+      "reference": {
+        "py-moc3": "2"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.default",
+      "status": "MATCH",
+      "ours": "0",
+      "reference": {
+        "py-moc3": "0"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.maximum",
+      "status": "MATCH",
+      "ours": "30",
+      "reference": {
+        "py-moc3": "30"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.minimum",
+      "status": "MATCH",
+      "ours": "-30",
+      "reference": {
+        "py-moc3": "-30"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "parameters.ids",
+      "status": "MATCH",
+      "ours": "[ParamSynthetic_AngleX]",
+      "reference": {
+        "py-moc3": "[ParamSynthetic_AngleX]"
+      },
+      "consensus": "CONSENSUS",
+      "details": []
+    },
+    {
+      "field": "parts..parent",
+      "status": "MISSING_OURS",
+      "ours": null,
+      "reference": {
+        "py-moc3": ""
+      },
+      "consensus": "MISSING_OURS",
+      "details": []
+    },
+    {
+      "field": "parts.Part_Synthetic_00.parent",
+      "status": "MISSING_REFERENCE",
+      "ours": "-",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parts.ids",
+      "status": "MISMATCH",
+      "ours": "[Part_Synthetic_00]",
+      "reference": {
+        "py-moc3": "[]"
+      },
+      "consensus": "DISPUTED",
+      "details": [
+        "py-moc3: []"
+      ]
+    }
+  ],
+  "statistics": {
+    "comparable_fields": 61,
+    "agreement": 30,
+    "disagreement": 6,
+    "order_only": 0,
+    "missing_ours": 8,
+    "missing_reference": 9,
+    "unsupported": 8,
+    "not_comparable": 0
+  },
+  "disputed": [
+    "art_meshes.ids",
+    "hierarchy_edges",
+    "keyforms.art_mesh_forms",
+    "keyforms.part_forms",
+    "keyforms.stored_forms",
+    "parts.ids"
+  ],
+  "notes": [],
+  "validation_status": "UNVALIDATED (no owned real .moc3; cross-implementation comparison only)",
+  "disclaimer": "These numbers are a cross-implementation comparison, not a recovery accuracy measurement."
+}

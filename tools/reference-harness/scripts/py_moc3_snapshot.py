@@ -239,6 +239,64 @@ def main():
         elif entry["parent_part"]:
             edge(entry["id"], entry["parent_part"], "part")
 
+    # AGENT.4: binding/keyform raw evidence. Only aggregates that read as
+    # stored arrays are emitted; py-moc3 does not model parameter grids or
+    # target form semantics, so shape/ordering evidence stays ours-only.
+    keyforms = {
+        "targets": 0,
+        "stored_forms": 0,
+        "bindings": 0,
+        "axes": 0,
+        "part_forms": 0,
+        "warp_forms": 0,
+        "rotation_forms": 0,
+        "art_mesh_forms": 0,
+        "axis_keys": [],
+    }
+    part_counts = section(moc, "part.keyform_counts") or []
+    warp_counts = section(moc, "warp_deformer.keyform_counts") or []
+    rotation_counts = section(moc, "rotation_deformer.keyform_counts") or []
+    art_counts = section(moc, "art_mesh.keyform_counts") or []
+    keyforms["part_forms"] = sum(int(value) for value in part_counts)
+    keyforms["warp_forms"] = sum(int(value) for value in warp_counts)
+    keyforms["rotation_forms"] = sum(int(value) for value in rotation_counts)
+    keyforms["art_mesh_forms"] = sum(int(value) for value in art_counts)
+    keyforms["stored_forms"] = (
+        keyforms["part_forms"]
+        + keyforms["warp_forms"]
+        + keyforms["rotation_forms"]
+        + keyforms["art_mesh_forms"]
+    )
+    keyforms["targets"] = (
+        len(part_counts) + len(warp_counts) + len(rotation_counts) + len(art_counts)
+    )
+
+    binding_key_begin = section(moc, "keyform_binding.keys_begin_indices") or []
+    binding_key_count = section(moc, "keyform_binding.keys_counts") or []
+    key_pool = section(moc, "keys.values") or []
+    keyforms["bindings"] = len(binding_key_count)
+    axis_evidence = []
+    for index, count in enumerate(binding_key_count):
+        begin = int(binding_key_begin[index]) if index < len(binding_key_begin) else 0
+        count = int(count)
+        if count <= 0:
+            continue
+        values = [
+            format(float(value), "g") for value in key_pool[begin : begin + count]
+        ]
+        axis_evidence.append("binding:{:06}={}".format(index, ",".join(values)))
+    parameter_binding_counts = section(moc, "parameter.keyform_binding_counts") or []
+    keyforms["axes"] = sum(int(value) for value in parameter_binding_counts)
+    keyforms["axis_keys"] = sorted(axis_evidence)
+
+    snapshot["keyforms"] = keyforms
+    unsupported["keyforms.dense_grids"] = "py-moc3 has no parameter-grid model"
+    unsupported["keyforms.sparse_grids"] = "py-moc3 has no parameter-grid model"
+    unsupported["keyforms.unknown_layout_grids"] = "py-moc3 has no parameter-grid model"
+    unsupported["keyforms.unresolved"] = "py-moc3 has no keyform recovery model"
+    unsupported["keyforms.target_forms"] = "py-moc3 object ids are unreliable on relocated bodies (DF-004)"
+    unsupported["keyforms.axis_parameters"] = "py-moc3 key arrays carry no parameter names"
+
     snapshot["hierarchy_edges"].sort(key=lambda item: (item["child"], item["parent"]))
     snapshot["counts"] = {key: snapshot["counts"][key] for key in sorted(snapshot["counts"])}
     snapshot["unsupported"] = {key: unsupported[key] for key in sorted(unsupported)}
