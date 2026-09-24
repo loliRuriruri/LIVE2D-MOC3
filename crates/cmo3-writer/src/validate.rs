@@ -128,11 +128,8 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
                 }
             }
             ParentRef::Warp(_) | ParentRef::Rotation(_) => {
-                // Deformers are deferred in AGENT.5.1; parenting would dangle.
-                findings.push(Finding::fatal(
-                    "deformer_parent_deferred",
-                    format!("mesh {index} is parented to a deformer, which AGENT.5.1 does not serialize"),
-                ));
+                // Supported since AGENT.5.2: the deformer source is emitted
+                // and `targetDeformerGuid` resolves through `deformer_pools`.
             }
         }
         if mesh.texture.is_some() && mesh.model_image.is_none() {

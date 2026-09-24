@@ -351,6 +351,7 @@ dependencies = [
 name = "recovery-core"
 version = "0.1.0"
 dependencies = [
+ "cmo3-writer",
  "fixture-gen",
  "hierarchy-recovery",
  "keyform-recovery",

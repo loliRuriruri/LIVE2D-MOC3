@@ -730,11 +730,19 @@ pub fn build_project(
                 &target,
                 &grid_id,
             );
+            // Static (zero-dimensional) targets still store their forms; each
+            // form has an empty key-index list.
+            let forms: Vec<GridFormOut> = (0..grid.stored_form_count as usize)
+                .map(|form_index| GridFormOut {
+                    form_index,
+                    key_indices: Vec::new(),
+                })
+                .collect();
             grids.push(GridOut {
                 semantic: grid_id.clone(),
                 target,
                 binding_indices: Vec::new(),
-                forms: Vec::new(),
+                forms,
                 dense: true,
             });
             continue;
