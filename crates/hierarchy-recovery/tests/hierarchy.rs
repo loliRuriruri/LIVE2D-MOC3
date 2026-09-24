@@ -252,9 +252,10 @@ fn deep_chain_is_iterative() {
 #[test]
 fn many_orphans_with_bindings_stay_fast() {
     // Regression guard for the HR-010 lookup: this used to be
-    // O(art_meshes * bindings). 20k meshes and bindings must finish well
-    // within the bound even in a debug build.
-    let count = 20_000usize;
+    // O(art_meshes * bindings). 100k meshes/bindings take ~40s in a debug
+    // build when regressed, so the tight bound catches the shape while the
+    // fixed code finishes in well under a second.
+    let count = 100_000usize;
     let mut art_meshes = Vec::with_capacity(count);
     let mut bindings = Vec::with_capacity(count);
     for index in 0..count {
@@ -270,7 +271,7 @@ fn many_orphans_with_bindings_stay_fast() {
     let project = reconstruct(&model, &RecoveryPolicy::default());
     let elapsed = started.elapsed();
     assert!(
-        elapsed < std::time::Duration::from_secs(60),
+        elapsed < std::time::Duration::from_secs(10),
         "orphan/binding reconstruction took {elapsed:?}; indexing regressed"
     );
     assert_eq!(project.statistics.unresolved, count);
@@ -280,8 +281,9 @@ fn many_orphans_with_bindings_stay_fast() {
 #[test]
 fn large_cycle_renders_once() {
     // Regression guard for cycle rendering: member labels used to be looked
-    // up with a linear scan per member.
-    let count = 5_000usize;
+    // up with a linear scan per member. 60k nodes regressed to ~15s debug,
+    // so the tight bound catches it while the fixed code stays sub-second.
+    let count = 60_000usize;
     let mut deformers = Vec::with_capacity(count);
     for index in 0..count {
         let parent = format!("warp:{:06}", (index + 1) % count);
@@ -293,7 +295,7 @@ fn large_cycle_renders_once() {
     let tree = hierarchy_recovery::text::render_tree(&project, 64);
     let elapsed = started.elapsed();
     assert!(
-        elapsed < std::time::Duration::from_secs(60),
+        elapsed < std::time::Duration::from_secs(10),
         "large cycle rendering took {elapsed:?}; indexing regressed"
     );
     assert_eq!(project.cycles.len(), 1);
@@ -407,6 +409,42 @@ fn structural_candidate_filters_reject_illegal_edges() {
         .candidates_for(&NodeId::new("artmesh:B"))
         .unwrap();
     assert_eq!(entry.candidates.len(), 1);
+
+    // The same parent arriving from two confidence tiers must still be
+    // deduplicated (equal parents are not adjacent after the confidence
+    // sort); the strongest candidate survives.
+    let mut cross_tier = RecoveryGraph {
+        nodes: vec![
+            node("Part_A", NodeKind::Part, 0),
+            node("artmesh:B", NodeKind::ArtMesh, 0),
+        ],
+        edges: vec![
+            EvidenceEdge {
+                child: NodeId::new("artmesh:B"),
+                parent: NodeId::new("Part_A"),
+                kind: EvidenceKind::ExplicitStoredRelation,
+                confidence: live2d_ir::Confidence::Exact,
+                rule: RuleId::new("HR-004"),
+                note: None,
+            },
+            EvidenceEdge {
+                child: NodeId::new("artmesh:B"),
+                parent: NodeId::new("Part_A"),
+                kind: EvidenceKind::BindingRelationship,
+                confidence: live2d_ir::Confidence::Heuristic,
+                rule: RuleId::new("HR-010"),
+                note: None,
+            },
+        ],
+        candidates: Vec::new(),
+        diagnostics: Vec::new(),
+    };
+    analyze_graph(&mut cross_tier, &RecoveryPolicy::with_heuristics());
+    let entry = cross_tier
+        .candidates_for(&NodeId::new("artmesh:B"))
+        .unwrap();
+    assert_eq!(entry.candidates.len(), 1, "cross-tier duplicate survived");
+    assert_eq!(entry.candidates[0].confidence, live2d_ir::Confidence::Exact);
 }
 
 #[test]

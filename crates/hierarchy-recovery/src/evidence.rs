@@ -1,4 +1,4 @@
-﻿//! Evidence collection: stored relations (Exact) and policy-gated heuristics.
+//! Evidence collection: stored relations (Exact) and policy-gated heuristics.
 //!
 //! Nothing here resolves parents; it only records *why* a parent relation is
 //! plausible, with a rule id and a confidence (work order sections 6-8).

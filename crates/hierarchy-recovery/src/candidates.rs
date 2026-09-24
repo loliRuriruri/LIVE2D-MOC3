@@ -15,7 +15,7 @@
 //!   candidate, accepted part candidates are demoted to the logical part
 //!   association (`DemotedToAssociation`)
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use live2d_ir::{Confidence, Diagnostic, Severity};
 
@@ -245,20 +245,19 @@ pub fn build_candidates(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
         }
 
         // Deduplicate by parent keeping the strongest candidate. The sort
-        // places equal parents adjacently, so this is O(k log k), not O(k^2).
+        // orders by confidence first, so equal parents are NOT necessarily
+        // adjacent across tiers; an explicit seen-set keeps this correct and
+        // still O(k log k) (not O(k^2)).
         accepted.sort_by(|left, right| {
             confidence_rank(right.confidence)
                 .cmp(&confidence_rank(left.confidence))
                 .then_with(|| left.parent.cmp(&right.parent))
                 .then_with(|| left.evidence_index.cmp(&right.evidence_index))
         });
+        let mut seen_parents: BTreeSet<String> = BTreeSet::new();
         let mut deduped: Vec<Candidate> = Vec::with_capacity(accepted.len());
         for candidate in accepted {
-            let duplicate = deduped
-                .last()
-                .map(|previous| previous.parent == candidate.parent)
-                .unwrap_or(false);
-            if duplicate {
+            if !seen_parents.insert(candidate.parent.0.clone()) {
                 rejected.push(RejectedCandidate {
                     parent: candidate.parent,
                     confidence: candidate.confidence,

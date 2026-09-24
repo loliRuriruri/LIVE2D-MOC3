@@ -1,4 +1,4 @@
-﻿//! Human-readable rendering of an [`InspectionReport`].
+//! Human-readable rendering of an [`InspectionReport`].
 //!
 //! The layout follows the AGENT.1 report sketch in the master spec: version,
 //! size, counts, parameter ids, and hierarchy candidates. Listings are capped

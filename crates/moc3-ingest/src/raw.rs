@@ -1,4 +1,4 @@
-﻿//! Raw (on-disk shaped) model description produced by the parser.
+//! Raw (on-disk shaped) model description produced by the parser.
 //!
 //! Arrays here intentionally mirror the file's table layout; normalization
 //! into the Live2D IR is a separate stage (AGENT.2). Field order and array

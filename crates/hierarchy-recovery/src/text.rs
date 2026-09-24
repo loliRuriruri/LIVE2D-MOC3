@@ -1,4 +1,4 @@
-﻿//! Human-readable rendering: recovered tree, statistics and explain mode.
+//! Human-readable rendering: recovered tree, statistics and explain mode.
 //!
 //! All renderers are iterative (no recursion) and cycle-safe: a node is
 //! shown once; later encounters are marked instead of recursing forever.
