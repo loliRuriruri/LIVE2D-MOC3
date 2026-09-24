@@ -185,6 +185,21 @@ impl ArtMeshSpec {
     }
 }
 
+/// Glue definition connecting two art meshes.
+#[derive(Debug, Clone)]
+pub struct GlueSpec {
+    /// Identifier.
+    pub name: String,
+    /// First glued art mesh index.
+    pub art_mesh_a: usize,
+    /// Second glued art mesh index.
+    pub art_mesh_b: usize,
+    /// Binding index.
+    pub binding: usize,
+    /// Flat `(weight, position_index)` entries in source order.
+    pub info: Vec<(f32, u16)>,
+}
+
 /// Draw order group definition.
 #[derive(Debug, Clone)]
 pub struct DrawGroupSpec {
@@ -213,6 +228,8 @@ pub struct SyntheticModel {
     pub deformers: Vec<DeformerSpec>,
     /// Art meshes.
     pub art_meshes: Vec<ArtMeshSpec>,
+    /// Glue entries.
+    pub glues: Vec<GlueSpec>,
     /// Draw order groups.
     pub draw_groups: Vec<DrawGroupSpec>,
 }
@@ -367,6 +384,18 @@ struct Arrays {
 
     keyform_mul_colors: Vec<f32>,
     keyform_scr_colors: Vec<f32>,
+
+    glue_ids: Vec<u8>,
+    glue_binding: Vec<i32>,
+    glue_kf_begin: Vec<i32>,
+    glue_kf_count: Vec<i32>,
+    glue_mesh_a: Vec<i32>,
+    glue_mesh_b: Vec<i32>,
+    glue_info_begin: Vec<i32>,
+    glue_info_count: Vec<i32>,
+    glue_info_weight: Vec<f32>,
+    glue_info_position_index: Vec<u16>,
+    glue_keyform_intensity: Vec<f32>,
 
     canvas: Vec<u8>,
     counts: CountInfo,
@@ -532,6 +561,17 @@ fn populate(model: &SyntheticModel, version: MocVersion) -> Arrays {
         draw_item_self_group: Vec::new(),
         keyform_mul_colors: Vec::new(),
         keyform_scr_colors: Vec::new(),
+        glue_ids: Vec::new(),
+        glue_binding: Vec::new(),
+        glue_kf_begin: Vec::new(),
+        glue_kf_count: Vec::new(),
+        glue_mesh_a: Vec::new(),
+        glue_mesh_b: Vec::new(),
+        glue_info_begin: Vec::new(),
+        glue_info_count: Vec::new(),
+        glue_info_weight: Vec::new(),
+        glue_info_position_index: Vec::new(),
+        glue_keyform_intensity: Vec::new(),
         canvas: Vec::new(),
         counts: make_count_info(),
     };
@@ -848,6 +888,45 @@ fn populate(model: &SyntheticModel, version: MocVersion) -> Arrays {
         art_kf_cursor += i32::try_from(keyforms).unwrap_or(1);
     }
     arrays.counts.art_mesh_keyforms = u32::try_from(art_kf_cursor).unwrap_or(0);
+
+    // ---- glue -------------------------------------------------------------
+    let mut glue_kf_cursor = 0i32;
+    let mut glue_info_cursor = 0i32;
+    for glue in &model.glues {
+        let keyforms = kf_product(glue.binding);
+        arrays.glue_ids.extend_from_slice(&id_bytes(&glue.name));
+        arrays
+            .glue_binding
+            .push(i32::try_from(glue.binding).unwrap_or(0));
+        arrays.glue_kf_begin.push(glue_kf_cursor);
+        arrays
+            .glue_kf_count
+            .push(i32::try_from(keyforms).unwrap_or(1));
+        arrays
+            .glue_mesh_a
+            .push(i32::try_from(glue.art_mesh_a).unwrap_or(0));
+        arrays
+            .glue_mesh_b
+            .push(i32::try_from(glue.art_mesh_b).unwrap_or(0));
+        arrays.glue_info_begin.push(glue_info_cursor);
+        arrays
+            .glue_info_count
+            .push(i32::try_from(glue.info.len()).unwrap_or(0));
+        for (weight, position_index) in &glue.info {
+            arrays.glue_info_weight.push(*weight);
+            arrays.glue_info_position_index.push(*position_index);
+        }
+        glue_info_cursor += i32::try_from(glue.info.len()).unwrap_or(0);
+        for keyform in 0..keyforms {
+            arrays
+                .glue_keyform_intensity
+                .push(1.0 + f32::from(i16::try_from(keyform).unwrap_or(0)) * 0.25);
+        }
+        glue_kf_cursor += i32::try_from(keyforms).unwrap_or(1);
+    }
+    arrays.counts.glue = u32::try_from(model.glues.len()).unwrap_or(0);
+    arrays.counts.glue_info = u32::try_from(arrays.glue_info_weight.len()).unwrap_or(0);
+    arrays.counts.glue_keyforms = u32::try_from(glue_kf_cursor).unwrap_or(0);
 
     // ---- draw groups -----------------------------------------------------
     for group in &model.draw_groups {
@@ -1240,6 +1319,25 @@ fn assemble(arrays: &Arrays, version: MocVersion) -> Vec<u8> {
         i32_bytes(&arrays.draw_item_self_group),
     );
 
+    // Glue.
+    set("glue.id", arrays.glue_ids.clone());
+    set("glue.binding_index", i32_bytes(&arrays.glue_binding));
+    set("glue.keyform_begin", i32_bytes(&arrays.glue_kf_begin));
+    set("glue.keyform_count", i32_bytes(&arrays.glue_kf_count));
+    set("glue.art_mesh_a", i32_bytes(&arrays.glue_mesh_a));
+    set("glue.art_mesh_b", i32_bytes(&arrays.glue_mesh_b));
+    set("glue.info_begin", i32_bytes(&arrays.glue_info_begin));
+    set("glue.info_count", i32_bytes(&arrays.glue_info_count));
+    set("glue_info.weight", f32_bytes(&arrays.glue_info_weight));
+    set(
+        "glue_info.position_index",
+        u16_bytes(&arrays.glue_info_position_index),
+    );
+    set(
+        "glue_keyform.intensity",
+        f32_bytes(&arrays.glue_keyform_intensity),
+    );
+
     if version.has_v42_sections() {
         let mut r = Vec::with_capacity(arrays.keyform_mul_colors.len() / 3);
         let mut g = Vec::with_capacity(r.capacity());
@@ -1380,6 +1478,7 @@ pub const FIXTURE_NAMES: &[&str] = &[
     "fixture-010-v53.moc3",
     "fixture-011-v30.moc3",
     "fixture-012-v40.moc3",
+    "fixture-013-glue.moc3",
 ];
 
 type Builder = (&'static str, fn() -> SyntheticModel);
@@ -1398,6 +1497,7 @@ fn builders() -> Vec<Builder> {
         ("fixture-010-v53.moc3", fixture_010),
         ("fixture-011-v30.moc3", fixture_011),
         ("fixture-012-v40.moc3", fixture_012),
+        ("fixture-013-glue.moc3", fixture_013),
     ]
 }
 
@@ -1452,7 +1552,11 @@ fn fixture_001() -> SyntheticModel {
         bindings: empty_binding(),
         parts: Vec::new(),
         deformers: Vec::new(),
-        art_meshes: vec![quad_mesh("ArtMesh_Synthetic_00", 0)],
+        art_meshes: vec![ArtMeshSpec {
+            flags: 0x05, // additive blending + double sided
+            ..quad_mesh("ArtMesh_Synthetic_00", 0)
+        }],
+        glues: Vec::new(),
         draw_groups: simple_group(1),
     }
 }
@@ -1676,6 +1780,26 @@ fn fixture_012() -> SyntheticModel {
         }
     }
     model
+}
+
+fn fixture_013() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        bindings: empty_binding(),
+        art_meshes: vec![
+            quad_mesh("ArtMesh_Synthetic_00", 0),
+            quad_mesh("ArtMesh_Synthetic_01", 0),
+        ],
+        glues: vec![GlueSpec {
+            name: "Glue_Synthetic_00".to_string(),
+            art_mesh_a: 0,
+            art_mesh_b: 1,
+            binding: 0,
+            info: vec![(0.5, 0), (0.5, 0), (1.0, 1), (1.0, 1)],
+        }],
+        draw_groups: simple_group(2),
+        ..SyntheticModel::default()
+    }
 }
 
 #[cfg(test)]

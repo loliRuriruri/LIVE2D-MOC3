@@ -17,12 +17,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use live2d_ir::{
     ArtMesh, ArtMeshId, ArtMeshKeyform, Binding, BindingId, BindingParameter, BindingTarget,
-    BlendMode, Canvas, Confidence, Deformer, DeformerCommon, DeformerId, Diagnostic, DrawableFlags,
-    Endianness, EntityCounts, EntityRef, FieldProvenance, Glue, GlueId, GlueInfoEntry, IdAssigner,
-    IdOutcome, Live2DModel, MaskGroup, MaskGroupId, Metadata, Parameter, ParameterId,
-    ParameterKind, Part, PartId, Provenance, RotationDeformer, RotationKeyform, RuntimeSectionInfo,
-    SchemaStatus, Severity, SourceFormat, Texture, TextureId, UndefinedSlot, UnknownCountField,
-    Unknowns, Uv, Vec2, WarpDeformer, WarpKeyform, SCHEMA_ID,
+    BlendMode, Canvas, Confidence, Deformer, DeformerCommon, DeformerId, Diagnostic,
+    DrawOrderGroup, DrawOrderGroupId, DrawOrderItem, DrawOrderTarget, DrawableFlags, Endianness,
+    EntityCounts, EntityRef, FieldProvenance, Glue, GlueId, GlueInfoEntry, IdAssigner, IdOutcome,
+    Live2DModel, MaskGroup, MaskGroupId, Metadata, Parameter, ParameterId, ParameterKind, Part,
+    PartId, Provenance, RotationDeformer, RotationKeyform, RuntimeSectionInfo, SchemaStatus,
+    Severity, SourceFormat, Texture, TextureId, UndefinedSlot, UnknownCountField, Unknowns, Uv,
+    Vec2, WarpDeformer, WarpKeyform, SCHEMA_ID,
 };
 use moc3_ingest::raw::{DeformerSpecific, ParameterType};
 use moc3_ingest::reader::IdField;
@@ -280,19 +281,30 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
                 kind,
                 key_values,
                 extension_key_values,
-                field_provenance: vec![field_provenance(
-                    "current",
-                    Provenance::unknown(
-                        "moc3:parameter",
-                        "current value is runtime state and is not stored in the file",
-                    ),
-                )],
+                field_provenance: parameter_field_provenance(&raw, kind),
                 provenance: Provenance::exact("moc3:parameter"),
             }
         })
         .collect();
 
     // ---- parts -------------------------------------------------------------
+    // Offscreen surfaces (5.3+) are not modeled in AGENT.2; keep the stored
+    // relation visible as a diagnostic instead of a raw index on the entity.
+    for (index, part) in raw.parts.iter().enumerate() {
+        if let (Some(surface), Some(id)) = (part.offscreen_index, part_ids.get(index)) {
+            if surface >= 0 {
+                diagnostics.push(Diagnostic::for_entity(
+                    Severity::Warning,
+                    "unmapped_reference",
+                    format!(
+                        "part '{id}' references offscreen surface index {surface}; \
+                         offscreen surfaces are not modeled in AGENT.2"
+                    ),
+                    EntityRef::Part(id.clone()),
+                ));
+            }
+        }
+    }
     let mut parts: Vec<Part> = raw
         .parts
         .iter()
@@ -321,9 +333,6 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
                 .cloned(),
             visible: part.visible,
             enabled: part.enabled,
-            offscreen_surface_index: part
-                .offscreen_index
-                .and_then(|value| usize::try_from(value).ok()),
             field_provenance: vec![
                 field_provenance(
                     "opacity",
@@ -490,6 +499,8 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
             binding: binding_ids
                 .get(usize::try_from(mesh.binding_index.max(0)).unwrap_or(usize::MAX))
                 .cloned(),
+            visible: mesh.visible,
+            enabled: mesh.enabled,
             mask_groups: mask_groups_by_mesh.get(index).cloned().unwrap_or_default(),
             field_provenance: vec![
                 field_provenance(
@@ -558,16 +569,20 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
                 .cloned()
                 .unwrap_or_else(|| GlueId::new(format!("glue:{index:06}"))),
             source_name: source_text(&glue.id).map(str::to_string),
-            art_mesh_a: usize::try_from(glue.art_mesh_a.max(0))
-                .ok()
-                .and_then(|position| art_mesh_ids.get(position))
-                .cloned()
-                .unwrap_or_else(|| ArtMeshId::new("artmesh:missing")),
-            art_mesh_b: usize::try_from(glue.art_mesh_b.max(0))
-                .ok()
-                .and_then(|position| art_mesh_ids.get(position))
-                .cloned()
-                .unwrap_or_else(|| ArtMeshId::new("artmesh:missing")),
+            art_mesh_a: glue_mesh_ref(
+                glue.art_mesh_a,
+                "a",
+                index,
+                &art_mesh_ids,
+                &mut diagnostics,
+            ),
+            art_mesh_b: glue_mesh_ref(
+                glue.art_mesh_b,
+                "b",
+                index,
+                &art_mesh_ids,
+                &mut diagnostics,
+            ),
             binding: binding_ids
                 .get(usize::try_from(glue.binding_index.max(0)).unwrap_or(usize::MAX))
                 .cloned(),
@@ -661,6 +676,76 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
         &glue_entries,
     );
 
+    // ---- draw order groups -------------------------------------------------
+    let mut draw_group_assigner = IdAssigner::new("drawgroup");
+    let draw_group_ids: Vec<DrawOrderGroupId> = raw
+        .draw_order_groups
+        .iter()
+        .enumerate()
+        .map(|(index, _)| DrawOrderGroupId::new(draw_group_assigner.assign(index, None).id))
+        .collect();
+    let mut draw_order_groups: Vec<DrawOrderGroup> =
+        Vec::with_capacity(raw.draw_order_groups.len());
+    for (index, group) in raw.draw_order_groups.iter().enumerate() {
+        let item_count = usize::try_from(group.object_count.max(0)).unwrap_or(0);
+        let mut items: Vec<DrawOrderItem> = Vec::with_capacity(item_count.min(1_000_000));
+        for slot in 0..item_count {
+            let at = usize::try_from(group.object_begin.max(0))
+                .unwrap_or(usize::MAX)
+                .saturating_add(slot);
+            let Some(item) = raw.draw_order_items.get(at) else {
+                continue;
+            };
+            let object = match item.object_type {
+                0 => usize::try_from(item.object_index.max(0))
+                    .ok()
+                    .and_then(|position| art_mesh_ids.get(position))
+                    .cloned()
+                    .map(DrawOrderTarget::ArtMesh),
+                1 => usize::try_from(item.object_index.max(0))
+                    .ok()
+                    .and_then(|position| part_ids.get(position))
+                    .cloned()
+                    .map(DrawOrderTarget::Part),
+                _ => None,
+            };
+            let Some(object) = object else {
+                continue;
+            };
+            let is_part = matches!(object, DrawOrderTarget::Part(_));
+            let self_group = if item.self_group >= 0 {
+                usize::try_from(item.self_group)
+                    .ok()
+                    .and_then(|position| draw_group_ids.get(position))
+                    .cloned()
+            } else {
+                None
+            };
+            if is_part && self_group.is_none() {
+                if let Some(group_id) = draw_group_ids.get(index) {
+                    diagnostics.push(Diagnostic::for_entity(
+                        Severity::Warning,
+                        "invalid_reference",
+                        format!(
+                            "draw order group '{group_id}' has a part item without a nested group"
+                        ),
+                        EntityRef::Model(Default::default()),
+                    ));
+                }
+            }
+            items.push(DrawOrderItem { object, self_group });
+        }
+        if let Some(id) = draw_group_ids.get(index) {
+            draw_order_groups.push(DrawOrderGroup {
+                id: id.clone(),
+                items,
+                maximum_order: i32::try_from(group.max_order).unwrap_or(0),
+                minimum_order: i32::try_from(group.min_order).unwrap_or(0),
+                provenance: Provenance::exact("moc3:draw_group"),
+            });
+        }
+    }
+
     // ---- model assembly ----------------------------------------------------
     let source = SourceFormat {
         format: "moc3".to_string(),
@@ -708,6 +793,7 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
             warp_deformers: 0,
             rotation_deformers: 0,
             art_meshes: 0,
+            draw_order_groups: 0,
             mask_groups: 0,
             textures: 0,
             glue: 0,
@@ -726,6 +812,7 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
         deformers,
         art_meshes,
         drawables: art_mesh_ids.clone(),
+        draw_order_groups,
         mask_groups,
         textures,
         glue: glue_entries,
@@ -1095,6 +1182,19 @@ fn blend_mode_of(
     } else {
         let additive = mesh.drawable_flags_raw & 0x01 != 0;
         let multiplicative = mesh.drawable_flags_raw & 0x02 != 0;
+        if additive && multiplicative {
+            if let Some(id) = art_mesh_ids.get(index) {
+                diagnostics.push(Diagnostic::for_entity(
+                    Severity::Warning,
+                    "conflicting_blend_bits",
+                    format!(
+                        "art mesh '{id}' sets both the additive and multiplicative flag bits; \
+                         treating the mesh as additive (raw flags preserved)"
+                    ),
+                    EntityRef::ArtMesh(id.clone()),
+                ));
+            }
+        }
         let mode = if additive {
             BlendMode::AddCompatible
         } else if multiplicative {
@@ -1128,6 +1228,61 @@ fn blend_mode_from_raw(raw: i32) -> BlendMode {
         17 => BlendMode::Color,
         _ => BlendMode::Unknown,
     }
+}
+
+/// Resolve a glue art mesh reference.
+///
+/// Parsed files are already validated, so the invalid branch is defensive
+/// (only reachable for hand-edited IR inputs); it produces a deterministic
+/// error placeholder id that can never collide with the documented ID policy
+/// and is always reported.
+fn glue_mesh_ref(
+    raw_index: i64,
+    side: &'static str,
+    glue_index: usize,
+    art_mesh_ids: &[ArtMeshId],
+    diagnostics: &mut Vec<Diagnostic>,
+) -> ArtMeshId {
+    if let Some(id) = usize::try_from(raw_index.max(0))
+        .ok()
+        .and_then(|position| art_mesh_ids.get(position))
+    {
+        return id.clone();
+    }
+    let placeholder = ArtMeshId::new(format!("artmesh:invalid:{side}:{glue_index:06}"));
+    diagnostics.push(Diagnostic::for_entity(
+        Severity::Warning,
+        "invalid_reference",
+        format!(
+            "glue[{glue_index}] art_mesh_{side} index {raw_index} does not resolve; \
+             placeholder '{placeholder}' used and reported"
+        ),
+        EntityRef::ArtMesh(placeholder.clone()),
+    ));
+    placeholder
+}
+
+fn parameter_field_provenance(
+    raw: &moc3_ingest::RawMoc3,
+    kind: ParameterKind,
+) -> Vec<FieldProvenance> {
+    let mut entries = vec![field_provenance(
+        "current",
+        Provenance::unknown(
+            "moc3:parameter",
+            "current value is runtime state and is not stored in the file",
+        ),
+    )];
+    if raw.header.version_byte < 4 && kind == ParameterKind::Normal {
+        entries.push(field_provenance(
+            "kind",
+            Provenance::derived("moc3:parameter.type").with_note(
+                "the explicit parameter type field exists from format version 4 (4.2); \
+                 earlier files are mapped to normal",
+            ),
+        ));
+    }
+    entries
 }
 
 fn deformer_common(deformer: Option<&Deformer>) -> Option<&DeformerCommon> {

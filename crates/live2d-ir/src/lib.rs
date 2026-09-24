@@ -34,16 +34,16 @@ pub mod validate;
 pub use diagnostics::{count_severity, has_fatal, Diagnostic, EntityRef, Severity};
 pub use geometry::{Uv, Vec2};
 pub use ids::{
-    ArtMeshId, BindingId, DeformerId, GlueId, IdAssigner, IdAssignment, IdOutcome, MaskGroupId,
-    ParameterId, PartId, TextureId,
+    ArtMeshId, BindingId, DeformerId, DrawOrderGroupId, GlueId, IdAssigner, IdAssignment,
+    IdOutcome, MaskGroupId, ParameterId, PartId, TextureId,
 };
 pub use json::{from_json_str, to_json_str, IrExportError, IrImportError};
 pub use model::{
     ArtMesh, ArtMeshKeyform, Binding, BindingParameter, BindingTarget, BlendMode, Canvas, Deformer,
-    DeformerCommon, DrawableFlags, Endianness, EntityCounts, Glue, GlueInfoEntry, Live2DModel,
-    MaskGroup, Metadata, Parameter, ParameterKind, Part, RotationDeformer, RotationKeyform,
-    RuntimeSectionInfo, SchemaStatus, SourceFormat, Texture, UndefinedSlot, UnknownCountField,
-    Unknowns, WarpDeformer, WarpKeyform, SCHEMA_ID,
+    DeformerCommon, DrawOrderGroup, DrawOrderItem, DrawOrderTarget, DrawableFlags, Endianness,
+    EntityCounts, Glue, GlueInfoEntry, Live2DModel, MaskGroup, Metadata, Parameter, ParameterKind,
+    Part, RotationDeformer, RotationKeyform, RuntimeSectionInfo, SchemaStatus, SourceFormat,
+    Texture, UndefinedSlot, UnknownCountField, Unknowns, WarpDeformer, WarpKeyform, SCHEMA_ID,
 };
 pub use provenance::{Confidence, FieldProvenance, Provenance};
 pub use validate::validate_ir;

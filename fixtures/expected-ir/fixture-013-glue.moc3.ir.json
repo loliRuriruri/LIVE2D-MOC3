@@ -3,8 +3,8 @@
   "schema_status": "experimental",
   "source": {
     "format": "moc3",
-    "version_byte": 3,
-    "version_label": "3 (4.0.00-4.1.05)",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
     "byte_order": "little"
   },
   "metadata": {
@@ -13,14 +13,14 @@
     "entity_counts": {
       "parameters": 0,
       "parts": 0,
-      "deformers": 1,
-      "warp_deformers": 1,
+      "deformers": 0,
+      "warp_deformers": 0,
       "rotation_deformers": 0,
-      "art_meshes": 1,
+      "art_meshes": 2,
       "draw_order_groups": 1,
       "mask_groups": 0,
       "textures": 1,
-      "glue": 0,
+      "glue": 1,
       "bindings": 1
     }
   },
@@ -58,29 +58,44 @@
   },
   "parameters": [],
   "parts": [],
-  "deformers": [
+  "deformers": [],
+  "art_meshes": [
     {
-      "kind": "warp",
-      "id": "WarpDeformer_Synthetic_00",
-      "source_name": "WarpDeformer_Synthetic_00",
-      "children_art_meshes": [
-        "ArtMesh_Synthetic_00"
-      ],
-      "binding": "binding:000000",
-      "visible": true,
-      "enabled": true,
-      "provenance": {
-        "confidence": "exact",
-        "source": "moc3:deformer"
-      },
-      "rows": 1,
-      "columns": 1,
+      "id": "ArtMesh_Synthetic_00",
+      "source_name": "ArtMesh_Synthetic_00",
+      "texture": "texture:000000",
       "vertex_count": 4,
-      "quad_transform": true,
+      "uvs": [
+        {
+          "u": 0.1,
+          "v": 0.1
+        },
+        {
+          "u": 0.9,
+          "v": 0.1
+        },
+        {
+          "u": 0.9,
+          "v": 0.9
+        },
+        {
+          "u": 0.1,
+          "v": 0.9
+        }
+      ],
+      "indices": [
+        0,
+        1,
+        2,
+        0,
+        2,
+        3
+      ],
       "keyforms": [
         {
           "index": 0,
           "opacity": 1.0,
+          "draw_order": 0.0,
           "positions": [
             {
               "x": 0.0,
@@ -91,23 +106,60 @@
               "y": 0.0
             },
             {
-              "x": 0.0,
+              "x": 100.0,
               "y": 100.0
             },
             {
-              "x": 100.0,
+              "x": 0.0,
               "y": 100.0
             }
           ]
         }
-      ]
-    }
-  ],
-  "art_meshes": [
+      ],
+      "flags": {
+        "additive": false,
+        "multiplicative": false,
+        "double_sided": false,
+        "inverted_mask": false
+      },
+      "blend_mode": "normal",
+      "binding": "binding:000000",
+      "visible": true,
+      "enabled": true,
+      "field_provenance": [
+        {
+          "field": "opacity",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:art_mesh",
+            "note": "base opacity is keyform/runtime dependent and not stored"
+          }
+        },
+        {
+          "field": "draw_order",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:art_mesh",
+            "note": "base draw order is keyform dependent; see keyforms[].draw_order"
+          }
+        },
+        {
+          "field": "blend_mode",
+          "provenance": {
+            "confidence": "derived",
+            "source": "moc3:art_mesh.drawable_flags",
+            "note": "derived from flag bits (pre-5.3) or the blend mode field (5.3+)"
+          }
+        }
+      ],
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:art_mesh"
+      }
+    },
     {
-      "id": "ArtMesh_Synthetic_00",
-      "source_name": "ArtMesh_Synthetic_00",
-      "parent_deformer": "WarpDeformer_Synthetic_00",
+      "id": "ArtMesh_Synthetic_01",
+      "source_name": "ArtMesh_Synthetic_01",
       "texture": "texture:000000",
       "vertex_count": 4,
       "uvs": [
@@ -204,7 +256,8 @@
     }
   ],
   "drawables": [
-    "ArtMesh_Synthetic_00"
+    "ArtMesh_Synthetic_00",
+    "ArtMesh_Synthetic_01"
   ],
   "draw_order_groups": [
     {
@@ -214,6 +267,12 @@
           "object": {
             "kind": "art_mesh",
             "id": "ArtMesh_Synthetic_00"
+          }
+        },
+        {
+          "object": {
+            "kind": "art_mesh",
+            "id": "ArtMesh_Synthetic_01"
           }
         }
       ],
@@ -237,7 +296,50 @@
       }
     }
   ],
-  "glue": [],
+  "glue": [
+    {
+      "id": "Glue_Synthetic_00",
+      "source_name": "Glue_Synthetic_00",
+      "art_mesh_a": "ArtMesh_Synthetic_00",
+      "art_mesh_b": "ArtMesh_Synthetic_01",
+      "binding": "binding:000000",
+      "keyform_intensities": [
+        1.0
+      ],
+      "info": [
+        {
+          "weight": 0.5,
+          "position_index": 0
+        },
+        {
+          "weight": 0.5,
+          "position_index": 0
+        },
+        {
+          "weight": 1.0,
+          "position_index": 1
+        },
+        {
+          "weight": 1.0,
+          "position_index": 1
+        }
+      ],
+      "field_provenance": [
+        {
+          "field": "info",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:glue.info",
+            "note": "weight/position pairing semantics are not confirmed; entries are preserved raw"
+          }
+        }
+      ],
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:glue"
+      }
+    }
+  ],
   "bindings": [
     {
       "id": "binding:000000",
@@ -246,12 +348,16 @@
       "parameters": [],
       "used_by": [
         {
-          "kind": "deformer",
-          "id": "WarpDeformer_Synthetic_00"
+          "kind": "art_mesh",
+          "id": "ArtMesh_Synthetic_00"
         },
         {
           "kind": "art_mesh",
-          "id": "ArtMesh_Synthetic_00"
+          "id": "ArtMesh_Synthetic_01"
+        },
+        {
+          "kind": "glue",
+          "id": "Glue_Synthetic_00"
         }
       ],
       "provenance": {
@@ -264,27 +370,27 @@
   "unknowns": {
     "runtime_sections": [
       {
-        "name": "deformer.id_runtime",
-        "element_count": 1,
-        "byte_size": 8
-      },
-      {
         "name": "art_mesh.id_runtime",
-        "element_count": 1,
-        "byte_size": 8
+        "element_count": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.uv_runtime",
-        "element_count": 1,
-        "byte_size": 8
+        "element_count": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.position_index_runtime",
-        "element_count": 1,
-        "byte_size": 8
+        "element_count": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.drawable_mask_runtime",
+        "element_count": 2,
+        "byte_size": 16
+      },
+      {
+        "name": "glue.id_runtime",
         "element_count": 1,
         "byte_size": 8
       }

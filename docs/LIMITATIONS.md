@@ -64,7 +64,13 @@ so nothing is silently dropped.
   public contract until real-file validation has happened.
 - Not modeled yet (present in the file, validated, reported through an
   `unmapped_sections` diagnostic): blend shapes and constraints, offscreen
-  surfaces (5.3), keyform color pools (multiply/screen).
+  surfaces (5.3), keyform color pools (multiply/screen). Part references to
+  offscreen surfaces additionally produce an `unmapped_reference` diagnostic;
+  that path is not exercised by the fixtures (the generator writes `-1`).
+- Reverse-link checks now cover parts, deformers, masks and bindings;
+  hierarchy cycles and draw order nesting cycles are diagnostics only.
+- Glue structure is mapped and fixture-tested (`fixture-013`), but the
+  weight/position pairing semantics remain `Unknown` (raw entries preserved).
 - Keyform *selection/interpolation* (which keyform is active for a given
   parameter state) is AGENT.4 work; the IR stores the raw per-object
   keyform lists plus the binding grid dimensions.
@@ -76,9 +82,12 @@ so nothing is silently dropped.
 - Import validates structure, not provenance: a hand-edited document can
   claim `Exact` confidence for invented values. Trust imported IR only from
   trusted sources.
-- Memory: the mapper copies each bulk pool once (parser `ModelPools` to IR
-  fields) and then drops the parser buffers; worst-case peak is roughly the
-  pool size plus the IR size, bounded by `Limits`.
+- Memory: the mapper consumes the parser output by value and copies each
+  bulk pool element once (parser `ModelPools` to IR fields); no whole-pool
+  clone happens. The file API drops the input byte buffer before mapping.
+  Peak memory is roughly input + pools + IR; key values are deliberately
+  duplicated per parameter and per binding (small, bounded). All bounded by
+  `Limits`.
 
 ## Tooling
 

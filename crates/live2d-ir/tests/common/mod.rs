@@ -30,7 +30,10 @@ pub fn minimal_model() -> Live2DModel {
         kind: ParameterKind::Normal,
         key_values: vec![-30.0, 30.0],
         extension_key_values: Vec::new(),
-        field_provenance: Vec::new(),
+        field_provenance: vec![live2d_ir::FieldProvenance {
+            field: "current".to_string(),
+            provenance: Provenance::unknown("test:parameter", "not stored"),
+        }],
         provenance: exact("test:parameter"),
     };
     let part = Part {
@@ -44,7 +47,6 @@ pub fn minimal_model() -> Live2DModel {
         binding: None,
         visible: true,
         enabled: true,
-        offscreen_surface_index: None,
         field_provenance: vec![
             live2d_ir::FieldProvenance {
                 field: "opacity".to_string(),
@@ -94,6 +96,8 @@ pub fn minimal_model() -> Live2DModel {
         opacity: None,
         draw_order: None,
         binding: None,
+        visible: true,
+        enabled: true,
         mask_groups: Vec::new(),
         field_provenance: vec![
             live2d_ir::FieldProvenance {
@@ -135,6 +139,7 @@ pub fn minimal_model() -> Live2DModel {
                 warp_deformers: 0,
                 rotation_deformers: 0,
                 art_meshes: 0,
+                draw_order_groups: 0,
                 mask_groups: 0,
                 textures: 0,
                 glue: 0,
@@ -155,6 +160,7 @@ pub fn minimal_model() -> Live2DModel {
         deformers: Vec::new(),
         art_meshes: vec![mesh],
         drawables: vec![ArtMeshId::new("ArtMeshFace")],
+        draw_order_groups: Vec::new(),
         mask_groups: Vec::new(),
         textures: vec![texture],
         glue: Vec::new(),

@@ -53,12 +53,25 @@ fn fixture_001_maps_single_artmesh() {
     assert_eq!(mesh.keyforms.len(), 1);
     assert_eq!(mesh.keyforms[0].positions.len(), 4);
     assert!(mesh.parent_part.is_none());
-    assert_eq!(mesh.blend_mode, BlendMode::Normal);
-    assert!(!mesh.flags.additive);
+    // Flags 0x05: additive blending + double sided.
+    assert_eq!(mesh.blend_mode, BlendMode::AddCompatible);
+    assert!(mesh.flags.additive);
+    assert!(mesh.flags.double_sided);
+    assert!(mesh.visible);
+    assert!(mesh.enabled);
     assert!(model.canvas.y_axis_reversed);
     assert_eq!(model.textures.len(), 1);
     assert_eq!(model.textures[0].page_index, 0);
     assert_eq!(model.drawables, vec![mesh.id.clone()]);
+    // Draw order group coverage.
+    assert_eq!(model.draw_order_groups.len(), 1);
+    let group = &model.draw_order_groups[0];
+    assert_eq!(group.items.len(), 1);
+    assert_eq!(
+        group.items[0].object,
+        live2d_ir::DrawOrderTarget::ArtMesh(mesh.id.clone())
+    );
+    assert!(group.items[0].self_group.is_none());
 }
 
 #[test]
@@ -247,6 +260,56 @@ fn id_assignment_is_deterministic_for_duplicates() {
         export_ir_json(&first, false).unwrap(),
         export_ir_json(&second, false).unwrap()
     );
+}
+
+#[test]
+fn fixture_013_maps_glue() {
+    let model = build("fixture-013-glue.moc3");
+    assert_eq!(model.glue.len(), 1);
+    let glue = &model.glue[0];
+    assert_eq!(glue.id.as_str(), "Glue_Synthetic_00");
+    assert_eq!(glue.art_mesh_a.as_str(), "ArtMesh_Synthetic_00");
+    assert_eq!(glue.art_mesh_b.as_str(), "ArtMesh_Synthetic_01");
+    assert_eq!(glue.info.len(), 4);
+    assert_eq!(glue.info[0].weight, 0.5);
+    assert_eq!(glue.info[0].position_index, 0);
+    assert_eq!(glue.info[2].weight, 1.0);
+    assert_eq!(glue.info[2].position_index, 1);
+    assert_eq!(glue.keyform_intensities, vec![1.0]);
+    assert!(!live2d_ir::has_fatal(&model.diagnostics));
+}
+
+#[test]
+fn art_mesh_visibility_flags_are_mapped() {
+    let mut bytes = support::read_fixture("fixture-002-artmesh-param.moc3");
+    let visible_offset = support::section_offset(&bytes, "art_mesh.visible");
+    support::write_u32(&mut bytes, visible_offset, 0);
+    let model = build_ir_from_bytes(&bytes, &InspectOptions::default()).unwrap();
+    assert!(!model.art_meshes[0].visible);
+    assert!(model.art_meshes[0].enabled);
+}
+
+#[test]
+fn conflicting_blend_bits_are_reported() {
+    let mut bytes = support::read_fixture("fixture-002-artmesh-param.moc3");
+    let flags_offset = support::section_offset(&bytes, "art_mesh.drawable_flags");
+    let at = usize::try_from(flags_offset).unwrap();
+    *bytes.get_mut(at).unwrap() = 0x03; // additive + multiplicative
+    let model = build_ir_from_bytes(&bytes, &InspectOptions::default()).unwrap();
+    assert_eq!(model.art_meshes[0].blend_mode, BlendMode::AddCompatible);
+    assert!(has_code(&model, "conflicting_blend_bits"));
+    assert_eq!(model.art_meshes[0].flags.unknown_bits, 0);
+}
+
+#[test]
+fn unknown_blend_mode_values_are_preserved() {
+    let mut bytes = support::read_fixture("fixture-010-v53.moc3");
+    let blend_offset = support::section_offset(&bytes, "art_mesh.blend_mode");
+    support::write_u32(&mut bytes, blend_offset, 99);
+    let model = build_ir_from_bytes(&bytes, &InspectOptions::default()).unwrap();
+    assert_eq!(model.art_meshes[0].blend_mode, BlendMode::Unknown);
+    assert_eq!(model.art_meshes[0].blend_mode_raw, Some(99));
+    assert!(has_code(&model, "unknown_blend_mode"));
 }
 
 #[test]

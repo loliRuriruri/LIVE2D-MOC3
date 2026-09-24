@@ -17,6 +17,7 @@
       "warp_deformers": 0,
       "rotation_deformers": 0,
       "art_meshes": 1,
+      "draw_order_groups": 1,
       "mask_groups": 0,
       "textures": 1,
       "glue": 0,
@@ -76,6 +77,14 @@
             "confidence": "unknown",
             "source": "moc3:parameter",
             "note": "current value is runtime state and is not stored in the file"
+          }
+        },
+        {
+          "field": "kind",
+          "provenance": {
+            "confidence": "derived",
+            "source": "moc3:parameter.type",
+            "note": "the explicit parameter type field exists from format version 4 (4.2); earlier files are mapped to normal"
           }
         }
       ],
@@ -210,6 +219,8 @@
       },
       "blend_mode": "normal",
       "binding": "binding:000000",
+      "visible": true,
+      "enabled": true,
       "field_provenance": [
         {
           "field": "opacity",
@@ -244,6 +255,25 @@
   ],
   "drawables": [
     "ArtMesh_Synthetic_00"
+  ],
+  "draw_order_groups": [
+    {
+      "id": "drawgroup:000000",
+      "items": [
+        {
+          "object": {
+            "kind": "art_mesh",
+            "id": "ArtMesh_Synthetic_00"
+          }
+        }
+      ],
+      "maximum_order": 0,
+      "minimum_order": 0,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:draw_group"
+      }
+    }
   ],
   "mask_groups": [],
   "textures": [

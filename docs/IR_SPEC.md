@@ -58,9 +58,10 @@ never conflated. `metadata` contains no timestamps and no file paths.
 | Entity | Id type | Key fields |
 |---|---|---|
 | `Parameter` | `ParameterId` | minimum/maximum/default, current (always null), repeat, decimal_places, kind (`normal`/`blend_shape`), key_values, extension_key_values (4.2+) |
-| `Part` | `PartId` | parent, children (derived), opacity (null), draw_order (null), keyform_draw_orders, binding, visible, enabled, offscreen_surface_index (5.3+) |
+| `Part` | `PartId` | parent, children (derived), opacity (null), draw_order (null), keyform_draw_orders, binding, visible, enabled |
 | `Deformer` (`kind`: `warp`/`rotation`) | `DeformerId` | parent_part, parent_deformer, children_deformers/children_art_meshes (derived), binding, visible, enabled; warp: rows/columns/vertex_count/quad_transform + keyforms (opacity, positions); rotation: base_angle + keyforms (opacity, angle, origin, scale, reflect_x/y) |
-| `ArtMesh` | `ArtMeshId` | parent_part, parent_deformer, texture, vertex_count, uvs, indices, keyforms (opacity, draw_order, positions), flags, blend_mode (+raw for 5.3+), opacity/draw_order (null), binding, mask_groups |
+| `ArtMesh` | `ArtMeshId` | parent_part, parent_deformer, texture, vertex_count, uvs, indices, keyforms (opacity, draw_order, positions), flags, blend_mode (+raw for 5.3+), opacity/draw_order (null), binding, visible, enabled, mask_groups |
+| `DrawOrderGroup` / `DrawOrderItem` | `DrawOrderGroupId` | items (part or art mesh targets), optional nested group (`self_group`), maximum/minimum order |
 | `MaskGroup` | `MaskGroupId` | target ArtMesh, sources (stored mask list of the target) |
 | `Texture` | `TextureId` | page_index; width/height/source_path null until `model3.json` support |
 | `Glue` | `GlueId` | art_mesh_a/b, binding, keyform_intensities, info entries |
@@ -71,11 +72,15 @@ later-phase concern; ordering here is canonical, not visual.
 
 ### Deliberately not modeled in AGENT.2
 
-- blend shapes, constraints, offscreens and keyform color pools (present in
-  the file, validated, reported via an `unmapped_sections` diagnostic),
+- blend shapes, constraints and keyform color pools (present in the file,
+  validated, reported via an `unmapped_sections` diagnostic),
+- offscreen surfaces (5.3): part references to them are reported with an
+  `unmapped_reference` diagnostic instead of leaking a raw surface index,
 - per-keyform interpolation/selection (AGENT.4),
 - base opacity / base draw order (not stored in the file),
 - texture dimensions and image paths (`model3.json` territory).
+- glue *pairing semantics* (which position index belongs to which side) are
+  preserved raw with `Unknown` provenance; see FORMAT_NOTES §11.
 
 ## 4. Identifier policy
 
@@ -145,6 +150,7 @@ validator and mapper never drop these entries.
 |---|---|
 | parameters, parts, deformers, art_meshes, glue, bindings | source order |
 | drawables | art mesh source order |
+| draw_order_groups | source order (items in stored order) |
 | mask_groups | ascending target art mesh index |
 | textures | ascending page number |
 | children / used_by | source order (parts, then deformers, then art meshes, then glue for bindings) |
@@ -163,7 +169,9 @@ Fatal diagnostics block export (`to_json_str` refuses them, `export-ir` exits
 | `metadata_count_mismatch` | Fatal | declared counts differ from arrays |
 | `duplicate_id`, `duplicate_texture_page` | Fatal | id/page uniqueness |
 | `dangling_reference`, `mask_reference_missing` | Fatal | typed references must resolve |
-| `inconsistent_reverse_link` | Fatal | children/used_by must match the forward links |
+| `inconsistent_reverse_link` | Fatal | parts (children), deformers (children_deformers, children_art_meshes), masks (mask_groups <-> target) and bindings (used_by) must all be reciprocal |
+| `field_not_stored` | Fatal | `current`, base `opacity`/`draw_order` must be null (not stored in .moc3) |
+| `invalid_reference` | Fatal | draw order part item without a nested group |
 | `drawables_mismatch` | Fatal | drawables must list art mesh ids in order |
 | `parameter_range_invalid` | Fatal | `minimum <= default <= maximum` |
 | `non_finite_value` | Fatal | NaN/Inf never enter canonical JSON |
@@ -175,7 +183,8 @@ Fatal diagnostics block export (`to_json_str` refuses them, `export-ir` exits
 | `index_count_not_triangular` | Warning | index count not a multiple of 3 |
 | `empty_mask_group` | Warning | mask group without sources |
 | `missing_field_provenance` | Warning | absent field lacks `Unknown` provenance |
-| `hierarchy_cycle` | Warning | stored parent chain contains a cycle |
+| `hierarchy_cycle` | Warning | stored parent chain or draw order nesting contains a cycle |
+| `unmapped_reference` | Warning | entity references a section not modeled in AGENT.2 (offscreen surfaces) |
 | `unmapped_sections`, `unknown_blend_mode`, `orphan_key_table` | Warning | mapper-level notes |
 | `empty_source_id`, `duplicate_source_id` | Recoverable | deterministic fallback used |
 | `moc3_*` parser anomalies | Info/Warning | forwarded from the parser |

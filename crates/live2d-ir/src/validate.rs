@@ -11,7 +11,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostics::{Diagnostic, EntityRef, Severity};
-use crate::model::{Deformer, Live2DModel, SCHEMA_ID};
+use crate::model::{Deformer, DrawOrderTarget, Live2DModel, SCHEMA_ID};
 use crate::provenance::Confidence;
 
 /// Validate an IR model and return all diagnostics in deterministic order.
@@ -55,6 +55,7 @@ impl<'a> Validator<'a> {
         self.check_parts(&sets);
         self.check_deformers(&sets);
         self.check_art_meshes(&sets);
+        self.check_draw_order_groups(&sets);
         self.check_mask_groups(&sets);
         self.check_glue(&sets);
         self.check_bindings(&sets);
@@ -77,7 +78,7 @@ impl<'a> Validator<'a> {
     fn check_metadata(&mut self) {
         let counts = self.model.entity_counts();
         let declared = &self.model.metadata.entity_counts;
-        let pairs: [(&str, usize, usize); 10] = [
+        let pairs: [(&str, usize, usize); 11] = [
             ("parameters", declared.parameters, counts.parameters),
             ("parts", declared.parts, counts.parts),
             ("deformers", declared.deformers, counts.deformers),
@@ -92,6 +93,11 @@ impl<'a> Validator<'a> {
                 counts.rotation_deformers,
             ),
             ("art_meshes", declared.art_meshes, counts.art_meshes),
+            (
+                "draw_order_groups",
+                declared.draw_order_groups,
+                counts.draw_order_groups,
+            ),
             ("mask_groups", declared.mask_groups, counts.mask_groups),
             ("textures", declared.textures, counts.textures),
             ("glue", declared.glue, counts.glue),
@@ -239,6 +245,23 @@ impl<'a> Validator<'a> {
     fn check_parameters(&mut self) {
         for parameter in &self.model.parameters {
             let entity = EntityRef::Parameter(parameter.id.clone());
+            if parameter.current.is_some() {
+                self.fatal(
+                    "field_not_stored",
+                    format!(
+                        "parameter '{}' has a current value, which is not stored in .moc3",
+                        parameter.id
+                    ),
+                    Some(entity.clone()),
+                );
+            } else {
+                expect_field_provenance(
+                    &mut self.out,
+                    parameter.field_provenance.as_slice(),
+                    "current",
+                    &entity,
+                );
+            }
             check_finite(
                 &mut self.out,
                 parameter.minimum,
@@ -367,12 +390,49 @@ impl<'a> Validator<'a> {
                     entity.clone(),
                 );
             }
-            if part.opacity.is_none() {
+            if part.opacity.is_some() || part.draw_order.is_some() {
+                self.fatal(
+                    "field_not_stored",
+                    format!(
+                        "part '{}' has a base opacity/draw order, which is keyform-dependent and not stored in .moc3",
+                        part.id
+                    ),
+                    Some(entity.clone()),
+                );
+            } else {
                 expect_field_provenance(
                     &mut self.out,
                     part.field_provenance.as_slice(),
                     "opacity",
                     &entity,
+                );
+                expect_field_provenance(
+                    &mut self.out,
+                    part.field_provenance.as_slice(),
+                    "draw_order",
+                    &entity,
+                );
+            }
+        }
+        // Reverse-link completeness: a part that declares a parent must be
+        // listed by that parent.
+        for part in &self.model.parts {
+            let Some(parent_id) = &part.parent else {
+                continue;
+            };
+            let listed = sets
+                .part_children
+                .get(parent_id.as_str())
+                .map(|children| children.contains(&part.id))
+                .unwrap_or(false);
+            if !listed {
+                self.fatal(
+                    "inconsistent_reverse_link",
+                    format!(
+                        "part '{}' declares parent '{parent_id}' that does not list it as a child",
+                        part.id
+                    ),
+                    Some(EntityRef::Part(part.id.clone())),
                 );
             }
         }
@@ -403,6 +463,11 @@ impl<'a> Validator<'a> {
                     );
                 }
             }
+            let child_deformers: BTreeSet<&str> = common
+                .children_deformers
+                .iter()
+                .map(|child| child.as_str())
+                .collect();
             for child in &common.children_deformers {
                 if !sets.deformers.contains(child.as_str()) {
                     self.fatal(
@@ -410,13 +475,65 @@ impl<'a> Validator<'a> {
                         format!("deformer '{id}' lists unknown child '{child}'"),
                         Some(entity.clone()),
                     );
+                } else if sets.deformer_parents.get(child.as_str()).copied().flatten()
+                    != Some(id.as_str())
+                {
+                    self.fatal(
+                        "inconsistent_reverse_link",
+                        format!(
+                            "deformer '{id}' lists '{child}' as a child but the link is not reciprocal"
+                        ),
+                        Some(entity.clone()),
+                    );
                 }
             }
+            for (candidate, parent) in &sets.deformer_parents {
+                if *parent == Some(id.as_str()) && !child_deformers.contains(candidate) {
+                    self.fatal(
+                        "inconsistent_reverse_link",
+                        format!(
+                            "deformer '{candidate}' declares '{id}' as its parent but is not listed as a child"
+                        ),
+                        Some(entity.clone()),
+                    );
+                }
+            }
+
+            let child_meshes: BTreeSet<&str> = common
+                .children_art_meshes
+                .iter()
+                .map(|mesh| mesh.as_str())
+                .collect();
             for mesh in &common.children_art_meshes {
                 if !sets.art_meshes.contains(mesh.as_str()) {
                     self.fatal(
                         "dangling_reference",
                         format!("deformer '{id}' lists unknown art mesh '{mesh}'"),
+                        Some(entity.clone()),
+                    );
+                } else if sets
+                    .mesh_parent_deformer
+                    .get(mesh.as_str())
+                    .copied()
+                    .flatten()
+                    != Some(id.as_str())
+                {
+                    self.fatal(
+                        "inconsistent_reverse_link",
+                        format!(
+                            "deformer '{id}' lists '{mesh}' as a child art mesh but the link is not reciprocal"
+                        ),
+                        Some(entity.clone()),
+                    );
+                }
+            }
+            for (mesh, parent) in &sets.mesh_parent_deformer {
+                if *parent == Some(id.as_str()) && !child_meshes.contains(mesh) {
+                    self.fatal(
+                        "inconsistent_reverse_link",
+                        format!(
+                            "art mesh '{mesh}' declares '{id}' as its parent deformer but is not listed as a child"
+                        ),
                         Some(entity.clone()),
                     );
                 }
@@ -703,6 +820,22 @@ impl<'a> Validator<'a> {
                     );
                 }
             }
+            // The target mesh must list this group (reverse link).
+            let listed_by_target = sets
+                .mesh_mask_groups
+                .get(group.target.as_str())
+                .map(|groups| groups.contains(&group.id))
+                .unwrap_or(false);
+            if !listed_by_target && sets.art_meshes.contains(group.target.as_str()) {
+                self.fatal(
+                    "inconsistent_reverse_link",
+                    format!(
+                        "mask group '{}' targets '{}' which does not list the group",
+                        group.id, group.target
+                    ),
+                    Some(entity.clone()),
+                );
+            }
             if group.sources.is_empty() {
                 self.push(
                     Severity::Warning,
@@ -711,6 +844,111 @@ impl<'a> Validator<'a> {
                     Some(entity.clone()),
                 );
             }
+        }
+        // Mesh side: every listed group must exist and target the mesh.
+        for mesh in &self.model.art_meshes {
+            for group_id in &mesh.mask_groups {
+                match sets.mask_group_targets.get(group_id.as_str()) {
+                    None => self.fatal(
+                        "dangling_reference",
+                        format!(
+                            "art mesh '{}' references unknown mask group '{group_id}'",
+                            mesh.id
+                        ),
+                        Some(EntityRef::ArtMesh(mesh.id.clone())),
+                    ),
+                    Some(target) if *target != mesh.id.as_str() => self.fatal(
+                        "inconsistent_reverse_link",
+                        format!(
+                            "art mesh '{}' lists mask group '{group_id}' that targets '{target}'",
+                            mesh.id
+                        ),
+                        Some(EntityRef::ArtMesh(mesh.id.clone())),
+                    ),
+                    Some(_) => {}
+                }
+            }
+        }
+    }
+
+    fn check_draw_order_groups(&mut self, sets: &IdSets) {
+        let group_ids: BTreeSet<&str> = self
+            .model
+            .draw_order_groups
+            .iter()
+            .map(|group| group.id.as_str())
+            .collect();
+        for group in &self.model.draw_order_groups {
+            let entity = EntityRef::Model(Default::default());
+            for item in &group.items {
+                match &item.object {
+                    DrawOrderTarget::Part(id) => {
+                        if !sets.parts.contains(id.as_str()) {
+                            self.fatal(
+                                "dangling_reference",
+                                format!(
+                                    "draw order group '{}' references unknown part '{id}'",
+                                    group.id
+                                ),
+                                Some(entity.clone()),
+                            );
+                        }
+                        if item.self_group.is_none() {
+                            self.fatal(
+                                "invalid_reference",
+                                format!(
+                                    "draw order group '{}' has a part item without a nested group",
+                                    group.id
+                                ),
+                                Some(entity.clone()),
+                            );
+                        }
+                    }
+                    DrawOrderTarget::ArtMesh(id) => {
+                        if !sets.art_meshes.contains(id.as_str()) {
+                            self.fatal(
+                                "dangling_reference",
+                                format!(
+                                    "draw order group '{}' references unknown art mesh '{id}'",
+                                    group.id
+                                ),
+                                Some(entity.clone()),
+                            );
+                        }
+                    }
+                }
+                if let Some(nested) = &item.self_group {
+                    if !group_ids.contains(nested.as_str()) {
+                        self.fatal(
+                            "dangling_reference",
+                            format!(
+                                "draw order group '{}' references unknown nested group '{nested}'",
+                                group.id
+                            ),
+                            Some(entity.clone()),
+                        );
+                    }
+                }
+            }
+        }
+        // Nested group cycles are reported but not fatal (resolution is a
+        // later-phase concern).
+        let mut edges: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+        for group in &self.model.draw_order_groups {
+            let nested: Vec<&str> = group
+                .items
+                .iter()
+                .filter_map(|item| item.self_group.as_ref().map(|id| id.as_str()))
+                .collect();
+            edges.insert(group.id.as_str(), nested);
+        }
+        for id in find_cycles_multi(&edges) {
+            self.push(
+                Severity::Warning,
+                "hierarchy_cycle",
+                format!("draw order group '{id}' participates in a nesting cycle"),
+                Some(EntityRef::Model(Default::default())),
+            );
         }
     }
 
@@ -961,6 +1199,16 @@ struct IdSets<'a> {
     mask_groups: BTreeSet<&'a str>,
     glue: BTreeSet<&'a str>,
     bindings: BTreeSet<&'a str>,
+    /// Part id -> declared children (reciprocity checks).
+    part_children: BTreeMap<&'a str, &'a [crate::ids::PartId]>,
+    /// Deformer id -> declared parent deformer.
+    deformer_parents: BTreeMap<&'a str, Option<&'a str>>,
+    /// Art mesh id -> declared parent deformer.
+    mesh_parent_deformer: BTreeMap<&'a str, Option<&'a str>>,
+    /// Mask group id -> target art mesh id.
+    mask_group_targets: BTreeMap<&'a str, &'a str>,
+    /// Art mesh id -> listed mask group ids.
+    mesh_mask_groups: BTreeMap<&'a str, &'a [crate::ids::MaskGroupId]>,
 }
 
 impl<'a> IdSets<'a> {
@@ -981,6 +1229,49 @@ impl<'a> IdSets<'a> {
             mask_groups: model.mask_groups.iter().map(|e| e.id.as_str()).collect(),
             glue: model.glue.iter().map(|e| e.id.as_str()).collect(),
             bindings: model.bindings.iter().map(|e| e.id.as_str()).collect(),
+            part_children: model
+                .parts
+                .iter()
+                .map(|part| (part.id.as_str(), part.children.as_slice()))
+                .collect(),
+            deformer_parents: model
+                .deformers
+                .iter()
+                .map(|deformer| match deformer {
+                    Deformer::Warp(warp) => (
+                        warp.common.id.as_str(),
+                        warp.common.parent_deformer.as_ref().map(|id| id.as_str()),
+                    ),
+                    Deformer::Rotation(rotation) => (
+                        rotation.common.id.as_str(),
+                        rotation
+                            .common
+                            .parent_deformer
+                            .as_ref()
+                            .map(|id| id.as_str()),
+                    ),
+                })
+                .collect(),
+            mesh_parent_deformer: model
+                .art_meshes
+                .iter()
+                .map(|mesh| {
+                    (
+                        mesh.id.as_str(),
+                        mesh.parent_deformer.as_ref().map(|id| id.as_str()),
+                    )
+                })
+                .collect(),
+            mask_group_targets: model
+                .mask_groups
+                .iter()
+                .map(|group| (group.id.as_str(), group.target.as_str()))
+                .collect(),
+            mesh_mask_groups: model
+                .art_meshes
+                .iter()
+                .map(|mesh| (mesh.id.as_str(), mesh.mask_groups.as_slice()))
+                .collect(),
         }
     }
 
@@ -1049,6 +1340,47 @@ fn expect_field_provenance(
             entity: Some(entity.clone()),
         });
     }
+}
+
+/// Iterative cycle detection over a directed graph (deterministic).
+fn find_cycles_multi(edges: &BTreeMap<&str, Vec<&str>>) -> Vec<String> {
+    let mut state: BTreeMap<&str, u8> = BTreeMap::new(); // 0 unknown, 1 done, 2 on stack
+    let mut cyclic: BTreeSet<&str> = BTreeSet::new();
+    for start in edges.keys() {
+        if state.get(start).copied().unwrap_or(0) != 0 {
+            continue;
+        }
+        state.insert(start, 2);
+        let mut path: Vec<&str> = vec![start];
+        let mut stack: Vec<(&str, usize)> = vec![(start, 0)];
+        while let Some((node, index)) = stack.pop() {
+            let children = edges.get(node).map(|value| value.as_slice()).unwrap_or(&[]);
+            if let Some(child) = children.get(index).copied() {
+                stack.push((node, index + 1));
+                match state.get(child).copied().unwrap_or(0) {
+                    0 => {
+                        state.insert(child, 2);
+                        path.push(child);
+                        stack.push((child, 0));
+                    }
+                    2 => {
+                        if let Some(position) = path.iter().position(|value| *value == child) {
+                            for marked in path.iter().skip(position) {
+                                cyclic.insert(marked);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            } else {
+                state.insert(node, 1);
+                if path.last().copied() == Some(node) {
+                    path.pop();
+                }
+            }
+        }
+    }
+    cyclic.into_iter().map(str::to_string).collect()
 }
 
 /// Iterative cycle detection over a parent map (deterministic).

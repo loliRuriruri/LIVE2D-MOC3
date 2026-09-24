@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::diagnostics::Diagnostic;
 use crate::geometry::{Uv, Vec2};
 use crate::ids::{
-    ArtMeshId, BindingId, DeformerId, GlueId, MaskGroupId, ParameterId, PartId, TextureId,
+    ArtMeshId, BindingId, DeformerId, DrawOrderGroupId, GlueId, MaskGroupId, ParameterId, PartId,
+    TextureId,
 };
 use crate::provenance::{FieldProvenance, Provenance};
 
@@ -65,6 +66,8 @@ pub struct EntityCounts {
     pub rotation_deformers: usize,
     /// Number of art meshes.
     pub art_meshes: usize,
+    /// Number of draw order groups.
+    pub draw_order_groups: usize,
     /// Number of mask groups.
     pub mask_groups: usize,
     /// Number of texture pages.
@@ -182,9 +185,6 @@ pub struct Part {
     pub visible: bool,
     /// Stored enable flag.
     pub enabled: bool,
-    /// Offscreen surface index (5.3+); surfaces are not modeled yet.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub offscreen_surface_index: Option<usize>,
     /// Per-field provenance overrides.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub field_provenance: Vec<FieldProvenance>,
@@ -415,12 +415,53 @@ pub struct ArtMesh {
     /// Keyform binding used by this art mesh.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binding: Option<BindingId>,
+    /// Stored visibility flag.
+    pub visible: bool,
+    /// Stored enable flag.
+    pub enabled: bool,
     /// Mask groups whose target is this art mesh.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub mask_groups: Vec<MaskGroupId>,
     /// Per-field provenance overrides.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub field_provenance: Vec<FieldProvenance>,
+    /// Entity provenance.
+    pub provenance: Provenance,
+}
+
+/// What a draw order item points at.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "id", rename_all = "snake_case")]
+pub enum DrawOrderTarget {
+    /// A part.
+    Part(PartId),
+    /// An art mesh.
+    ArtMesh(ArtMeshId),
+}
+
+/// One draw order item.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DrawOrderItem {
+    /// Referenced object.
+    pub object: DrawOrderTarget,
+    /// Nested draw order group (part items always reference one; art mesh
+    /// items may have none, which is stored as `-1` and mapped to `null`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub self_group: Option<DrawOrderGroupId>,
+}
+
+/// One draw order group (stored structure; visual resolution is a later
+/// phase).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DrawOrderGroup {
+    /// Stable identifier.
+    pub id: DrawOrderGroupId,
+    /// Items in source order.
+    pub items: Vec<DrawOrderItem>,
+    /// Maximum draw order stored for the group.
+    pub maximum_order: i32,
+    /// Minimum draw order stored for the group.
+    pub minimum_order: i32,
     /// Entity provenance.
     pub provenance: Provenance,
 }
@@ -619,6 +660,8 @@ pub struct Live2DModel {
     /// Drawable list (art mesh ids in source order; resolved draw order is a
     /// later-phase concern).
     pub drawables: Vec<ArtMeshId>,
+    /// Draw order groups (source order).
+    pub draw_order_groups: Vec<DrawOrderGroup>,
     /// Mask groups (ascending by target art mesh).
     pub mask_groups: Vec<MaskGroup>,
     /// Texture pages (ascending by page number).
@@ -651,6 +694,7 @@ impl Live2DModel {
             warp_deformers,
             rotation_deformers,
             art_meshes: self.art_meshes.len(),
+            draw_order_groups: self.draw_order_groups.len(),
             mask_groups: self.mask_groups.len(),
             textures: self.textures.len(),
             glue: self.glue.len(),

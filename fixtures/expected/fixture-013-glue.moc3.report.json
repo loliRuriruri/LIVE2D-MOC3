@@ -1,8 +1,8 @@
 {
   "schema": "live2d-recovery/inspect-report/1",
   "source": {
-    "file_name": "fixture-001-single-artmesh.moc3",
-    "file_size": 1256
+    "file_name": "fixture-013-glue.moc3",
+    "file_size": 1584
   },
   "summary": {
     "moc3_version_byte": 2,
@@ -14,35 +14,35 @@
       "origin_y": 300.0,
       "width": 800.0,
       "height": 600.0,
-      "flags_raw": 1,
-      "flag_y_reversed": true
+      "flags_raw": 0,
+      "flag_y_reversed": false
     },
     "counts": {
       "parts": 0,
       "deformers": 0,
       "warp_deformers": 0,
       "rotation_deformers": 0,
-      "art_meshes": 1,
+      "art_meshes": 2,
       "parameters": 0,
       "part_keyforms": 0,
       "warp_deformer_keyforms": 0,
       "rotation_deformer_keyforms": 0,
-      "art_mesh_keyforms": 1,
-      "keyform_positions": 8,
+      "art_mesh_keyforms": 2,
+      "keyform_positions": 16,
       "parameter_binding_indices": 0,
       "keyform_bindings": 1,
       "parameter_bindings": 0,
       "keys": 0,
-      "uvs": 8,
-      "position_indices": 6,
+      "uvs": 16,
+      "position_indices": 12,
       "drawable_masks": 0,
       "draw_order_groups": 1,
-      "draw_order_group_objects": 1,
-      "glue": 0,
-      "glue_info": 0,
-      "glue_keyforms": 0,
-      "keyform_multiply_colors": 1,
-      "keyform_screen_colors": 1,
+      "draw_order_group_objects": 2,
+      "glue": 1,
+      "glue_info": 4,
+      "glue_keyforms": 1,
+      "keyform_multiply_colors": 2,
+      "keyform_screen_colors": 2,
       "blend_shape_parameter_bindings": 0,
       "blend_shape_keyform_bindings": 0,
       "blend_shapes_warp_deformers": 0,
@@ -60,7 +60,7 @@
       "raw_int_count": 32
     },
     "texture_reference_count": 1,
-    "total_keyforms": 1,
+    "total_keyforms": 3,
     "hierarchy_edge_count": 0,
     "anomaly_count": 0
   },
@@ -71,6 +71,11 @@
         "kind": "art_mesh",
         "index": 0,
         "name": "ArtMesh_Synthetic_00"
+      },
+      {
+        "kind": "art_mesh",
+        "index": 1,
+        "name": "ArtMesh_Synthetic_01"
       }
     ],
     "anomalies": []
@@ -79,7 +84,8 @@
     {
       "texture_number": 0,
       "art_mesh_indices": [
-        0
+        0,
+        1
       ]
     }
   ],
@@ -96,35 +102,35 @@
       "origin_y": 300.0,
       "width": 800.0,
       "height": 600.0,
-      "flags_raw": 1,
-      "flag_y_reversed": true
+      "flags_raw": 0,
+      "flag_y_reversed": false
     },
     "counts": {
       "parts": 0,
       "deformers": 0,
       "warp_deformers": 0,
       "rotation_deformers": 0,
-      "art_meshes": 1,
+      "art_meshes": 2,
       "parameters": 0,
       "part_keyforms": 0,
       "warp_deformer_keyforms": 0,
       "rotation_deformer_keyforms": 0,
-      "art_mesh_keyforms": 1,
-      "keyform_positions": 8,
+      "art_mesh_keyforms": 2,
+      "keyform_positions": 16,
       "parameter_binding_indices": 0,
       "keyform_bindings": 1,
       "parameter_bindings": 0,
       "keys": 0,
-      "uvs": 8,
-      "position_indices": 6,
+      "uvs": 16,
+      "position_indices": 12,
       "drawable_masks": 0,
       "draw_order_groups": 1,
-      "draw_order_group_objects": 1,
-      "glue": 0,
-      "glue_info": 0,
-      "glue_keyforms": 0,
-      "keyform_multiply_colors": 1,
-      "keyform_screen_colors": 1,
+      "draw_order_group_objects": 2,
+      "glue": 1,
+      "glue_info": 4,
+      "glue_keyforms": 1,
+      "keyform_multiply_colors": 2,
+      "keyform_screen_colors": 2,
       "blend_shape_parameter_bindings": 0,
       "blend_shape_keyform_bindings": 0,
       "blend_shapes_warp_deformers": 0,
@@ -159,13 +165,39 @@
         "visible": true,
         "enabled": true,
         "texture_number": 0,
-        "drawable_flags_raw": 5,
-        "blend_mode_bits": 1,
-        "double_sided": true,
+        "drawable_flags_raw": 0,
+        "blend_mode_bits": 0,
+        "double_sided": false,
         "inverted_mask": false,
         "vertex_count": 4,
         "uv_begin": 0,
         "index_begin": 0,
+        "index_count": 6,
+        "mask_begin": 0,
+        "mask_count": 0,
+        "mask_drawables": []
+      },
+      {
+        "index": 1,
+        "id": {
+          "text": "ArtMesh_Synthetic_01",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 1,
+        "keyform_count": 1,
+        "visible": true,
+        "enabled": true,
+        "texture_number": 0,
+        "drawable_flags_raw": 0,
+        "blend_mode_bits": 0,
+        "double_sided": false,
+        "inverted_mask": false,
+        "vertex_count": 4,
+        "uv_begin": 8,
+        "index_begin": 6,
         "index_count": 6,
         "mask_begin": 0,
         "mask_count": 0,
@@ -177,8 +209,8 @@
       {
         "index": 0,
         "object_begin": 0,
-        "object_count": 1,
-        "object_total_count": 1,
+        "object_count": 2,
+        "object_total_count": 2,
         "max_order": 0,
         "min_order": 0
       }
@@ -189,9 +221,32 @@
         "object_type": 0,
         "object_index": 0,
         "self_group": -1
+      },
+      {
+        "index": 1,
+        "object_type": 0,
+        "object_index": 1,
+        "self_group": -1
       }
     ],
-    "glues": [],
+    "glues": [
+      {
+        "index": 0,
+        "id": {
+          "text": "Glue_Synthetic_00",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 0,
+        "keyform_count": 1,
+        "art_mesh_a": 0,
+        "art_mesh_b": 1,
+        "info_begin": 0,
+        "info_count": 4
+      }
+    ],
     "bindings": [
       {
         "index": 0,
@@ -215,38 +270,38 @@
       {
         "name": "art_mesh.id_runtime",
         "offset": 856,
-        "elements": 1,
-        "byte_size": 8
+        "elements": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.uv_runtime",
-        "offset": 864,
-        "elements": 1,
-        "byte_size": 8
+        "offset": 872,
+        "elements": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.position_index_runtime",
-        "offset": 872,
-        "elements": 1,
-        "byte_size": 8
+        "offset": 888,
+        "elements": 2,
+        "byte_size": 16
       },
       {
         "name": "art_mesh.drawable_mask_runtime",
-        "offset": 880,
-        "elements": 1,
-        "byte_size": 8
+        "offset": 904,
+        "elements": 2,
+        "byte_size": 16
       },
       {
         "name": "parameter.id_runtime",
-        "offset": 1072,
+        "offset": 1168,
         "elements": 0,
         "byte_size": 0
       },
       {
         "name": "glue.id_runtime",
-        "offset": 1256,
-        "elements": 0,
-        "byte_size": 0
+        "offset": 1424,
+        "elements": 1,
+        "byte_size": 8
       }
     ],
     "unknown_slots": [],
@@ -254,17 +309,17 @@
     "not_extracted": [
       {
         "field": "keyform_position.xy",
-        "count": 8,
+        "count": 16,
         "reason": "vertex position values are read in AGENT.2 (Live2D IR)"
       },
       {
         "field": "uv.xy",
-        "count": 8,
+        "count": 16,
         "reason": "UV values are read in AGENT.2 (Live2D IR)"
       },
       {
         "field": "position_indices",
-        "count": 6,
+        "count": 12,
         "reason": "triangle indices are read in AGENT.2 (Live2D IR)"
       },
       {
@@ -289,17 +344,17 @@
       },
       {
         "field": "art_mesh_keyform.values",
-        "count": 1,
+        "count": 2,
         "reason": "keyform values are read in AGENT.2/AGENT.4"
       },
       {
         "field": "glue_info.weight",
-        "count": 0,
+        "count": 4,
         "reason": "glue weights are read in AGENT.2 (Live2D IR)"
       },
       {
         "field": "keyform_color.*",
-        "count": 2,
+        "count": 4,
         "reason": "keyform colors are read in AGENT.2 (Live2D IR)"
       },
       {

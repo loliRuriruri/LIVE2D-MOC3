@@ -74,6 +74,10 @@ string_id!(
     /// Identifier of a keyform binding entry.
     BindingId
 );
+string_id!(
+    /// Identifier of a draw order group entry.
+    DrawOrderGroupId
+);
 
 /// Why an assignment did not keep the stored source name verbatim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -137,6 +137,7 @@ fn cycles_are_warnings_not_fatal() {
     let mut second = model.parts[0].clone();
     second.id = PartId::new("PartBody");
     second.parent = Some(PartId::new("PartHead"));
+    second.children = vec![PartId::new("PartHead")];
     model.parts.push(second);
     if let Some(parent) = model.parts.first_mut() {
         parent.parent = Some(PartId::new("PartBody"));
@@ -163,6 +164,136 @@ fn empty_mask_group_is_a_warning() {
     model.metadata.entity_counts = model.entity_counts();
     let diagnostics = validate_ir(&model);
     assert!(codes(&diagnostics).contains(&"empty_mask_group".to_string()));
+    assert!(!has_fatal(&diagnostics));
+}
+
+#[test]
+fn missing_reverse_child_link_is_fatal() {
+    let mut model = minimal_model();
+    let mut second = model.parts[0].clone();
+    second.id = PartId::new("PartBody");
+    second.parent = Some(PartId::new("PartHead"));
+    second.children.clear();
+    model.parts.push(second);
+    // PartHead has no children entry for PartBody -> incomplete reverse link.
+    model.metadata.entity_counts = model.entity_counts();
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"inconsistent_reverse_link".to_string()));
+    assert!(has_fatal(&diagnostics));
+}
+
+#[test]
+fn missing_reverse_deformer_links_are_fatal() {
+    let mut model = minimal_model();
+    push_warp(&mut model);
+    let mut child = model.deformers[0].clone();
+    if let live2d_ir::Deformer::Warp(warp) = &mut child {
+        warp.common.id = live2d_ir::DeformerId::new("warp:000001");
+        warp.common.parent_deformer = Some(live2d_ir::DeformerId::new("warp:000000"));
+        warp.common.children_deformers.clear();
+    }
+    model.deformers.push(child);
+    // Mesh declares the warp as its parent but the warp does not list it.
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        mesh.parent_deformer = Some(live2d_ir::DeformerId::new("warp:000000"));
+    }
+    model.metadata.entity_counts = model.entity_counts();
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"inconsistent_reverse_link".to_string()));
+}
+
+#[test]
+fn missing_reverse_mask_link_is_fatal() {
+    let mut model = minimal_model();
+    model.mask_groups.push(MaskGroup {
+        id: MaskGroupId::new("mask:000000"),
+        target: live2d_ir::ArtMeshId::new("ArtMeshFace"),
+        sources: vec![live2d_ir::ArtMeshId::new("ArtMeshFace")],
+        provenance: live2d_ir::Provenance::exact("test:mask".to_string()),
+    });
+    // The mesh does not list the group -> reverse link missing.
+    model.metadata.entity_counts = model.entity_counts();
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"inconsistent_reverse_link".to_string()));
+
+    // With the link present the model is valid again.
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        mesh.mask_groups.push(MaskGroupId::new("mask:000000"));
+    }
+    let diagnostics = validate_ir(&model);
+    assert!(!has_fatal(&diagnostics), "{diagnostics:?}");
+}
+
+#[test]
+fn stored_but_unmodeled_fields_are_rejected_when_filled() {
+    let mut model = minimal_model();
+    model.parameters[0].current = Some(10.0);
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"field_not_stored".to_string()));
+    assert!(has_fatal(&diagnostics));
+
+    let mut model = minimal_model();
+    model.parts[0].draw_order = Some(1.0);
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"field_not_stored".to_string()));
+}
+
+#[test]
+fn draw_order_groups_validate_references_and_cycles() {
+    let mut model = minimal_model();
+    model.draw_order_groups.push(live2d_ir::DrawOrderGroup {
+        id: live2d_ir::DrawOrderGroupId::new("drawgroup:000000"),
+        items: vec![live2d_ir::DrawOrderItem {
+            object: live2d_ir::DrawOrderTarget::ArtMesh(live2d_ir::ArtMeshId::new("ArtMeshFace")),
+            self_group: None,
+        }],
+        maximum_order: 0,
+        minimum_order: 0,
+        provenance: live2d_ir::Provenance::exact("test:draw_group".to_string()),
+    });
+    model.metadata.entity_counts = model.entity_counts();
+    let diagnostics = validate_ir(&model);
+    assert!(diagnostics.is_empty(), "{diagnostics:?}");
+
+    // Dangling object reference.
+    let mut broken = model.clone();
+    if let Some(group) = broken.draw_order_groups.first_mut() {
+        group.items[0].object =
+            live2d_ir::DrawOrderTarget::ArtMesh(live2d_ir::ArtMeshId::new("Gone"));
+    }
+    let diagnostics = validate_ir(&broken);
+    assert!(codes(&diagnostics).contains(&"dangling_reference".to_string()));
+
+    // Part item without a nested group.
+    let mut broken = model.clone();
+    if let Some(group) = broken.draw_order_groups.first_mut() {
+        group.items[0].object = live2d_ir::DrawOrderTarget::Part(PartId::new("PartHead"));
+        group.items[0].self_group = None;
+    }
+    let diagnostics = validate_ir(&broken);
+    assert!(codes(&diagnostics).contains(&"invalid_reference".to_string()));
+
+    // Nesting cycle (Warning, not fatal): two groups referencing each other.
+    let mut cyc = model.clone();
+    cyc.draw_order_groups.push(live2d_ir::DrawOrderGroup {
+        id: live2d_ir::DrawOrderGroupId::new("drawgroup:000001"),
+        items: vec![live2d_ir::DrawOrderItem {
+            object: live2d_ir::DrawOrderTarget::Part(PartId::new("PartHead")),
+            self_group: Some(live2d_ir::DrawOrderGroupId::new("drawgroup:000000")),
+        }],
+        maximum_order: 0,
+        minimum_order: 0,
+        provenance: live2d_ir::Provenance::exact("test:draw_group".to_string()),
+    });
+    if let Some(group) = cyc.draw_order_groups.first_mut() {
+        if let Some(item) = group.items.first_mut() {
+            item.object = live2d_ir::DrawOrderTarget::Part(PartId::new("PartHead"));
+            item.self_group = Some(live2d_ir::DrawOrderGroupId::new("drawgroup:000001"));
+        }
+    }
+    cyc.metadata.entity_counts = cyc.entity_counts();
+    let diagnostics = validate_ir(&cyc);
+    assert!(codes(&diagnostics).contains(&"hierarchy_cycle".to_string()));
     assert!(!has_fatal(&diagnostics));
 }
 

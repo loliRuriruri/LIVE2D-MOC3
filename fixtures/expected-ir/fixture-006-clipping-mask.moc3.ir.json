@@ -17,6 +17,7 @@
       "warp_deformers": 0,
       "rotation_deformers": 0,
       "art_meshes": 2,
+      "draw_order_groups": 1,
       "mask_groups": 1,
       "textures": 1,
       "glue": 0,
@@ -123,6 +124,8 @@
       },
       "blend_mode": "normal",
       "binding": "binding:000000",
+      "visible": true,
+      "enabled": true,
       "field_provenance": [
         {
           "field": "opacity",
@@ -218,6 +221,8 @@
       },
       "blend_mode": "normal",
       "binding": "binding:000000",
+      "visible": true,
+      "enabled": true,
       "mask_groups": [
         "mask:000000"
       ],
@@ -256,6 +261,31 @@
   "drawables": [
     "ArtMesh_Synthetic_00",
     "ArtMesh_Synthetic_01"
+  ],
+  "draw_order_groups": [
+    {
+      "id": "drawgroup:000000",
+      "items": [
+        {
+          "object": {
+            "kind": "art_mesh",
+            "id": "ArtMesh_Synthetic_00"
+          }
+        },
+        {
+          "object": {
+            "kind": "art_mesh",
+            "id": "ArtMesh_Synthetic_01"
+          }
+        }
+      ],
+      "maximum_order": 0,
+      "minimum_order": 0,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:draw_group"
+      }
+    }
   ],
   "mask_groups": [
     {

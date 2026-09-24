@@ -2,8 +2,8 @@
 
 Scope: AGENT.0/AGENT.1 (bootstrap + read-only inspector) and AGENT.2
 (normalized IR). Test types follow master spec section 14: unit, integration,
-snapshot/golden, corruption, fuzz (smoke), regression. Current total: **103
-tests, all passing**.
+snapshot/golden, corruption, fuzz (smoke), regression. Current total: **112
+tests, all passing** (13 synthetic fixtures).
 
 ## How to run
 
@@ -49,6 +49,10 @@ $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_i
 | 010 v53 | 5.3 | 480-slot table, offscreen/blend-mode fields |
 | 011 v30 | 3.0 | base layout, no quad transform |
 | 012 v40 | 4.0 | warp with quad transform |
+| 013 glue | 3.3 | two glued art meshes with info entries and one glue keyform |
+
+Fixture 001 additionally exercises non-default drawable flags (additive +
+double sided) and most fixtures carry draw order groups.
 
 Corruption fixtures are generated in-test (deterministic patches), so they
 cannot rot and require no binary blobs. Regression rule (master spec
