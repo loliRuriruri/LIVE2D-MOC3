@@ -188,7 +188,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 name = "hierarchy-recovery"
 version = "0.1.0"
 dependencies = [
+ "live2d-ir",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -319,6 +321,7 @@ dependencies = [
  "clap",
  "env_logger",
  "fixture-gen",
+ "hierarchy-recovery",
  "live2d-ir",
  "log",
  "moc3-ingest",
@@ -331,6 +334,7 @@ name = "recovery-core"
 version = "0.1.0"
 dependencies = [
  "fixture-gen",
+ "hierarchy-recovery",
  "live2d-ir",
  "moc3-ingest",
  "serde",

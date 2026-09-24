@@ -1,13 +1,15 @@
 [package]
 name = "hierarchy-recovery"
-description = "Hierarchy reconstruction graph (reserved for AGENT.3)"
+description = "Recovery graph and deterministic hierarchy reconstruction over the Live2D IR"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+live2d-ir.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true
