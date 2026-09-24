@@ -1,9 +1,9 @@
 # Test Plan
 
-Scope: AGENT.0/AGENT.1 (bootstrap + read-only inspector) and AGENT.2
-(normalized IR). Test types follow master spec section 14: unit, integration,
-snapshot/golden, corruption, fuzz (smoke), regression. Current total: **113
-tests, all passing** (13 synthetic fixtures).
+Scope: AGENT.0-AGENT.3 (bootstrap, read-only inspector, normalized IR,
+hierarchy reconstruction). Test types follow master spec section 14: unit,
+integration, snapshot/golden, corruption, fuzz (smoke), regression. Current
+total: **154 tests, all passing** (27 synthetic fixtures).
 
 ## How to run
 
@@ -14,6 +14,7 @@ cargo fmt --all --check
 cargo run -p fixture-gen -- fixtures/synthetic     # regenerate fixtures
 $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
 $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_ir_documents_match
+$env:UPDATE_GOLDEN_HIERARCHY="1"; cargo test -p recovery-core --test hierarchy_recovery golden_recovered_projects_match
 ```
 
 ## Matrix
@@ -31,7 +32,11 @@ $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_i
 | IR golden | `crates/recovery-core/tests/ir_golden.rs` + `fixtures/expected-ir/` | 12/12 canonical IR snapshots; goldens re-imported and validated |
 | IR corruption | `crates/recovery-core/tests/ir_corruption.rs` | truncations/byte flips/random bytes through parse->map->validate->serialize with zero panics; malformed IR import (syntax/schema/dangling ref) |
 | IR CLI | `apps/recovery-cli/tests/cli_ir.rs` | export determinism, `--output` equality, `--compact`, structured failures (parser and IR validation), validate-ir golden accept/reject |
-| Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary check** (`cargo metadata` graph) |
+| Hierarchy unit | `crates/hierarchy-recovery` unit tests (`cycles.rs`, `rule.rs`, hands-on graph tests) | iterative cycle detection (incl. 200k chain), rule id hygiene, self-parent/duplicate/wrong-type rejections, validator negative matrix, explain output, statistics semantics |
+| Hierarchy fixtures | `crates/recovery-core/tests/hierarchy_recovery.rs` | per-fixture resolution assertions (Exact chains, deformer precedence, orphan preservation, ambiguity policy, cycles, HR-007 conflict, self-parent fallback), deep (1502 nodes) and scale (6001 nodes) runs, geometry-free JSON check |
+| Hierarchy golden | same file, `fixtures/expected-hierarchy/` | 25 canonical recovered-project snapshots (large/deep fixtures excluded and covered by determinism runs) |
+| Hierarchy CLI | `apps/recovery-cli/tests/cli_hierarchy.rs` | tree markers, JSON determinism, `--output` equality, `--strict` exit codes, `--allow-heuristic`, `--explain`, IR JSON input equivalence, corrupt input handling |
+| Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary checks for `live2d-ir` and `hierarchy-recovery`** (`cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
 
@@ -57,6 +62,28 @@ nesting a second group); fixture 013 exercises glue. The offscreen-surface
 reference path has no fixture (the parser rejects non-default values when no
 surfaces exist); that gap is documented in LIMITATIONS and covered by
 validator-level tests only.
+
+### Hierarchy fixture inventory (`fixtures/synthetic/hierarchy-*`)
+
+| Fixture | Shape |
+|---|---|
+| 001 | Part -> ArtMesh |
+| 002 | Part -> Warp -> ArtMesh |
+| 003 | Part -> Rotation -> ArtMesh |
+| 004 | Part -> Warp -> Warp -> ArtMesh |
+| 005 | Part -> Warp -> Rotation -> ArtMesh |
+| 006 | Part -> Part -> Part chain + meshes |
+| 007 | orphan ArtMesh preserved |
+| 008 | shared-binding orphan (ambiguous under `--allow-heuristic`) |
+| 009 | stored cycle (two warps mutually parented) |
+| 010 | part association conflicting with the deformer chain (HR-007) |
+| 011 | 1500-deep warp chain (golden-excluded; determinism + tree tests) |
+| 012 | 1500 flat meshes under one part |
+| 013 | 2000 warps + 4000 meshes scale run (golden-excluded) |
+| 014 | self-parent deformer (illegal relation rejected, part fallback) |
+
+Corruption sweeps skip the two largest fixtures in their full loops and use
+deterministic sampled mutations instead (`large_fixtures_are_sampled*`).
 
 Corruption fixtures are generated in-test (deterministic patches), so they
 cannot rot and require no binary blobs. Regression rule (master spec

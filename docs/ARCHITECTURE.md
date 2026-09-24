@@ -1,8 +1,9 @@
 # Architecture
 
-Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0,
-AGENT.1 and AGENT.2 complete** (research/bootstrap, read-only MOC3 inspector,
-normalized Live2D IR). Later phases exist only as reserved, empty crates.
+Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0
+through AGENT.3 complete** (research/bootstrap, read-only MOC3 inspector,
+normalized Live2D IR, hierarchy reconstruction). Later phases exist only as
+reserved, empty crates.
 
 ## Pipeline
 
@@ -21,14 +22,27 @@ MOC3 / model3.json / Texture
             |
    Canonical JSON           export-ir / validate-ir   (AGENT.2)
             |
-   Recovery Graph Engine    crates/hierarchy-recovery (AGENT.3/AGENT.4, reserved)
-            |
-       Recovered Project IR
+   Recovery Graph Engine    crates/hierarchy-recovery (AGENT.3, implemented)
+   Hierarchy Resolver                               (deterministic; see
+            |                                         docs/HIERARCHY_RECOVERY.md)
+       RecoveredProjectIR   recovered-project/1 (experimental)
             |
    CMO3 Writer              crates/cmo3-writer        (AGENT.5, reserved)
             |
    Validation               crates/project-validator  (AGENT.7, reserved)
 ```
+
+### Hierarchy layer (AGENT.3)
+
+- `crates/hierarchy-recovery` consumes `Live2DModel` and produces
+  `RecoveredProject` (graph + traces + statistics + diagnostics). **It must
+  never depend on `moc3-ingest`/`recovery-core`**; the same workspace test
+  pattern enforces the boundary.
+- Stored relations stay `Exact`; at most one policy-gated heuristic rule
+  (HR-010) exists and is disabled by default. Ambiguity is preserved.
+- Geometry is never copied; nodes keep ids, evidence and metadata only.
+- Traversals, cycle detection and rendering are iterative (deep chains are
+  fixture-tested at 20k nodes, rendering at depth limits).
 
 ### IR layer (AGENT.2)
 
@@ -59,8 +73,9 @@ Hard rules carried over from the master spec:
 |---|---|---|
 | `crates/moc3-ingest` | read-only MOC3 parser, limits, errors, report builder, bulk pools | `serde` |
 | `crates/live2d-ir` | normalized IR, typed ids, validator, canonical JSON | `serde`, `serde_json` |
+| `crates/hierarchy-recovery` | recovery graph, resolver, hierarchy validator, project JSON | `live2d-ir`, `serde`, `serde_json` |
 | `crates/recovery-core` | file IO, inspection orchestration, IR mapper, IR export/import | `moc3-ingest`, `live2d-ir`, `serde`, `serde_json` |
-| `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest`, `live2d-ir` |
+| `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest`, `live2d-ir`, `hierarchy-recovery` |
 | `crates/hierarchy-recovery` | recovery graph (reserved: AGENT.3) | - |
 | `crates/cmo3-writer` | CMO3 serializer (reserved: AGENT.5) | - |
 | `crates/project-validator` | structural comparison (reserved: AGENT.7) | - |
@@ -131,9 +146,11 @@ from.
 
 ## Test strategy
 
-See `docs/TEST_PLAN.md`. Summary: unit tests in `moc3-ingest` and
-`live2d-ir`; integration tests for fixtures/corruption; golden inspection
-reports and golden IR documents; mapper/round-trip/validator tests; CLI
-end-to-end tests (determinism, exit codes, input immutability); workspace
-smoke tests including the parser-independence boundary check. All checked-in
-fixture data is synthetic (see `fixtures/README.md`).
+See `docs/TEST_PLAN.md`. Summary: unit tests in `moc3-ingest`, `live2d-ir`
+and `hierarchy-recovery`; integration tests for fixtures/corruption; golden
+inspection reports, golden IR documents and golden recovered-project
+documents; mapper/round-trip/validator tests; hierarchy resolution, trace,
+ambiguity, orphan, cycle, deep and scale tests; CLI end-to-end tests
+(determinism, exit codes, input immutability); workspace smoke tests including
+the parser-independence boundary checks. All checked-in fixture data is
+synthetic (see `fixtures/README.md`).

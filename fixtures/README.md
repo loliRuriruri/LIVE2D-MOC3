@@ -31,5 +31,17 @@ Fixture policy (master spec sections 2 and 20):
    Goldens are review targets, not automatically authoritative: inspect a
    diff before accepting a regenerated document.
 
+5. **expected-hierarchy/** - golden recovered-project documents
+   (`<fixture>.project.json`), produced by `recovery reconstruct-hierarchy
+   <fixture> --json`. Regenerate with:
+
+   ```text
+   $env:UPDATE_GOLDEN_HIERARCHY="1"; cargo test -p recovery-core --test hierarchy_recovery golden_recovered_projects_match
+   ```
+
+   The two largest fixtures (`GOLDEN_SKIP` in fixture-gen) are excluded to
+   keep goldens reviewable; they are covered by determinism and statistics
+   tests instead.
+
 The checked-in synthetic fixtures are verified against the generator by
 tests (`checked_in_fixtures_match_generator`), so they cannot silently drift.

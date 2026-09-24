@@ -118,3 +118,38 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
   the parser (checked by a workspace test that walks the `cargo metadata`
   graph), and the mapper consumes the parser output by value so no large
   buffer is copied more than once.
+
+## 8. AGENT.3 research (hierarchy reconstruction)
+
+- **Semantic model of Live2D parenting.** In the file each object stores both
+  a parent part and (for deformers/art meshes) an optional parent deformer.
+  Cross-checking public references showed this is normal, not contradictory:
+  the deformer is the structural parent, the part is the logical association
+  that the deformer chain itself resolves through. This became rule HR-006
+  (deformer precedence, association preserved) plus HR-007 (association vs
+  chain-part consistency check), instead of inventing a conflict.
+- **Top-level vs orphan.** Parts and deformers without stored parents are
+  exact top-level nodes (the file states no parent). Art meshes without any
+  parent evidence are orphans and stay unresolved; the work-order orphan
+  fallback under the root was deliberately not implemented (unresolved nodes
+  go to a marked synthetic container instead).
+- **Ambiguity without fabrication.** MOC3 stores at most one parent per
+  relation kind, so genuine many-parent ambiguity only appears through
+  heuristic evidence. Exactly one heuristic rule (HR-010, shared keyform
+  binding) is implemented, disabled by default, and used to build the
+  ambiguity fixture. No storage-order tie-breaks exist anywhere.
+- **Cycles are data.** The parser accepts deformer parent cycles (indices are
+  in range); the resolver keeps those stored edges, marks the nodes and
+  reports the group. The 200k-node detector unit test and the 1500-deep
+  fixture prove the iterative traversals cannot overflow the stack.
+- **Bugs found by the new tests:** (1) validator counted children per parent
+  as "multiple parent", which flagged legitimate trees - replaced with a
+  child-listener index; (2) the depth test itself built a self-referential
+  chain, exposing how the fallback HR-003 masks self-parent errors (kept as a
+  documented behavior: illegal deformer relations are rejected, the legal
+  part association is still used); (3) large fixtures made corruption sweeps
+  quadratic in wall time - sweeps now skip them and use bounded sampled
+  mutations.
+- **Boundary enforcement repeated:** `hierarchy-recovery` depends only on
+  `live2d-ir`; the workspace smoke test checks the manifest and the
+  `cargo metadata` graph.

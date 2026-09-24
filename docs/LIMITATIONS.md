@@ -89,6 +89,24 @@ so nothing is silently dropped.
   duplicated per parameter and per binding (small, bounded). All bounded by
   `Limits`.
 
+## AGENT.3 (hierarchy) limitations
+
+- **Real-world hierarchy accuracy: UNVALIDATED** (no owned `.moc3`). Only
+  structure statistics are reported; they are never an accuracy measure.
+- Exactly one heuristic rule exists (HR-010, disabled by default). Its
+  evidence (shared keyform binding) is weak by nature; enable it only as an
+  experiment (`--allow-heuristic`).
+- No automatic tie-breaking for ambiguous parents: equal-confidence
+  candidates stay ambiguous. This is deliberate (work order section 15).
+- Stored cycles are reported, not repaired; cycle-free hierarchies are not
+  guaranteed for corrupt files.
+- Range/draw-order/mask/glue evidence is deliberately unused for parenting;
+  those relations live in the IR and remain available for later phases.
+- Keyform selection and interpolation are AGENT.4 work; this phase groups
+  and validates structure only.
+- Offscreen surfaces (5.3) are not hierarchy nodes; part references to them
+  are reported via IR-level `unmapped_reference` diagnostics.
+
 ## Tooling
 
 - `cargo-fuzz` integration is planned after parser stabilisation (master

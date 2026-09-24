@@ -24,21 +24,21 @@ Recovered structure (used by hierarchy edges today, recovery output later):
   `RotationDeformer_0007`, `Deformer_0003`, `Glue_0002`.
 - Same input -> same names; no randomness, no timestamps.
 
-## Hierarchy rules (AGENT.1 candidate edges, AGENT.3 graph)
+## Hierarchy rules (AGENT.3 implemented)
 
-Currently reported as edges (all `Exact`, each naming its stored field):
+The hierarchy stage uses stable rule ids `HR-001..HR-010`; the full table
+(evidence, confidence, failure modes, fixtures) lives in
+`docs/HIERARCHY_RECOVERY.md`. Summary:
 
-- `part.parent_part` -> part -> parent part
-- `deformer.parent_deformer` -> deformer -> parent deformer
-- `deformer.parent_part` -> part -> deformer
-- `art_mesh.parent_deformer` -> deformer -> art mesh
-- `art_mesh.parent_part` -> part -> art mesh
-- drawable mask entries -> `masked_by` (masking art mesh -> masked art mesh)
+- `HR-001..HR-005`: stored parent fields become hierarchy parents (`Exact`),
+  the stored part of a deformer-parented node stays a logical association,
+- `HR-006`: deformer precedence demotes part candidates to associations,
+- `HR-007`: part association vs deformer-chain part mismatches are reported
+  (`exact_relation_conflict`), both values preserved,
+- `HR-010`: the single heuristic rule (binding sharing), disabled by default.
 
-AGENT.1 additionally detects cycles in part/deformer parent chains
-(`hierarchy_cycle` anomalies). AGENT.3 will add orphan detection,
-multi-parent conflict resolution, parent-candidate scoring and deterministic
-ordering for the recovery graph.
+AGENT.1's inspection-only hierarchy candidates were superseded by this rule
+system; the `inspect` report remains unchanged for its phase.
 
 ## Planned order of fidelity work (AGENT.6, from the master spec)
 

@@ -6,6 +6,12 @@ been validated yet; the schema may still change. Do not treat it as a stable
 public contract.
 **Implemented:** AGENT.2 (`crates/live2d-ir`, mapper in `recovery-core`).
 
+## 0. Downstream note (AGENT.3)
+
+Hierarchy reconstruction consumes this IR read-only and emits its own
+document (`live2d-recovery/recovered-project/1`, see
+`docs/HIERARCHY_RECOVERY.md`). The IR schema is unchanged by AGENT.3.
+
 ## 1. Purpose and boundaries
 
 The IR is the normalized semantic model between the binary parser and every

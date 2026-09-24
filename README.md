@@ -17,10 +17,10 @@ that the user owns or is authorized to analyze:
    Structural Validation (comparison engine)        <- AGENT.7
 ```
 
-**Current status: AGENT.0 (research/bootstrap), AGENT.1 (read-only MOC3
-inspector) and AGENT.2 (normalized Live2D IR) complete and passing all
-acceptance criteria.** No CMO3 writer, no PSD recovery, no GUI, no hierarchy
-heuristics - those are gated behind later phases (master spec v0.1).
+**Current status: AGENT.0-AGENT.3 complete** (research/bootstrap, read-only
+MOC3 inspector, normalized Live2D IR, hierarchy reconstruction) and passing
+all acceptance criteria. No CMO3 writer, no PSD recovery, no GUI, no keyform
+reconstruction - those are gated behind later phases (master spec v0.1).
 
 ## Quickstart
 
@@ -32,6 +32,9 @@ recovery inspect path\to\model.moc3 --json > report.json
 
 recovery export-ir path\to\model.moc3 --output model.ir.json
 recovery validate-ir model.ir.json
+
+recovery reconstruct-hierarchy path\to\model.moc3
+recovery reconstruct-hierarchy model.ir.json --json --output recovered.project.json
 
 cargo test
 cargo clippy --workspace --all-targets --all-features
@@ -46,6 +49,13 @@ sections, anomalies, and what is intentionally not extracted yet.
 (`live2d-ir/1`, currently **experimental**): typed stable identifiers,
 provenance/confidence, preserved unknowns, structured diagnostics, and
 byte-stable JSON that round-trips back through `validate-ir`.
+
+`reconstruct-hierarchy` runs the recovery graph engine over the IR: stored
+relations are `Exact`, one policy-gated heuristic rule exists (off by
+default), ambiguity and orphans are preserved (never guessed), cycles are
+reported not broken, and the output is a deterministic recovered-project
+document plus a human-readable tree and structure statistics. See
+`docs/HIERARCHY_RECOVERY.md`.
 
 ## Legal / scope
 
@@ -62,8 +72,10 @@ byte-stable JSON that round-trips back through `validate-ir`.
 ```text
 crates/moc3-ingest/       read-only MOC3 parser + inspection report + pools
 crates/live2d-ir/         normalized IR, validator, canonical JSON
+crates/hierarchy-recovery/ recovery graph, resolver, hierarchy validator
 crates/recovery-core/     file IO, inspection orchestration, IR mapper
-apps/recovery-cli/        `recovery` binary (inspect / export-ir / validate-ir)
+apps/recovery-cli/        `recovery` binary (inspect / export-ir / validate-ir /
+                          reconstruct-hierarchy)
 crates/hierarchy-recovery/(reserved: AGENT.3)
 crates/cmo3-writer/       (reserved: AGENT.5)
 crates/project-validator/ (reserved: AGENT.7)
@@ -83,6 +95,7 @@ docs/                     architecture, format research, test plan, ...
 | `docs/RESEARCH_LOG.md` | research chronology and decisions |
 | `docs/LICENSE_NOTES.md` | reference licenses and usage policy |
 | `docs/IR_SPEC.md` | Live2D IR schema `live2d-ir/1` (experimental) |
+| `docs/HIERARCHY_RECOVERY.md` | recovery graph, rules HR-001..HR-010, policy, CLI |
 | `docs/RECOVERY_RULES.md` | confidence/naming/hierarchy rules (AGENT.3+) |
 | `docs/TEST_PLAN.md` | test matrix and acceptance-criteria mapping |
 | `docs/LIMITATIONS.md` | what is not verified / not extracted yet |
