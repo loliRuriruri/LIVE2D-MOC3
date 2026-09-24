@@ -139,18 +139,18 @@
     <CDeformerGuid xs.id="#2" xs.idx="2" uuid="71fae776-e218-4aee-873e-78e8ac0cb48a" note="deformer root"/>
     <StaticFilterDefGuid xs.id="#3" xs.idx="3" uuid="5e9fe1ea-0ec3-4d68-a5fa-018fc7abe301" note="CLayerSelector"/>
     <StaticFilterDefGuid xs.id="#4" xs.idx="4" uuid="4083cd1f-40ba-4eda-8400-379019d55ed8" note="CLayerFilter"/>
-    <CParameterGuid xs.id="#5" xs.idx="5" uuid="64f655fc-5826-40e1-98ba-50c47f7e14ba" note="parameter:minimal"/>
-    <CBlend_Normal xs.id="#6" xs.idx="6">
+    <CBlend_Normal xs.id="#5" xs.idx="5">
       <ACBlend xs.n="super">
         <s xs.n="displayName" v="Normal"/>
       </ACBlend>
     </CBlend_Normal>
-    <CoordType xs.id="#7" xs.idx="7">
+    <CoordType xs.id="#6" xs.idx="6">
       <s xs.n="coordName" v="DeformerLocal"/>
     </CoordType>
-    <CoordType xs.id="#8" xs.idx="8">
+    <CoordType xs.id="#7" xs.idx="7">
       <s xs.n="coordName" v="Canvas"/>
     </CoordType>
+    <CParameterGuid xs.id="#8" xs.idx="8" uuid="27463f6a-04e4-4374-850e-dfe2c39e56c6" note="ParamAngleX"/>
     <FilterValueId xs.id="#9" xs.idx="9" idstr="ilf_outputLayerData"/>
     <FilterValueId xs.id="#10" xs.idx="10" idstr="mi_input_layerInputData"/>
     <FilterValueId xs.id="#11" xs.idx="11" idstr="ilf_inputLayerData"/>
@@ -211,10 +211,10 @@
     <CExtensionGuid xs.id="#30" xs.idx="30" uuid="a6ea54af-4857-4302-b088-88ccfd144582" note="ext.editable:Mesh_00"/>
     <CExtensionGuid xs.id="#31" xs.idx="31" uuid="e9fd9f78-1d90-46a0-911a-fa8ec8c4810e" note="ext.texture_input:Mesh_00"/>
     <CExtensionGuid xs.id="#32" xs.idx="32" uuid="57c27d1d-825c-4f34-8ae9-51d9e267e6cd" note="ext.mesh_generator:Mesh_00"/>
-    <CFormGuid xs.id="#37" xs.idx="37" uuid="5132486c-2ce5-4e5d-8661-e3d5a0c4d522" note="Mesh_00#static"/>
-    <CFormGuid xs.id="#38" xs.idx="38" uuid="836371a0-b5ec-4bd3-bae8-a75f2249bb50" note="form:root"/>
-    <CFormGuid xs.id="#39" xs.idx="39" uuid="7bf46007-41d1-4ed0-83fb-6d753d15b444" note="Part_00#form0"/>
-    <CFormGuid xs.id="#40" xs.idx="40" uuid="3bfc15a0-b600-428f-bef5-4deffa929dbc" note="Part_00#form1"/>
+    <CFormGuid xs.id="#35" xs.idx="35" uuid="823d392d-7849-43fd-9254-4e947a3afa40" note="grid:binding:000000:part:Part_00#form0"/>
+    <CFormGuid xs.id="#36" xs.idx="36" uuid="4348f3eb-95f9-49a2-bc6d-9e363d2b1bea" note="grid:binding:000000:part:Part_00#form1"/>
+    <CFormGuid xs.id="#39" xs.idx="39" uuid="4cfbaa11-0e07-4adc-b4e3-718d2c287767" note="grid:binding:000000:art_mesh:Mesh_00#form0"/>
+    <CFormGuid xs.id="#40" xs.idx="40" uuid="70e28828-0f8d-4b97-8238-9fcf76d04052" note="grid:binding:000000:art_mesh:Mesh_00#form1"/>
     <GTextureGuid xs.id="#41" xs.idx="41" uuid="916cd763-f92f-4bb3-9cd0-fad773ec28a2" note="image_resource:000000"/>
     <CLayeredImageGuid xs.id="#42" xs.idx="42" uuid="6187688c-4e24-4f43-a205-af10178e0dd8" note="layered_image:000000"/>
     <CModelImageGuid xs.id="#43" xs.idx="43" uuid="f3f82117-bd0c-4d1f-9273-772aef0164a0" note="model_image:000000"/>
@@ -269,24 +269,24 @@
           <i v="3"/>
         </int-array>
         <GEditableMeshGuid xs.n="meshGuid" xs.ref="#29"/>
-        <CoordType xs.n="coordType" xs.ref="#7"/>
+        <CoordType xs.n="coordType" xs.ref="#6"/>
       </GEditableMesh2>
       <b xs.n="isLocked" v="false"/>
     </CEditableMeshExtension>
-    <CTextureInputExtension xs.id="#33" xs.idx="33">
+    <CTextureInputExtension xs.id="#46" xs.idx="46">
       <ACExtension xs.n="super">
         <CExtensionGuid xs.n="guid" xs.ref="#31"/>
         <CArtMeshSource xs.n="_owner" xs.ref="#28"/>
       </ACExtension>
       <carray_list xs.n="_textureInputs" count="1">
-        <CTextureInput_ModelImage xs.ref="#34"/>
+        <CTextureInput_ModelImage xs.ref="#47"/>
       </carray_list>
-      <CTextureInput_ModelImage xs.n="currentTextureInputData" xs.ref="#34"/>
+      <CTextureInput_ModelImage xs.n="currentTextureInputData" xs.ref="#47"/>
     </CTextureInputExtension>
-    <CTextureInput_ModelImage xs.id="#34" xs.idx="34">
+    <CTextureInput_ModelImage xs.id="#47" xs.idx="47">
       <ACTextureInput xs.n="super">
         <CAffine xs.n="optionalTransformOnCanvas" m00="1.0" m01="0.0" m02="0.0" m10="0.0" m11="1.0" m12="0.0"/>
-        <CTextureInputExtension xs.n="_owner" xs.ref="#33"/>
+        <CTextureInputExtension xs.n="_owner" xs.ref="#46"/>
       </ACTextureInput>
       <CModelImageGuid xs.n="_modelImageGuid" xs.ref="#43"/>
     </CTextureInput_ModelImage>
@@ -305,10 +305,10 @@
         <i xs.n="thresholdAlpha" v="0"/>
       </MeshGenerateSetting>
     </CMeshGeneratorExtension>
-    <FilterInstance xs.id="#51" xs.idx="51" filterName="CLayerSelector">
+    <FilterInstance xs.id="#53" xs.idx="53" filterName="CLayerSelector">
       <StaticFilterDefGuid xs.n="filterDefGuid" xs.ref="#3"/>
       <null xs.n="filterDef"/>
-      <FilterInstanceId xs.n="filterId" xs.ref="#53"/>
+      <FilterInstanceId xs.n="filterId" xs.ref="#55"/>
       <hash_map xs.n="inputConnectors" count="2">
         <entry>
           <FilterValueId xs.n="key" xs.ref="#11"/>
@@ -328,42 +328,42 @@
       <hash_map xs.n="outputConnectors" count="1">
         <entry>
           <FilterValueId xs.n="key" xs.ref="#9"/>
-          <FilterOutputValueConnector xs.n="value" xs.ref="#55"/>
+          <FilterOutputValueConnector xs.n="value" xs.ref="#57"/>
         </entry>
       </hash_map>
-      <ModelImageFilterSet xs.n="ownerFilterSet" xs.ref="#50"/>
+      <ModelImageFilterSet xs.n="ownerFilterSet" xs.ref="#52"/>
     </FilterInstance>
-    <FilterInstance xs.id="#52" xs.idx="52" filterName="CLayerFilter">
+    <FilterInstance xs.id="#54" xs.idx="54" filterName="CLayerFilter">
       <StaticFilterDefGuid xs.n="filterDefGuid" xs.ref="#4"/>
       <null xs.n="filterDef"/>
-      <FilterInstanceId xs.n="filterId" xs.ref="#54"/>
+      <FilterInstanceId xs.n="filterId" xs.ref="#56"/>
       <hash_map xs.n="inputConnectors" count="1">
         <entry>
           <FilterValueId xs.n="key" xs.ref="#16"/>
-          <FilterOutputValueConnector xs.n="value" xs.ref="#55"/>
+          <FilterOutputValueConnector xs.n="value" xs.ref="#57"/>
         </entry>
       </hash_map>
       <hash_map xs.n="outputConnectors" count="0" keyType="string"/>
-      <ModelImageFilterSet xs.n="ownerFilterSet" xs.ref="#50"/>
+      <ModelImageFilterSet xs.n="ownerFilterSet" xs.ref="#52"/>
     </FilterInstance>
-    <FilterInstanceId xs.id="#53" xs.idx="53" idstr="filter0_0"/>
-    <FilterInstanceId xs.id="#54" xs.idx="54" idstr="filter1_0"/>
-    <FilterOutputValueConnector xs.id="#55" xs.idx="55">
+    <FilterInstanceId xs.id="#55" xs.idx="55" idstr="filter0_0"/>
+    <FilterInstanceId xs.id="#56" xs.idx="56" idstr="filter1_0"/>
+    <FilterOutputValueConnector xs.id="#57" xs.idx="57">
       <AValueConnector xs.n="super"/>
-      <FilterInstance xs.n="instance" xs.ref="#51"/>
+      <FilterInstance xs.n="instance" xs.ref="#53"/>
       <FilterValueId xs.n="id" xs.ref="#9"/>
       <FilterValue xs.n="valueDef" xs.ref="#17"/>
     </FilterOutputValueConnector>
-    <ModelImageFilterSet xs.id="#50" xs.idx="50">
+    <ModelImageFilterSet xs.id="#52" xs.idx="52">
       <FilterSet xs.n="super">
         <linked_map xs.n="filterMap" count="2">
           <entry>
-            <FilterInstanceId xs.n="key" xs.ref="#53"/>
-            <FilterInstance xs.n="value" xs.ref="#51"/>
+            <FilterInstanceId xs.n="key" xs.ref="#55"/>
+            <FilterInstance xs.n="value" xs.ref="#53"/>
           </entry>
           <entry>
-            <FilterInstanceId xs.n="key" xs.ref="#54"/>
-            <FilterInstance xs.n="value" xs.ref="#52"/>
+            <FilterInstanceId xs.n="key" xs.ref="#56"/>
+            <FilterInstance xs.n="value" xs.ref="#54"/>
           </entry>
         </linked_map>
         <linked_map xs.n="_externalInputs" count="2">
@@ -371,7 +371,7 @@
             <FilterValueId xs.n="key" xs.ref="#10"/>
             <EnvConnection xs.n="value">
               <FilterValue xs.n="_envValueDef" xs.ref="#18"/>
-              <FilterInstance xs.n="filter" xs.ref="#51"/>
+              <FilterInstance xs.n="filter" xs.ref="#53"/>
               <FilterValue xs.n="filterValueDef" xs.ref="#19"/>
             </EnvConnection>
           </entry>
@@ -379,7 +379,7 @@
             <FilterValueId xs.n="key" xs.ref="#12"/>
             <EnvConnection xs.n="value">
               <FilterValue xs.n="_envValueDef" xs.ref="#20"/>
-              <FilterInstance xs.n="filter" xs.ref="#51"/>
+              <FilterInstance xs.n="filter" xs.ref="#53"/>
               <FilterValue xs.n="filterValueDef" xs.ref="#21"/>
             </EnvConnection>
           </entry>
@@ -389,7 +389,7 @@
             <FilterValueId xs.n="key" xs.ref="#14"/>
             <EnvConnection xs.n="value">
               <FilterValue xs.n="_envValueDef" xs.ref="#22"/>
-              <FilterInstance xs.n="filter" xs.ref="#52"/>
+              <FilterInstance xs.n="filter" xs.ref="#54"/>
               <FilterValue xs.n="filterValueDef" xs.ref="#23"/>
             </EnvConnection>
           </entry>
@@ -397,46 +397,46 @@
             <FilterValueId xs.n="key" xs.ref="#15"/>
             <EnvConnection xs.n="value">
               <FilterValue xs.n="_envValueDef" xs.ref="#24"/>
-              <FilterInstance xs.n="filter" xs.ref="#52"/>
+              <FilterInstance xs.n="filter" xs.ref="#54"/>
               <FilterValue xs.n="filterValueDef" xs.ref="#25"/>
             </EnvConnection>
           </entry>
         </linked_map>
       </FilterSet>
     </ModelImageFilterSet>
-    <CLayerGroup xs.id="#49" xs.idx="49">
+    <CLayerGroup xs.id="#51" xs.idx="51">
       <ACLayerGroup xs.n="super">
         <ACLayerEntry xs.n="super">
           <s xs.n="name" v="root"/>
           <s xs.n="memo" v=""/>
           <b xs.n="isVisible" v="true"/>
           <b xs.n="isClipping" v="false"/>
-          <CBlend_Normal xs.n="blend" xs.ref="#6"/>
+          <CBlend_Normal xs.n="blend" xs.ref="#5"/>
           <CLayerGuid xs.n="guid" uuid="86915183-7f36-4d95-b3e8-3797cd65eccb" note="root"/>
           <null xs.n="group"/>
           <i xs.n="opacity255" v="255"/>
           <hash_map xs.n="_optionOfIOption" count="0" keyType="string"/>
-          <CLayeredImage xs.n="_layeredImage" xs.ref="#47"/>
+          <CLayeredImage xs.n="_layeredImage" xs.ref="#49"/>
         </ACLayerEntry>
         <carray_list xs.n="_children" count="1">
-          <CLayer xs.ref="#48"/>
+          <CLayer xs.ref="#50"/>
         </carray_list>
       </ACLayerGroup>
       <null xs.n="layerIdentifier"/>
     </CLayerGroup>
-    <CLayer xs.id="#48" xs.idx="48">
+    <CLayer xs.id="#50" xs.idx="50">
       <ACImageLayer xs.n="super">
         <ACLayerEntry xs.n="super">
           <s xs.n="name" v="Mesh_00"/>
           <s xs.n="memo" v=""/>
           <b xs.n="isVisible" v="true"/>
           <b xs.n="isClipping" v="false"/>
-          <CBlend_Normal xs.n="blend" xs.ref="#6"/>
+          <CBlend_Normal xs.n="blend" xs.ref="#5"/>
           <CLayerGuid xs.n="guid" uuid="4e7cf3bf-0373-4fc6-9f15-310e6e0ca7a0" note="layer-0"/>
-          <CLayerGroup xs.n="group" xs.ref="#49"/>
+          <CLayerGroup xs.n="group" xs.ref="#51"/>
           <i xs.n="opacity255" v="255"/>
           <hash_map xs.n="_optionOfIOption" count="0" keyType="string"/>
-          <CLayeredImage xs.n="_layeredImage" xs.ref="#47"/>
+          <CLayeredImage xs.n="_layeredImage" xs.ref="#49"/>
         </ACLayerEntry>
       </ACImageLayer>
       <CImageResource xs.n="imageResource" xs.ref="#44"/>
@@ -456,7 +456,7 @@
       <linked_map xs.n="layerInfo" count="0" keyType="string"/>
       <hash_map xs.n="_optionOfIOption" count="0" keyType="string"/>
     </CLayer>
-    <CLayeredImage xs.id="#47" xs.idx="47">
+    <CLayeredImage xs.id="#49" xs.idx="49">
       <s xs.n="name" v="RecoveredLayeredImage.psd"/>
       <s xs.n="memo" v=""/>
       <i xs.n="width" v="512"/>
@@ -466,18 +466,18 @@
       <CLayeredImageGuid xs.n="guid" xs.ref="#42"/>
       <null xs.n="psdBytes"/>
       <l xs.n="psdFileLastModified" v="0"/>
-      <CLayerGroup xs.n="_rootLayer" xs.ref="#49"/>
+      <CLayerGroup xs.n="_rootLayer" xs.ref="#51"/>
       <LayerSet xs.n="layerSet">
-        <CLayeredImage xs.n="_layeredImage" xs.ref="#47"/>
+        <CLayeredImage xs.n="_layeredImage" xs.ref="#49"/>
         <carray_list xs.n="_layerEntryList" count="2">
-          <CLayerGroup xs.ref="#49"/>
-          <CLayer xs.ref="#48"/>
+          <CLayerGroup xs.ref="#51"/>
+          <CLayer xs.ref="#50"/>
         </carray_list>
       </LayerSet>
       <null xs.n="icon16"/>
       <null xs.n="icon64"/>
     </CLayeredImage>
-    <CModelImageGroup xs.id="#46" xs.idx="46">
+    <CModelImageGroup xs.id="#48" xs.idx="48">
       <s xs.n="memo" v=""/>
       <s xs.n="groupName" v="RecoveredLayeredImage"/>
       <carray_list xs.n="_linkedRawImageGuids" count="1">
@@ -487,7 +487,7 @@
         <CModelImage modelImageVersion="0">
           <CModelImageGuid xs.n="guid" xs.ref="#43"/>
           <s xs.n="name" v="Mesh_00"/>
-          <ModelImageFilterSet xs.n="inputFilter" xs.ref="#50"/>
+          <ModelImageFilterSet xs.n="inputFilter" xs.ref="#52"/>
           <ModelImageFilterEnv xs.n="inputFilterEnv">
             <FilterEnv xs.n="super">
               <null xs.n="parentEnv"/>
@@ -510,7 +510,7 @@
                           <CLayeredImageGuid xs.n="key" xs.ref="#42"/>
                           <array_list xs.n="value" count="1">
                             <CLayerInputData>
-                              <CLayer xs.n="layer" xs.ref="#48"/>
+                              <CLayer xs.n="layer" xs.ref="#50"/>
                               <CAffine xs.n="affine" m00="1.0" m01="0.0" m02="0.0" m10="0.0" m11="1.0" m12="0.0"/>
                               <null xs.n="clippingOnTexturePx"/>
                             </CLayerInputData>
@@ -527,7 +527,7 @@
           <CImageResource xs.n="_filteredImage" xs.ref="#44"/>
           <null xs.n="icon16"/>
           <CAffine xs.n="_materialLocalToCanvasTransform" m00="1.0" m01="0.0" m02="0.0" m10="0.0" m11="1.0" m12="0.0"/>
-          <CModelImageGroup xs.n="_group" xs.ref="#46"/>
+          <CModelImageGroup xs.n="_group" xs.ref="#48"/>
           <carray_list xs.n="linkedRawImageGuids" count="1">
             <CLayeredImageGuid xs.ref="#42"/>
           </carray_list>
@@ -552,29 +552,83 @@
         </CModelImage>
       </carray_list>
     </CModelImageGroup>
-    <KeyformGridSource xs.id="#35" xs.idx="35">
-      <array_list xs.n="keyformsOnGrid" count="1">
+    <KeyformGridSource xs.id="#33" xs.idx="33">
+      <array_list xs.n="keyformsOnGrid" count="2">
         <KeyformOnGrid>
           <KeyformGridAccessKey xs.n="accessKey">
             <array_list xs.n="_keyOnParameterList" count="1">
               <KeyOnParameter>
-                <KeyformBindingSource xs.n="binding" xs.ref="#36"/>
+                <KeyformBindingSource xs.n="binding" xs.ref="#34"/>
                 <i xs.n="keyIndex" v="0"/>
               </KeyOnParameter>
             </array_list>
           </KeyformGridAccessKey>
-          <CFormGuid xs.n="keyformGuid" xs.ref="#37"/>
+          <CFormGuid xs.n="keyformGuid" xs.ref="#35"/>
+        </KeyformOnGrid>
+        <KeyformOnGrid>
+          <KeyformGridAccessKey xs.n="accessKey">
+            <array_list xs.n="_keyOnParameterList" count="1">
+              <KeyOnParameter>
+                <KeyformBindingSource xs.n="binding" xs.ref="#34"/>
+                <i xs.n="keyIndex" v="0"/>
+              </KeyOnParameter>
+            </array_list>
+          </KeyformGridAccessKey>
+          <CFormGuid xs.n="keyformGuid" xs.ref="#36"/>
         </KeyformOnGrid>
       </array_list>
       <array_list xs.n="keyformBindings" count="1">
-        <KeyformBindingSource xs.ref="#36"/>
+        <KeyformBindingSource xs.ref="#34"/>
       </array_list>
     </KeyformGridSource>
-    <KeyformBindingSource xs.id="#36" xs.idx="36">
-      <KeyformGridSource xs.n="_gridSource" xs.ref="#35"/>
-      <CParameterGuid xs.n="parameterGuid" xs.ref="#5"/>
-      <array_list xs.n="keys" count="1">
-        <f v="0.0"/>
+    <KeyformBindingSource xs.id="#34" xs.idx="34">
+      <KeyformGridSource xs.n="_gridSource" xs.ref="#33"/>
+      <CParameterGuid xs.n="parameterGuid" xs.ref="#8"/>
+      <array_list xs.n="keys" count="2">
+        <f v="-30.0"/>
+        <f v="30.0"/>
+      </array_list>
+      <InterpolationType xs.n="interpolationType" v="LINEAR"/>
+      <ExtendedInterpolationType xs.n="extendedInterpolationType" v="LINEAR"/>
+      <i xs.n="insertPointCount" v="1"/>
+      <f xs.n="extendedInterpolationScale" v="1.0"/>
+      <s xs.n="description" v=""/>
+    </KeyformBindingSource>
+    <KeyformGridSource xs.id="#37" xs.idx="37">
+      <array_list xs.n="keyformsOnGrid" count="2">
+        <KeyformOnGrid>
+          <KeyformGridAccessKey xs.n="accessKey">
+            <array_list xs.n="_keyOnParameterList" count="1">
+              <KeyOnParameter>
+                <KeyformBindingSource xs.n="binding" xs.ref="#38"/>
+                <i xs.n="keyIndex" v="0"/>
+              </KeyOnParameter>
+            </array_list>
+          </KeyformGridAccessKey>
+          <CFormGuid xs.n="keyformGuid" xs.ref="#39"/>
+        </KeyformOnGrid>
+        <KeyformOnGrid>
+          <KeyformGridAccessKey xs.n="accessKey">
+            <array_list xs.n="_keyOnParameterList" count="1">
+              <KeyOnParameter>
+                <KeyformBindingSource xs.n="binding" xs.ref="#38"/>
+                <i xs.n="keyIndex" v="0"/>
+              </KeyOnParameter>
+            </array_list>
+          </KeyformGridAccessKey>
+          <CFormGuid xs.n="keyformGuid" xs.ref="#40"/>
+        </KeyformOnGrid>
+      </array_list>
+      <array_list xs.n="keyformBindings" count="1">
+        <KeyformBindingSource xs.ref="#38"/>
+      </array_list>
+    </KeyformGridSource>
+    <KeyformBindingSource xs.id="#38" xs.idx="38">
+      <KeyformGridSource xs.n="_gridSource" xs.ref="#37"/>
+      <CParameterGuid xs.n="parameterGuid" xs.ref="#8"/>
+      <array_list xs.n="keys" count="2">
+        <f v="-30.0"/>
+        <f v="30.0"/>
       </array_list>
       <InterpolationType xs.n="interpolationType" v="LINEAR"/>
       <ExtendedInterpolationType xs.n="extendedInterpolationType" v="LINEAR"/>
@@ -599,15 +653,15 @@
         <carray_list xs.n="_sources" count="1">
           <CParameterSource>
             <i xs.n="decimalPlaces" v="3"/>
-            <CParameterGuid xs.n="guid" xs.ref="#5"/>
+            <CParameterGuid xs.n="guid" xs.ref="#8"/>
             <f xs.n="snapEpsilon" v="0.001"/>
-            <f xs.n="minValue" v="0.0"/>
-            <f xs.n="maxValue" v="1.0"/>
+            <f xs.n="minValue" v="-30.0"/>
+            <f xs.n="maxValue" v="30.0"/>
             <f xs.n="defaultValue" v="0.0"/>
             <b xs.n="isRepeat" v="false"/>
-            <CParameterId xs.n="id" idstr="Param_Minimal"/>
+            <CParameterId xs.n="id" idstr="ParamAngleX"/>
             <Type xs.n="paramType" v="NORMAL"/>
-            <s xs.n="name" v="Param_Minimal"/>
+            <s xs.n="name" v="ParamAngleX"/>
             <s xs.n="description" v=""/>
             <b xs.n="combined" v="false"/>
             <CParameterGroupGuid xs.n="parentGroupGuid" xs.ref="#1"/>
@@ -620,14 +674,14 @@
         </TextureImageGroup>
         <carray_list xs.n="_rawImages" count="1">
           <LayeredImageWrapper>
-            <CLayeredImage xs.n="image" xs.ref="#47"/>
+            <CLayeredImage xs.n="image" xs.ref="#49"/>
             <l xs.n="importedTimeMSec" v="0"/>
             <l xs.n="lastModifiedTimeMSec" v="0"/>
             <b xs.n="isReplaced" v="false"/>
           </LayeredImageWrapper>
         </carray_list>
         <carray_list xs.n="_modelImageGroups" count="1">
-          <CModelImageGroup xs.ref="#46"/>
+          <CModelImageGroup xs.ref="#48"/>
         </carray_list>
         <carray_list xs.n="_textureAtlases" count="0"/>
         <b xs.n="isTextureInputModelImageMode" v="true"/>
@@ -644,7 +698,7 @@
                 <b xs.n="isVisible" v="true"/>
                 <b xs.n="isLocked" v="false"/>
                 <CPartGuid xs.n="parentGuid" xs.ref="#27"/>
-                <KeyformGridSource xs.n="keyformGridSource" xs.ref="#35"/>
+                <KeyformGridSource xs.n="keyformGridSource" xs.ref="#37"/>
                 <KeyFormMorphTargetSet xs.n="keyformMorphTargetSet">
                   <carray_list xs.n="_morphTargets" count="0"/>
                   <MorphTargetBlendWeightConstraintSet xs.n="blendWeightConstraintSet">
@@ -683,11 +737,11 @@
                         <i v="3"/>
                       </int-array>
                       <GEditableMeshGuid xs.n="meshGuid" xs.ref="#29"/>
-                      <CoordType xs.n="coordType" xs.ref="#7"/>
+                      <CoordType xs.n="coordType" xs.ref="#6"/>
                     </GEditableMesh2>
                     <b xs.n="isLocked" v="false"/>
                   </CEditableMeshExtension>
-                  <CTextureInputExtension xs.ref="#33"/>
+                  <CTextureInputExtension xs.ref="#46"/>
                   <CMeshGeneratorExtension>
                     <ACExtension xs.n="super">
                       <CExtensionGuid xs.n="guid" xs.ref="#32"/>
@@ -720,22 +774,49 @@
               <i v="2"/>
               <i v="3"/>
             </int-array>
-            <carray_list xs.n="keyforms" count="1">
+            <carray_list xs.n="keyforms" count="2">
               <CArtMeshForm>
                 <ACDrawableForm xs.n="super">
                   <ACForm xs.n="super">
-                    <CFormGuid xs.n="guid" xs.ref="#37"/>
+                    <CFormGuid xs.n="guid" xs.ref="#39"/>
                     <b xs.n="isAnimatedForm" v="false"/>
                     <b xs.n="isLocalAnimatedForm" v="false"/>
                     <CArtMeshSource xs.n="_source" xs.ref="#28"/>
                     <null xs.n="name"/>
                     <s xs.n="notes" v=""/>
                   </ACForm>
-                  <i xs.n="drawOrder" v="500"/>
+                  <i xs.n="drawOrder" v="0"/>
                   <f xs.n="opacity" v="1.0"/>
                   <CFloatColor xs.n="multiplyColor" red="1.0" green="1.0" blue="1.0" alpha="1.0"/>
                   <CFloatColor xs.n="screenColor" red="1.0" green="1.0" blue="1.0" alpha="1.0"/>
-                  <CoordType xs.n="coordType" xs.ref="#7"/>
+                  <CoordType xs.n="coordType" xs.ref="#6"/>
+                </ACDrawableForm>
+                <float-array xs.n="positions">
+                  <f v="0.0"/>
+                  <f v="0.0"/>
+                  <f v="512.0"/>
+                  <f v="0.0"/>
+                  <f v="512.0"/>
+                  <f v="512.0"/>
+                  <f v="0.0"/>
+                  <f v="512.0"/>
+                </float-array>
+              </CArtMeshForm>
+              <CArtMeshForm>
+                <ACDrawableForm xs.n="super">
+                  <ACForm xs.n="super">
+                    <CFormGuid xs.n="guid" xs.ref="#40"/>
+                    <b xs.n="isAnimatedForm" v="false"/>
+                    <b xs.n="isLocalAnimatedForm" v="false"/>
+                    <CArtMeshSource xs.n="_source" xs.ref="#28"/>
+                    <null xs.n="name"/>
+                    <s xs.n="notes" v=""/>
+                  </ACForm>
+                  <i xs.n="drawOrder" v="1"/>
+                  <f xs.n="opacity" v="1.0"/>
+                  <CFloatColor xs.n="multiplyColor" red="1.0" green="1.0" blue="1.0" alpha="1.0"/>
+                  <CFloatColor xs.n="screenColor" red="1.0" green="1.0" blue="1.0" alpha="1.0"/>
+                  <CoordType xs.n="coordType" xs.ref="#6"/>
                 </ACDrawableForm>
                 <float-array xs.n="positions">
                   <f v="0.0"/>
@@ -811,19 +892,7 @@
               <CPartGuid xs.ref="#27"/>
             </carray_list>
             <CDeformerGuid xs.n="targetDeformerGuid" xs.ref="#2"/>
-            <carray_list xs.n="keyforms" count="1">
-              <CPartForm>
-                <ACForm xs.n="super">
-                  <CFormGuid xs.n="guid" xs.ref="#38"/>
-                  <b xs.n="isAnimatedForm" v="false"/>
-                  <b xs.n="isLocalAnimatedForm" v="false"/>
-                  <CPartSource xs.n="_source" xs.ref="#26"/>
-                  <null xs.n="name"/>
-                  <s xs.n="notes" v=""/>
-                </ACForm>
-                <i xs.n="drawOrder" v="500"/>
-              </CPartForm>
-            </carray_list>
+            <carray_list xs.n="keyforms" count="0"/>
           </CPartSource>
           <CPartSource>
             <ACParameterControllableSource xs.n="super">
@@ -831,7 +900,7 @@
               <b xs.n="isVisible" v="true"/>
               <b xs.n="isLocked" v="false"/>
               <null xs.n="parentGuid"/>
-              <null xs.n="keyformGridSource"/>
+              <KeyformGridSource xs.n="keyformGridSource" xs.ref="#33"/>
               <KeyFormMorphTargetSet xs.n="keyformMorphTargetSet">
                 <carray_list xs.n="_morphTargets" count="0"/>
                 <MorphTargetBlendWeightConstraintSet xs.n="blendWeightConstraintSet">
@@ -854,25 +923,25 @@
             <carray_list xs.n="keyforms" count="2">
               <CPartForm>
                 <ACForm xs.n="super">
-                  <CFormGuid xs.n="guid" xs.ref="#39"/>
+                  <CFormGuid xs.n="guid" xs.ref="#35"/>
                   <b xs.n="isAnimatedForm" v="false"/>
                   <b xs.n="isLocalAnimatedForm" v="false"/>
                   <CPartSource xs.n="_source" xs.ref="#27"/>
                   <null xs.n="name"/>
                   <s xs.n="notes" v=""/>
                 </ACForm>
-                <i xs.n="drawOrder" v="500"/>
+                <i xs.n="drawOrder" v="0"/>
               </CPartForm>
               <CPartForm>
                 <ACForm xs.n="super">
-                  <CFormGuid xs.n="guid" xs.ref="#40"/>
+                  <CFormGuid xs.n="guid" xs.ref="#36"/>
                   <b xs.n="isAnimatedForm" v="false"/>
                   <b xs.n="isLocalAnimatedForm" v="false"/>
                   <CPartSource xs.n="_source" xs.ref="#27"/>
                   <null xs.n="name"/>
                   <s xs.n="notes" v=""/>
                 </ACForm>
-                <i xs.n="drawOrder" v="500"/>
+                <i xs.n="drawOrder" v="1"/>
               </CPartForm>
             </carray_list>
           </CPartSource>

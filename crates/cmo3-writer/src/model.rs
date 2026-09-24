@@ -158,6 +158,9 @@ pub struct ArtMeshOut {
     pub texture: Option<usize>,
     /// Model image index when the mesh has a texture (MODEL_IMAGE mode).
     pub model_image: Option<usize>,
+    /// CMO3 `ColorComposition` value (`NORMAL`/`ADD`/`MULTIPLY`), decided by
+    /// the mapping layer under the blend policy.
+    pub composition: String,
     /// Base vertex positions (editor space, verbatim).
     pub positions: Vec<[f32; 2]>,
     /// UVs (verbatim).
@@ -348,6 +351,133 @@ pub struct ImageResourceOut {
     pub byte_len: usize,
     /// Archive entry name.
     pub archive_name: String,
+}
+
+/// One deformer in deterministic CMO3 serialization order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeformerRef {
+    /// Index into [`Cmo3Project::warps`].
+    Warp(usize),
+    /// Index into [`Cmo3Project::rotations`].
+    Rotation(usize),
+}
+
+/// Stable parent-before-child DFS order for deformers (work order section 15).
+///
+/// Roots are deformers whose parent is not a deformer (part/root), visited in
+/// combined source order (warps then rotations); children follow their parent,
+/// siblings in combined source order. Unreachable deformers (stored cycles)
+/// are appended deterministically and reported by the validator.
+pub fn compute_cmo3_serialization_order(project: &Cmo3Project) -> Vec<DeformerRef> {
+    let warp_count = project.warps.len();
+    let rotation_count = project.rotations.len();
+    let total = warp_count + rotation_count;
+    let mut visited = vec![false; total];
+    let mut order: Vec<DeformerRef> = Vec::with_capacity(total);
+    let index_of = |reference: DeformerRef| -> usize {
+        match reference {
+            DeformerRef::Warp(index) => index,
+            DeformerRef::Rotation(index) => warp_count + index,
+        }
+    };
+    let reference_of = |index: usize| -> DeformerRef {
+        if index < warp_count {
+            DeformerRef::Warp(index)
+        } else {
+            DeformerRef::Rotation(index - warp_count)
+        }
+    };
+    let children_of = |reference: DeformerRef| -> Vec<DeformerRef> {
+        let mut children: Vec<DeformerRef> = Vec::new();
+        let mut consider = |list: &[crate::model::ChildRef]| {
+            for child in list {
+                match child {
+                    crate::model::ChildRef::Warp(semantic) => {
+                        if let Some(index) = project
+                            .warps
+                            .iter()
+                            .position(|warp| warp.semantic == *semantic)
+                        {
+                            children.push(DeformerRef::Warp(index));
+                        }
+                    }
+                    crate::model::ChildRef::Rotation(semantic) => {
+                        if let Some(index) = project
+                            .rotations
+                            .iter()
+                            .position(|rotation| rotation.semantic == *semantic)
+                        {
+                            children.push(DeformerRef::Rotation(index));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        };
+        match reference {
+            DeformerRef::Warp(index) => {
+                if let Some(warp) = project.warps.get(index) {
+                    consider(&warp.children);
+                }
+            }
+            DeformerRef::Rotation(index) => {
+                if let Some(rotation) = project.rotations.get(index) {
+                    consider(&rotation.children);
+                }
+            }
+        }
+        children
+    };
+    let is_deformer_parent = |reference: DeformerRef| -> bool {
+        let parent = match reference {
+            DeformerRef::Warp(index) => project.warps.get(index).map(|warp| &warp.parent),
+            DeformerRef::Rotation(index) => project
+                .rotations
+                .get(index)
+                .map(|rotation| &rotation.parent),
+        };
+        matches!(
+            parent,
+            Some(ParentRef::Warp(_)) | Some(ParentRef::Rotation(_))
+        )
+    };
+
+    // Iterative DFS so deep chains cannot overflow the stack.
+    let mut roots: Vec<DeformerRef> = Vec::new();
+    for index in 0..warp_count {
+        let reference = DeformerRef::Warp(index);
+        if !is_deformer_parent(reference) {
+            roots.push(reference);
+        }
+    }
+    for index in 0..rotation_count {
+        let reference = DeformerRef::Rotation(index);
+        if !is_deformer_parent(reference) {
+            roots.push(reference);
+        }
+    }
+    let mut stack: Vec<DeformerRef> = roots.iter().rev().copied().collect();
+    while let Some(reference) = stack.pop() {
+        let index = index_of(reference);
+        if visited.get(index).copied().unwrap_or(true) {
+            continue;
+        }
+        if let Some(slot) = visited.get_mut(index) {
+            *slot = true;
+        }
+        order.push(reference);
+        let children = children_of(reference);
+        for child in children.iter().rev() {
+            stack.push(*child);
+        }
+    }
+    // Unreachable (stored cycles) appended deterministically.
+    for index in 0..total {
+        if !visited.get(index).copied().unwrap_or(true) {
+            order.push(reference_of(index));
+        }
+    }
+    order
 }
 
 /// A writer-required default (never presented as recovered data).

@@ -54,6 +54,47 @@ fn error(code: &'static str, message: impl Into<String>) -> WriteError {
     }
 }
 
+/// Blend policy: stored flag bits first, then the verified blend-mode
+/// mapping; anything else has no verified CMO3 mapping and fails strict mode
+/// (best-effort falls back to NORMAL with an explicit note).
+fn blend_composition(
+    mesh: &live2d_ir::ArtMesh,
+    best_effort: bool,
+    unsupported: &mut Vec<UnsupportedNote>,
+) -> Result<String, WriteError> {
+    use live2d_ir::BlendMode;
+    if mesh.flags.additive {
+        return Ok("ADD".to_string());
+    }
+    if mesh.flags.multiplicative {
+        return Ok("MULTIPLY".to_string());
+    }
+    match mesh.blend_mode {
+        BlendMode::Normal => Ok("NORMAL".to_string()),
+        BlendMode::AddCompatible | BlendMode::Add => Ok("ADD".to_string()),
+        BlendMode::MultiplyCompatible | BlendMode::Multiply => Ok("MULTIPLY".to_string()),
+        other => {
+            if best_effort {
+                unsupported.push(UnsupportedNote {
+                    subject: mesh.id.as_str().to_string(),
+                    reason: format!(
+                        "blend mode {other:?} has no verified CMO3 mapping; NORMAL was written (BEST_EFFORT)"
+                    ),
+                });
+                Ok("NORMAL".to_string())
+            } else {
+                Err(error(
+                    "UnsupportedBlendMode",
+                    format!(
+                        "art mesh '{}' uses blend mode {other:?} which has no verified CMO3 mapping",
+                        mesh.id.as_str()
+                    ),
+                ))
+            }
+        }
+    }
+}
+
 fn finite(value: f32, semantic: &str, field: &str) -> Result<f32, WriteError> {
     if value.is_finite() {
         Ok(value)
@@ -454,12 +495,14 @@ pub fn build_project(
             .flat_map(|group| group.sources.iter())
             .filter_map(|source| mesh_by_id.get(source.as_str()).copied())
             .collect();
+        let composition = blend_composition(mesh, best_effort, &mut unsupported)?;
         meshes.push(ArtMeshOut {
             semantic: semantic.to_string(),
             name,
             parent: mesh_parent(model, &parent_of, mesh),
             texture,
             model_image: None,
+            composition,
             positions: base_positions,
             uvs,
             indices: mesh.indices.clone(),
@@ -789,11 +832,41 @@ pub fn build_project(
             reason: "AGENT.4 keyform grids are out of AGENT.5.1 scope; one static form per target",
         });
     }
-    defaults.push(WriterDefault {
-        semantic: "$parameters".to_string(),
-        field: "parameter.substitution",
-        reason: "the minimal writer emits a single synthetic parameter (Param_Minimal) and does not serialize recovered parameter tables",
-    });
+    if parameters.is_empty() {
+        defaults.push(WriterDefault {
+            semantic: "$parameters".to_string(),
+            field: "parameter.substitution",
+            reason: "no recovered parameters exist; a single synthetic parameter drives the static forms",
+        });
+    }
+    if !model.draw_order_groups.is_empty() {
+        unsupported.push(UnsupportedNote {
+            subject: "$draw_order_groups".to_string(),
+            reason: format!(
+                "{} recovered draw-order group(s) preserved in the IR; CMO3 group serialization has no field-level evidence (PRESERVED_UNKNOWN)",
+                model.draw_order_groups.len()
+            ),
+        });
+    }
+    if !model.glue.is_empty() {
+        unsupported.push(UnsupportedNote {
+            subject: "$glue".to_string(),
+            reason: format!(
+                "{} glue entr(ies) preserved in the IR; glue serialization is PARTIAL (target schema evidence insufficient)",
+                model.glue.len()
+            ),
+        });
+    }
+    if model
+        .art_meshes
+        .iter()
+        .any(|mesh| mesh.blend_mode_raw.is_some())
+    {
+        unsupported.push(UnsupportedNote {
+            subject: "$blend_mode_raw".to_string(),
+            reason: "extended blend-mode raw values preserved in the IR; only Normal/Add/Multiply are serialized".to_string(),
+        });
+    }
 
     // ---- textures --------------------------------------------------------
     let textures_out: Vec<TextureOut> = textures

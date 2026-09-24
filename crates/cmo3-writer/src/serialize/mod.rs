@@ -1,29 +1,36 @@
-//! Minimal MODEL_IMAGE-mode CMO3 document serialization (AGENT.5.1).
+//! Full semantic CMO3 document serialization (AGENT.5.2).
 //!
-//! The orchestrator allocates every pool id up front and passes explicit ids
-//! into the builders (`builders.rs`). Structure follows the pinned evidence
-//! in `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`; writer-required constants are
-//! recorded in `docs/CMO3_WRITER_DEFAULTS.md`.
+//! The orchestrator allocates every pool id up front, in the deterministic
+//! order produced by [`crate::model::compute_cmo3_serialization_order`], and
+//! passes explicit ids into the builders (`builders.rs`). Structure follows
+//! the pinned evidence in `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md` and the
+//! version profile; writer-required constants are recorded in
+//! `docs/CMO3_WRITER_DEFAULTS.md`.
 //!
 //! **Precondition:** the project must pass [`crate::validate::validate_typed`]
 //! (and the result must be rescanned by [`crate::validate::scan_xml`]) before
 //! the bytes are used. [`crate::write_minimal_cmo3`] enforces this; calling
-//! `serialize` directly on an unvalidated project can produce dangling refs
-//! (for example a missing layered image or an empty part list).
+//! `serialize` directly on an unvalidated project can produce dangling refs.
 
 mod builders;
 
+use std::collections::BTreeMap;
+
 use crate::ids::{GuidAllocator, GuidMode, ObjectPool};
-use crate::model::{ChildRef, Cmo3Project, ParentRef};
-use crate::profile::{fixed_guids, EDITOR_5_PROFILE, IMPORT_CLASSES, ROOT_PART_ID};
+use crate::model::{
+    compute_cmo3_serialization_order, ChildRef, Cmo3Project, DeformerRef, GridOut, ParameterOut,
+    ParentRef,
+};
+use crate::profile::{fixed_guids, EDITOR_5_PROFILE, IMPORT_CLASSES};
 use crate::xml::{bool_leaf, float_leaf, int_leaf, string_leaf, XmlElement};
 
 use builders::{
     art_mesh_source, child_guid, editable_mesh_extension, empty_carray, empty_hash_map,
     env_connection, env_connector_entry, filter_output_connector, gtexture2d, image_resource,
-    layer_entry_super, layered_image_wrapper, mesh_generator_extension, model_image,
-    model_image_env, null_leaf, part_source, reference, reference_anon, texture_input_extension,
-    texture_input_model_image, MeshIds, SharedIds,
+    keyform_binding_source, keyform_grid_source, layer_entry_super, layered_image_wrapper,
+    mesh_generator_extension, model_image, model_image_env, null_leaf, part_source, reference,
+    reference_anon, rotation_deformer_source, texture_input_extension, texture_input_model_image,
+    warp_deformer_source, DeformerIds, MeshFormInput, MeshIds, SharedIds,
 };
 
 /// Serialized document plus allocation facts.
@@ -84,8 +91,6 @@ pub const FILTER_VALUE_NAMES: [&str; 9] = [
 ];
 
 /// `FilterValue` -> shared `FilterValueId` index (`None` = inline id).
-/// Pinned pairing: value 7 uses `mi_output_transform`; values 6 and 8 carry
-/// the inline `ilf_outputImageRes`/`ilf_outputTransform` ids.
 const FILTER_VALUE_ID_INDEX: [Option<usize>; 9] = [
     Some(0), // ilf_outputLayerData
     Some(1), // mi_input_layerInputData
@@ -97,6 +102,16 @@ const FILTER_VALUE_ID_INDEX: [Option<usize>; 9] = [
     Some(6), // mi_output_transform
     None,    // ilf_outputTransform (inline)
 ];
+
+/// Per-target keyform allocation plan.
+#[derive(Debug, Clone, Default)]
+struct TargetPlan {
+    grid_semantic: Option<String>,
+    grid_source_id: Option<usize>,
+    binding_pool_ids: Vec<usize>,
+    binding_pool_by_global: BTreeMap<usize, usize>,
+    form_guids: Vec<usize>,
+}
 
 /// Serialize the project into `main.xml`.
 pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> SerializedCmo3 {
@@ -139,13 +154,6 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         "CLayerFilter",
         &mut shared,
     );
-    let parameter_guid = alloc_guid(
-        &mut pool,
-        &mut guids,
-        "CParameterGuid",
-        "parameter:minimal",
-        &mut shared,
-    );
     let blend_id = pool.allocate("CBlend_Normal", None);
     shared.push(
         XmlElement::new("CBlend_Normal")
@@ -171,12 +179,46 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             .attr("xs.idx", coord_canvas.to_string())
             .child(string_leaf("coordName", "Canvas")),
     );
-    let _ = coord_canvas;
     let shared_ids = SharedIds {
         coord_deformer_local,
     };
 
-    // ---- filter value ids and values --------------------------------------
+    // ---- parameters -------------------------------------------------------
+    let parameters: Vec<ParameterOut> = if project.parameters.is_empty() {
+        vec![ParameterOut {
+            semantic: "parameter:minimal".to_string(),
+            name: "Param_Minimal".to_string(),
+            minimum: 0.0,
+            maximum: 1.0,
+            default: 0.0,
+            decimals: 3,
+            repeat: false,
+            keys: vec![0.0],
+            synthetic_name: true,
+        }]
+    } else {
+        project.parameters.clone()
+    };
+    let parameter_guids: Vec<usize> = parameters
+        .iter()
+        .map(|parameter| {
+            alloc_guid(
+                &mut pool,
+                &mut guids,
+                "CParameterGuid",
+                &parameter.semantic,
+                &mut shared,
+            )
+        })
+        .collect();
+    let parameter_guid_of = |index: usize| -> usize {
+        parameter_guids
+            .get(index)
+            .copied()
+            .unwrap_or_else(|| parameter_guids.first().copied().unwrap_or(root_group_guid))
+    };
+
+    // ---- filter atoms -----------------------------------------------------
     let mut filter_value_ids: Vec<usize> = Vec::new();
     for name in FILTER_VALUE_ID_NAMES {
         let id = pool.allocate("FilterValueId", Some(name));
@@ -227,7 +269,7 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
     }
     let value_of = |index: usize| -> usize { filter_values.get(index).copied().unwrap_or(0) };
 
-    // ---- per-object guids and ids -----------------------------------------
+    // ---- object guids -----------------------------------------------------
     let part_guids: Vec<usize> = project
         .parts
         .iter()
@@ -241,6 +283,39 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             )
         })
         .collect();
+    let deformer_order = compute_cmo3_serialization_order(project);
+    let mut deformer_guids: Vec<usize> = Vec::with_capacity(deformer_order.len());
+    let mut deformer_pools: Vec<(String, usize)> = Vec::with_capacity(deformer_order.len());
+    for reference in &deformer_order {
+        let (semantic, kind) = match reference {
+            DeformerRef::Warp(index) => (
+                project
+                    .warps
+                    .get(*index)
+                    .map(|warp| warp.semantic.clone())
+                    .unwrap_or_default(),
+                "CWarpDeformerSource",
+            ),
+            DeformerRef::Rotation(index) => (
+                project
+                    .rotations
+                    .get(*index)
+                    .map(|rotation| rotation.semantic.clone())
+                    .unwrap_or_default(),
+                "CRotationDeformerSource",
+            ),
+        };
+        let _ = kind;
+        let id = alloc_guid(
+            &mut pool,
+            &mut guids,
+            "CDeformerGuid",
+            &format!("deformer:{semantic}"),
+            &mut shared,
+        );
+        deformer_guids.push(id);
+        deformer_pools.push((semantic, id));
+    }
     let drawable_guids: Vec<usize> = project
         .meshes
         .iter()
@@ -254,91 +329,143 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             )
         })
         .collect();
-    let mut mesh_ids: Vec<MeshIds> = Vec::with_capacity(project.meshes.len());
-    for (index, mesh) in project.meshes.iter().enumerate() {
-        let editable_mesh_guid = alloc_guid(
-            &mut pool,
-            &mut guids,
-            "GEditableMeshGuid",
-            &format!("editable:{}", mesh.semantic),
-            &mut shared,
-        );
-        let extension_guid_editable = alloc_guid(
+    let editable_mesh_guids: Vec<usize> = project
+        .meshes
+        .iter()
+        .map(|mesh| {
+            alloc_guid(
+                &mut pool,
+                &mut guids,
+                "GEditableMeshGuid",
+                &format!("editable:{}", mesh.semantic),
+                &mut shared,
+            )
+        })
+        .collect();
+    let mut extension_guids: Vec<[usize; 3]> = Vec::with_capacity(project.meshes.len());
+    for mesh in &project.meshes {
+        let editable = alloc_guid(
             &mut pool,
             &mut guids,
             "CExtensionGuid",
             &format!("ext.editable:{}", mesh.semantic),
             &mut shared,
         );
-        let extension_guid_texture_input = alloc_guid(
+        let texture_input = alloc_guid(
             &mut pool,
             &mut guids,
             "CExtensionGuid",
             &format!("ext.texture_input:{}", mesh.semantic),
             &mut shared,
         );
-        let extension_guid_mesh_generator = alloc_guid(
+        let generator = alloc_guid(
             &mut pool,
             &mut guids,
             "CExtensionGuid",
             &format!("ext.mesh_generator:{}", mesh.semantic),
             &mut shared,
         );
-        let texture_input_ext_id = pool.allocate(
-            "CTextureInputExtension",
-            Some(&format!("texture_input_ext:{}", mesh.semantic)),
-        );
-        let texture_input_id = mesh.model_image.map(|_| {
-            pool.allocate(
-                "CTextureInput_ModelImage",
-                Some(&format!("texture_input:{}", mesh.semantic)),
-            )
-        });
-        let grid_source_id = pool.allocate("KeyformGridSource", Some(&mesh.semantic));
-        let binding_id = pool.allocate("KeyformBindingSource", Some(&mesh.semantic));
-        let form_guid = alloc_guid(
-            &mut pool,
-            &mut guids,
-            "CFormGuid",
-            &format!("{}#static", mesh.semantic),
-            &mut shared,
-        );
-        let _ = index;
-        mesh_ids.push(MeshIds {
-            drawable_pool: drawable_guids[index],
-            editable_mesh_guid,
-            extension_guid_editable,
-            extension_guid_texture_input,
-            extension_guid_mesh_generator,
-            texture_input_ext_id,
-            texture_input_id,
-            grid_source_id,
-            binding_id,
-            form_guid,
-            model_image_guid: None,
-            texture_pool: None,
-        });
+        extension_guids.push([editable, texture_input, generator]);
     }
-    let root_form_guid = alloc_guid(&mut pool, &mut guids, "CFormGuid", "form:root", &mut shared);
-    let part_form_guids: Vec<Vec<usize>> = project
+
+    // ---- keyform plans (parts, deformers in order, meshes) ----------------
+    let grid_by_semantic: BTreeMap<&str, &GridOut> = project
+        .grids
+        .iter()
+        .map(|grid| (grid.semantic.as_str(), grid))
+        .collect();
+    let plan_for = |grid_semantic: Option<&str>,
+                    semantic: &str,
+                    pool: &mut ObjectPool,
+                    guids: &mut GuidAllocator,
+                    shared: &mut XmlElement|
+     -> TargetPlan {
+        let Some(grid) = grid_semantic.and_then(|name| grid_by_semantic.get(name).copied()) else {
+            return TargetPlan::default();
+        };
+        let grid_source_id = pool.allocate("KeyformGridSource", Some(semantic));
+        let mut binding_pool_ids: Vec<usize> = Vec::with_capacity(grid.binding_indices.len());
+        let mut binding_pool_by_global: BTreeMap<usize, usize> = BTreeMap::new();
+        for global in &grid.binding_indices {
+            let binding_semantic = project
+                .bindings
+                .get(*global)
+                .map(|binding| binding.semantic.clone())
+                .unwrap_or_else(|| format!("{semantic}#binding{global}"));
+            let id = pool.allocate("KeyformBindingSource", Some(&binding_semantic));
+            binding_pool_by_global.insert(*global, id);
+            binding_pool_ids.push(id);
+        }
+        let mut form_guids: Vec<usize> = Vec::with_capacity(grid.forms.len());
+        for form in &grid.forms {
+            form_guids.push(alloc_guid(
+                pool,
+                guids,
+                "CFormGuid",
+                &format!("{}#form{}", grid.semantic, form.form_index),
+                shared,
+            ));
+        }
+        TargetPlan {
+            grid_semantic: Some(grid.semantic.clone()),
+            grid_source_id: Some(grid_source_id),
+            binding_pool_ids,
+            binding_pool_by_global,
+            form_guids,
+        }
+    };
+    let part_plans: Vec<TargetPlan> = project
         .parts
         .iter()
         .map(|part| {
-            part.draw_orders
-                .iter()
-                .enumerate()
-                .map(|(index, _)| {
-                    alloc_guid(
-                        &mut pool,
-                        &mut guids,
-                        "CFormGuid",
-                        &format!("{}#form{}", part.semantic, index),
-                        &mut shared,
-                    )
-                })
-                .collect()
+            plan_for(
+                part.grid.as_deref(),
+                &part.semantic,
+                &mut pool,
+                &mut guids,
+                &mut shared,
+            )
         })
         .collect();
+    let mut deformer_plans: Vec<TargetPlan> = Vec::with_capacity(deformer_order.len());
+    for reference in &deformer_order {
+        let plan = match reference {
+            DeformerRef::Warp(index) => project
+                .warps
+                .get(*index)
+                .map(|warp| (warp.grid.clone(), warp.semantic.clone())),
+            DeformerRef::Rotation(index) => project
+                .rotations
+                .get(*index)
+                .map(|rotation| (rotation.grid.clone(), rotation.semantic.clone())),
+        };
+        let plan = match plan {
+            Some((grid, semantic)) => plan_for(
+                grid.as_deref(),
+                &semantic,
+                &mut pool,
+                &mut guids,
+                &mut shared,
+            ),
+            None => TargetPlan::default(),
+        };
+        deformer_plans.push(plan);
+    }
+    let mesh_plans: Vec<TargetPlan> = project
+        .meshes
+        .iter()
+        .map(|mesh| {
+            plan_for(
+                mesh.grid.as_deref(),
+                &mesh.semantic,
+                &mut pool,
+                &mut guids,
+                &mut shared,
+            )
+        })
+        .collect();
+
+    // ---- image pipeline ids ----------------------------------------------
     let resource_guids: Vec<usize> = project
         .image_resources
         .iter()
@@ -400,21 +527,39 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             image_resource_ids[index],
         ));
     }
-
-    // Attach per-mesh texture/model-image ids now that resources exist.
+    let mut texture_input_ext_ids: Vec<usize> = Vec::with_capacity(project.meshes.len());
+    let mut texture_input_ids: Vec<Option<usize>> = Vec::with_capacity(project.meshes.len());
+    let mut mesh_ids: Vec<MeshIds> = Vec::with_capacity(project.meshes.len());
     for (index, mesh) in project.meshes.iter().enumerate() {
-        if let Some(model_image_index) = mesh.model_image {
-            if let Some(ids) = mesh_ids.get_mut(index) {
-                ids.model_image_guid = model_image_guids.get(model_image_index).copied();
-            }
-        }
-        if let Some(resource_index) = mesh.texture {
-            if let Some(ids) = mesh_ids.get_mut(index) {
-                ids.texture_pool = texture_ids.get(resource_index).copied();
-            }
-        }
+        let texture_input_ext_id = pool.allocate(
+            "CTextureInputExtension",
+            Some(&format!("texture_input_ext:{}", mesh.semantic)),
+        );
+        let texture_input_id = mesh.model_image.map(|_| {
+            pool.allocate(
+                "CTextureInput_ModelImage",
+                Some(&format!("texture_input:{}", mesh.semantic)),
+            )
+        });
+        texture_input_ext_ids.push(texture_input_ext_id);
+        texture_input_ids.push(texture_input_id);
+        mesh_ids.push(MeshIds {
+            drawable_pool: drawable_guids[index],
+            editable_mesh_guid: editable_mesh_guids[index],
+            extension_guid_editable: extension_guids[index][0],
+            extension_guid_texture_input: extension_guids[index][1],
+            extension_guid_mesh_generator: extension_guids[index][2],
+            texture_input_ext_id,
+            texture_input_id,
+            grid_source_id: mesh_plans[index].grid_source_id,
+            model_image_guid: mesh
+                .model_image
+                .and_then(|model_index| model_image_guids.get(model_index).copied()),
+            texture_pool: mesh
+                .texture
+                .and_then(|resource| texture_ids.get(resource).copied()),
+        });
     }
-
     let group_id = pool.allocate("CModelImageGroup", None);
     let layered_image_id = if project.layered_images.is_empty() {
         None
@@ -435,15 +580,12 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
     } else {
         None
     };
-
-    // ---- per-mesh filter objects -----------------------------------------
-    let mesh_count = project.meshes.len();
-    let mut filter_set_ids: Vec<usize> = Vec::with_capacity(mesh_count);
-    let mut selector_instance_ids: Vec<usize> = Vec::with_capacity(mesh_count);
-    let mut layer_instance_ids: Vec<usize> = Vec::with_capacity(mesh_count);
-    let mut instance_id_objects: Vec<[usize; 2]> = Vec::with_capacity(mesh_count);
-    let mut output_connector_ids: Vec<usize> = Vec::with_capacity(mesh_count);
-    for (index, mesh) in project.meshes.iter().enumerate() {
+    let mut filter_set_ids: Vec<usize> = Vec::with_capacity(project.meshes.len());
+    let mut selector_instance_ids: Vec<usize> = Vec::with_capacity(project.meshes.len());
+    let mut layer_instance_ids: Vec<usize> = Vec::with_capacity(project.meshes.len());
+    let mut instance_id_objects: Vec<[usize; 2]> = Vec::with_capacity(project.meshes.len());
+    let mut output_connector_ids: Vec<usize> = Vec::with_capacity(project.meshes.len());
+    for mesh in &project.meshes {
         filter_set_ids.push(pool.allocate("ModelImageFilterSet", Some(&mesh.semantic)));
         selector_instance_ids.push(pool.allocate(
             "FilterInstance",
@@ -454,8 +596,14 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             Some(&format!("layer_filter:{}", mesh.semantic)),
         ));
         instance_id_objects.push([
-            pool.allocate("FilterInstanceId", Some(&format!("filter0_{index}"))),
-            pool.allocate("FilterInstanceId", Some(&format!("filter1_{index}"))),
+            pool.allocate(
+                "FilterInstanceId",
+                Some(&format!("filter0_{}", filter_set_ids.len() - 1)),
+            ),
+            pool.allocate(
+                "FilterInstanceId",
+                Some(&format!("filter1_{}", filter_set_ids.len() - 1)),
+            ),
         ]);
         output_connector_ids.push(pool.allocate(
             "FilterOutputValueConnector",
@@ -463,9 +611,9 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         ));
     }
 
-    // ---- shared: per-mesh extensions and texture inputs ------------------
+    // ---- shared: mesh extensions and texture inputs -----------------------
     for (index, mesh) in project.meshes.iter().enumerate() {
-        let ids = mesh_ids[index];
+        let ids = mesh_ids[index].clone();
         shared.push(editable_mesh_extension(mesh, &ids, &shared_ids));
         if let Some(texture_input_id) = ids.texture_input_id {
             shared.push(texture_input_extension(&ids, texture_input_id));
@@ -481,7 +629,7 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
     }
 
     // ---- shared: filter instances, ids, connectors, sets ------------------
-    for index in 0..mesh_count {
+    for index in 0..project.meshes.len() {
         let filter_set = filter_set_ids[index];
         let selector = selector_instance_ids[index];
         let layer_filter = layer_instance_ids[index];
@@ -667,8 +815,6 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         }
         root_super.push(children);
         root_group.push(root_super);
-        // Both pinned sources place `layerIdentifier` directly under
-        // `CLayerGroup` (outside the `ACLayerGroup` super element).
         root_group.push(null_leaf("layerIdentifier"));
         shared.push(root_group);
 
@@ -793,8 +939,6 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
                 id_of("mi_currentImageGuid"),
                 id_of("mi_input_layerInputData"),
             );
-            // `validate_typed` guarantees one model image per textured mesh,
-            // so the lookups below always resolve.
             let Some(model_image_guid) = model_image_guids.get(model_index).copied() else {
                 continue;
             };
@@ -813,7 +957,6 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
                 height,
             ));
         }
-        // Count derives from the entries actually emitted (no desync).
         images
             .attributes
             .push(("count".to_string(), images.children.len().to_string()));
@@ -821,63 +964,63 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         shared.push(group);
     }
 
-    // ---- shared: keyform grid and binding (one static form per mesh) ------
-    for ids in &mesh_ids {
-        let mut grid = XmlElement::new("KeyformGridSource")
-            .attr("xs.id", format!("#{}", ids.grid_source_id))
-            .attr("xs.idx", ids.grid_source_id.to_string());
-        let mut on_grid = XmlElement::new("array_list")
-            .attr("xs.n", "keyformsOnGrid")
-            .attr("count", "1");
-        let mut access_key = XmlElement::new("KeyformGridAccessKey").attr("xs.n", "accessKey");
-        let mut key_list = XmlElement::new("array_list")
-            .attr("xs.n", "_keyOnParameterList")
-            .attr("count", "1");
-        key_list.push(
-            XmlElement::new("KeyOnParameter")
-                .child(reference("KeyformBindingSource", "binding", ids.binding_id))
-                .child(int_leaf("keyIndex", 0)),
-        );
-        access_key.push(key_list);
-        let mut entry = XmlElement::new("KeyformOnGrid").child(access_key);
-        entry.push(reference("CFormGuid", "keyformGuid", ids.form_guid));
-        on_grid.push(entry);
-        grid.push(on_grid);
-        let mut bindings_list = XmlElement::new("array_list")
-            .attr("xs.n", "keyformBindings")
-            .attr("count", "1");
-        bindings_list.push(reference_anon("KeyformBindingSource", ids.binding_id));
-        grid.push(bindings_list);
-        shared.push(grid);
-
-        let mut binding = XmlElement::new("KeyformBindingSource")
-            .attr("xs.id", format!("#{}", ids.binding_id))
-            .attr("xs.idx", ids.binding_id.to_string());
-        binding.push(reference(
-            "KeyformGridSource",
-            "_gridSource",
-            ids.grid_source_id,
+    // ---- shared: keyform grid sources and bindings ------------------------
+    let emit_target_keyforms = |plan: &TargetPlan,
+                                pool: &ObjectPool,
+                                guids: &mut GuidAllocator,
+                                shared: &mut XmlElement| {
+        let Some(grid_source_id) = plan.grid_source_id else {
+            return;
+        };
+        let Some(grid) = plan
+            .grid_semantic
+            .as_deref()
+            .and_then(|semantic| grid_by_semantic.get(semantic).copied())
+        else {
+            return;
+        };
+        let forms: Vec<(usize, Vec<(usize, usize)>)> = grid
+            .forms
+            .iter()
+            .enumerate()
+            .map(|(position, form)| {
+                let form_guid = plan.form_guids.get(position).copied().unwrap_or(0);
+                let key_indices = form
+                    .key_indices
+                    .iter()
+                    .enumerate()
+                    .map(|(axis, key_index)| (axis, *key_index))
+                    .collect();
+                (form_guid, key_indices)
+            })
+            .collect();
+        shared.push(keyform_grid_source(
+            grid_source_id,
+            &forms,
+            &plan.binding_pool_ids,
         ));
-        binding.push(reference("CParameterGuid", "parameterGuid", parameter_guid));
-        let mut keys = XmlElement::new("array_list")
-            .attr("xs.n", "keys")
-            .attr("count", "1");
-        keys.push(XmlElement::new("f").attr("v", "0.0"));
-        binding.push(keys);
-        binding.push(
-            XmlElement::new("InterpolationType")
-                .attr("xs.n", "interpolationType")
-                .attr("v", "LINEAR"),
-        );
-        binding.push(
-            XmlElement::new("ExtendedInterpolationType")
-                .attr("xs.n", "extendedInterpolationType")
-                .attr("v", "LINEAR"),
-        );
-        binding.push(int_leaf("insertPointCount", 1));
-        binding.push(float_leaf("extendedInterpolationScale", 1.0));
-        binding.push(string_leaf("description", ""));
-        shared.push(binding);
+        for (global, binding_pool) in &plan.binding_pool_by_global {
+            let Some(binding) = project.bindings.get(*global) else {
+                continue;
+            };
+            let parameter_guid = parameter_guid_of(binding.parameter_index);
+            shared.push(keyform_binding_source(
+                *binding_pool,
+                grid_source_id,
+                parameter_guid,
+                &binding.keys,
+            ));
+        }
+        let _ = (pool, guids);
+    };
+    for index in 0..project.parts.len() {
+        emit_target_keyforms(&part_plans[index], &pool, &mut guids, &mut shared);
+    }
+    for index in 0..deformer_order.len() {
+        emit_target_keyforms(&deformer_plans[index], &pool, &mut guids, &mut shared);
+    }
+    for index in 0..project.meshes.len() {
+        emit_target_keyforms(&mesh_plans[index], &pool, &mut guids, &mut shared);
     }
 
     // ---- main tree --------------------------------------------------------
@@ -904,34 +1047,40 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         XmlElement::new("CParameterSourceSet").attr("xs.n", "parameterSourceSet");
     let mut sources = XmlElement::new("carray_list")
         .attr("xs.n", "_sources")
-        .attr("count", "1");
-    let mut source = XmlElement::new("CParameterSource");
-    source.push(int_leaf("decimalPlaces", 3));
-    source.push(reference("CParameterGuid", "guid", parameter_guid));
-    source.push(float_leaf("snapEpsilon", 0.001));
-    source.push(float_leaf("minValue", 0.0));
-    source.push(float_leaf("maxValue", 1.0));
-    source.push(float_leaf("defaultValue", 0.0));
-    source.push(bool_leaf("isRepeat", false));
-    source.push(
-        XmlElement::new("CParameterId")
-            .attr("xs.n", "id")
-            .attr("idstr", "Param_Minimal"),
-    );
-    source.push(
-        XmlElement::new("Type")
-            .attr("xs.n", "paramType")
-            .attr("v", "NORMAL"),
-    );
-    source.push(string_leaf("name", "Param_Minimal"));
-    source.push(string_leaf("description", ""));
-    source.push(bool_leaf("combined", false));
-    source.push(reference(
-        "CParameterGroupGuid",
-        "parentGroupGuid",
-        root_group_guid,
-    ));
-    sources.push(source);
+        .attr("count", parameters.len().to_string());
+    for (index, parameter) in parameters.iter().enumerate() {
+        let mut source = XmlElement::new("CParameterSource");
+        source.push(int_leaf("decimalPlaces", i64::from(parameter.decimals)));
+        source.push(reference(
+            "CParameterGuid",
+            "guid",
+            parameter_guid_of(index),
+        ));
+        source.push(float_leaf("snapEpsilon", 0.001));
+        source.push(float_leaf("minValue", parameter.minimum));
+        source.push(float_leaf("maxValue", parameter.maximum));
+        source.push(float_leaf("defaultValue", parameter.default));
+        source.push(bool_leaf("isRepeat", parameter.repeat));
+        source.push(
+            XmlElement::new("CParameterId")
+                .attr("xs.n", "id")
+                .attr("idstr", &parameter.name),
+        );
+        source.push(
+            XmlElement::new("Type")
+                .attr("xs.n", "paramType")
+                .attr("v", "NORMAL"),
+        );
+        source.push(string_leaf("name", &parameter.name));
+        source.push(string_leaf("description", ""));
+        source.push(bool_leaf("combined", false));
+        source.push(reference(
+            "CParameterGroupGuid",
+            "parentGroupGuid",
+            root_group_guid,
+        ));
+        sources.push(source);
+    }
     parameter_set.push(sources);
     model.push(parameter_set);
 
@@ -967,10 +1116,32 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         .attr("xs.n", "_sources")
         .attr("count", project.meshes.len().to_string());
     for (index, mesh) in project.meshes.iter().enumerate() {
+        let forms: Vec<MeshFormInput> = mesh
+            .forms
+            .iter()
+            .enumerate()
+            .filter_map(|(position, form)| {
+                let form_guid = mesh_plans[index].form_guids.get(position).copied()?;
+                let positions: Vec<f32> = form
+                    .positions
+                    .iter()
+                    .flat_map(|position| [position[0], position[1]])
+                    .collect();
+                Some(MeshFormInput {
+                    form_guid,
+                    draw_order: form.draw_order,
+                    opacity: form.opacity,
+                    positions,
+                })
+            })
+            .collect();
         drawable_sources.push(art_mesh_source(
             mesh,
             &mesh_ids[index],
+            &forms,
             &part_guids,
+            &drawable_guids,
+            &deformer_pools,
             deformer_root_guid,
             &shared_ids,
         ));
@@ -978,11 +1149,71 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
     drawable_set.push(drawable_sources);
     model.push(drawable_set);
 
-    model.push(
-        XmlElement::new("CDeformerSourceSet")
-            .attr("xs.n", "deformerSourceSet")
-            .child(empty_carray("_sources")),
-    );
+    let mut deformer_set = XmlElement::new("CDeformerSourceSet").attr("xs.n", "deformerSourceSet");
+    let mut deformer_sources = XmlElement::new("carray_list")
+        .attr("xs.n", "_sources")
+        .attr("count", deformer_order.len().to_string());
+    for (ordinal, reference) in deformer_order.iter().enumerate() {
+        let ids = DeformerIds {
+            guid_pool: deformer_guids[ordinal],
+            grid_source_id: deformer_plans[ordinal].grid_source_id,
+            form_guids: deformer_plans[ordinal].form_guids.clone(),
+        };
+        let parent_deformer_pool = match reference {
+            DeformerRef::Warp(index) => {
+                project
+                    .warps
+                    .get(*index)
+                    .and_then(|warp| match &warp.parent {
+                        ParentRef::Warp(semantic) | ParentRef::Rotation(semantic) => deformer_pools
+                            .iter()
+                            .find(|(name, _)| name == semantic)
+                            .map(|(_, id)| *id),
+                        _ => None,
+                    })
+            }
+            DeformerRef::Rotation(index) => {
+                project
+                    .rotations
+                    .get(*index)
+                    .and_then(|rotation| match &rotation.parent {
+                        ParentRef::Warp(semantic) | ParentRef::Rotation(semantic) => deformer_pools
+                            .iter()
+                            .find(|(name, _)| name == semantic)
+                            .map(|(_, id)| *id),
+                        _ => None,
+                    })
+            }
+        };
+        match reference {
+            DeformerRef::Warp(index) => {
+                if let Some(warp) = project.warps.get(*index) {
+                    deformer_sources.push(warp_deformer_source(
+                        warp,
+                        &ids,
+                        &part_guids,
+                        parent_deformer_pool,
+                        deformer_root_guid,
+                        &shared_ids,
+                    ));
+                }
+            }
+            DeformerRef::Rotation(index) => {
+                if let Some(rotation) = project.rotations.get(*index) {
+                    deformer_sources.push(rotation_deformer_source(
+                        rotation,
+                        &ids,
+                        &part_guids,
+                        parent_deformer_pool,
+                        deformer_root_guid,
+                        &shared_ids,
+                    ));
+                }
+            }
+        }
+    }
+    deformer_set.push(deformer_sources);
+    model.push(deformer_set);
     model.push(
         XmlElement::new("CAffecterSourceSet")
             .attr("xs.n", "affecterSourceSet")
@@ -1007,23 +1238,20 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
                     continue;
                 }
             }
-            if let Some(element) = child_guid(child, &part_guids, &drawable_guids) {
+            if let Some(element) = child_guid(child, &part_guids, &drawable_guids, &deformer_pools)
+            {
                 child_refs.push(element);
             }
         }
-        let form_guids: Vec<usize> = if part.is_root {
-            vec![root_form_guid]
-        } else {
-            part_form_guids.get(index).cloned().unwrap_or_default()
-        };
         part_sources.push(part_source(
             part,
             part_guids[index],
             parent_pool,
             &child_refs,
-            &form_guids,
+            &part_plans[index].form_guids,
+            &part.draw_orders,
+            part_plans[index].grid_source_id,
             deformer_root_guid,
-            ROOT_PART_ID,
         ));
     }
     part_set.push(part_sources);

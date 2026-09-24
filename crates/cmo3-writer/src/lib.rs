@@ -79,13 +79,20 @@ pub fn write_minimal_cmo3(
     let serialized = serialize::serialize(project, options);
     let scan = validate::scan_xml(&serialized.xml);
     if !scan.is_valid() {
+        let sample: Vec<String> = scan
+            .dangling
+            .iter()
+            .take(5)
+            .map(|(tag, target)| format!("{tag}->#{target}"))
+            .collect();
         return Err(WriteError {
             code: "XmlValidationFailed",
             message: format!(
-                "serialized XML is inconsistent (duplicate ids: {}, dangling refs: {}, GUID mismatches: {})",
+                "serialized XML is inconsistent (duplicate ids: {}, dangling refs: {}, GUID mismatches: {}; sample: {})",
                 scan.duplicate_ids.len(),
                 scan.dangling.len(),
-                scan.guid_type_mismatches.len()
+                scan.guid_type_mismatches.len(),
+                sample.join(", ")
             ),
         });
     }

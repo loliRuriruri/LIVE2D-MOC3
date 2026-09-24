@@ -204,6 +204,121 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
             ));
         }
     }
+    // Keyform form-count consistency: a target with a grid must carry exactly
+    // the grid's stored form count; forms without a grid would be dropped.
+    let grid_form_count = |semantic: &str| -> Option<usize> {
+        project
+            .grids
+            .iter()
+            .find(|grid| grid.semantic == semantic)
+            .map(|grid| grid.forms.len())
+    };
+    let mut check_forms = |label: &str, semantic: &str, grid: &Option<String>, forms: usize| match (
+        grid,
+        grid_form_count(grid.as_deref().unwrap_or_default()),
+    ) {
+        (Some(_), Some(expected)) if expected == forms => {}
+        (Some(grid_id), Some(expected)) => findings.push(Finding::fatal(
+            "form_count_mismatch",
+            format!(
+                "{label} '{semantic}' carries {forms} form(s) but grid '{grid_id}' has {expected}"
+            ),
+        )),
+        (Some(grid_id), None) => findings.push(Finding::fatal(
+            "dangling_target_grid",
+            format!("{label} '{semantic}' references missing grid '{grid_id}'"),
+        )),
+        (None, _) if forms > 0 => findings.push(Finding::fatal(
+            "forms_without_grid",
+            format!("{label} '{semantic}' carries {forms} form(s) without a keyform grid"),
+        )),
+        _ => {}
+    };
+    for part in &project.parts {
+        check_forms("part", &part.semantic, &part.grid, part.draw_orders.len());
+    }
+    for warp in &project.warps {
+        check_forms("warp", &warp.semantic, &warp.grid, warp.forms.len());
+    }
+    for rotation in &project.rotations {
+        check_forms(
+            "rotation",
+            &rotation.semantic,
+            &rotation.grid,
+            rotation.forms.len(),
+        );
+    }
+    for mesh in &project.meshes {
+        check_forms("art mesh", &mesh.semantic, &mesh.grid, mesh.forms.len());
+    }
+    // Binding parameter indices must resolve inside the emitted parameters
+    // (the serializer emits a synthetic parameter when none exist).
+    let parameter_slots = project.parameters.len().max(1);
+    for (index, binding) in project.bindings.iter().enumerate() {
+        if binding.parameter_index >= parameter_slots {
+            findings.push(Finding::fatal(
+                "dangling_binding_parameter",
+                format!(
+                    "binding {index} ('{}') references parameter slot {} outside 0..{parameter_slots}",
+                    binding.semantic, binding.parameter_index
+                ),
+            ));
+        }
+    }
+    // Deformer parent cycles: stored cycles are preserved by AGENT.3, but a
+    // CMO3 hierarchy cannot represent them; fail strict mode.
+    let deformer_parent = |semantic: &str| -> Option<String> {
+        project
+            .warps
+            .iter()
+            .find(|warp| warp.semantic == semantic)
+            .and_then(|warp| match &warp.parent {
+                ParentRef::Warp(parent) | ParentRef::Rotation(parent) => Some(parent.clone()),
+                _ => None,
+            })
+            .or_else(|| {
+                project
+                    .rotations
+                    .iter()
+                    .find(|rotation| rotation.semantic == semantic)
+                    .and_then(|rotation| match &rotation.parent {
+                        ParentRef::Warp(parent) | ParentRef::Rotation(parent) => {
+                            Some(parent.clone())
+                        }
+                        _ => None,
+                    })
+            })
+    };
+    let all_deformers: Vec<&str> = project
+        .warps
+        .iter()
+        .map(|warp| warp.semantic.as_str())
+        .chain(
+            project
+                .rotations
+                .iter()
+                .map(|rotation| rotation.semantic.as_str()),
+        )
+        .collect();
+    for semantic in &all_deformers {
+        let mut current = semantic.to_string();
+        let mut depth = 0usize;
+        while let Some(parent) = deformer_parent(&current) {
+            if parent == *semantic {
+                findings.push(Finding::fatal(
+                    "deformer_parent_cycle",
+                    format!("deformer '{semantic}' is inside a stored parent cycle"),
+                ));
+                break;
+            }
+            depth += 1;
+            if depth > all_deformers.len() {
+                break;
+            }
+            current = parent;
+        }
+    }
+
     let mut layer_ids: BTreeSet<&str> = BTreeSet::new();
     if let Some(layered) = project.layered_images.first() {
         for (index, layer) in layered.layers.iter().enumerate() {

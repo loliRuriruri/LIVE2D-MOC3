@@ -1,9 +1,10 @@
-//! XML builders for the AGENT.5.1 minimal MODEL_IMAGE-mode document.
+//! XML builders for the full semantic CMO3 document (AGENT.5.2).
 //!
 //! Every builder receives explicit pool ids; there are no lookups and no
 //! fallback literals, so a dangling `xs.ref` cannot be produced here.
 
-use crate::model::{ChildRef, ParentRef, PartOut};
+use crate::model::{ChildRef, ParentRef, PartOut, RotationOut, WarpOut};
+use crate::profile::ROOT_PART_ID;
 use crate::xml::{
     bool_leaf, float_array, float_leaf, int_array, int_leaf, string_leaf, XmlElement,
 };
@@ -16,7 +17,7 @@ pub struct SharedIds {
 }
 
 /// Per-mesh object ids.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct MeshIds {
     /// `CDrawableGuid` pool id.
     pub drawable_pool: usize,
@@ -32,16 +33,36 @@ pub struct MeshIds {
     pub texture_input_ext_id: usize,
     /// `CTextureInput_ModelImage` object pool id when textured.
     pub texture_input_id: Option<usize>,
-    /// `KeyformGridSource` pool id.
-    pub grid_source_id: usize,
-    /// `KeyformBindingSource` pool id.
-    pub binding_id: usize,
-    /// `CFormGuid` for the static mesh form.
-    pub form_guid: usize,
+    /// `KeyformGridSource` pool id when the mesh is bound.
+    pub grid_source_id: Option<usize>,
     /// `CModelImageGuid` when textured.
     pub model_image_guid: Option<usize>,
     /// `GTexture2D` pool id of the mesh's resource.
     pub texture_pool: Option<usize>,
+}
+
+/// Per-deformer object ids.
+#[derive(Debug, Clone)]
+pub struct DeformerIds {
+    /// `CDeformerGuid` pool id.
+    pub guid_pool: usize,
+    /// `KeyformGridSource` pool id when bound.
+    pub grid_source_id: Option<usize>,
+    /// `CFormGuid` pool id per stored form.
+    pub form_guids: Vec<usize>,
+}
+
+/// One stored art-mesh form.
+#[derive(Debug, Clone)]
+pub struct MeshFormInput {
+    /// `CFormGuid` pool id.
+    pub form_guid: usize,
+    /// Stored draw order.
+    pub draw_order: f32,
+    /// Stored opacity.
+    pub opacity: f32,
+    /// Keyed vertex positions (flat pairs).
+    pub positions: Vec<f32>,
 }
 
 /// Shared default `CAffine` identity.
@@ -96,6 +117,13 @@ pub fn reference_anon(tag: &str, id: usize) -> XmlElement {
 /// `<null xs.n="name"/>`.
 pub fn null_leaf(name: &str) -> XmlElement {
     XmlElement::new("null").attr("xs.n", name)
+}
+
+fn deformer_reference(parent_deformer_pool: Option<usize>, deformer_root: usize) -> XmlElement {
+    match parent_deformer_pool {
+        Some(parent) => reference("CDeformerGuid", "targetDeformerGuid", parent),
+        None => reference("CDeformerGuid", "targetDeformerGuid", deformer_root),
+    }
 }
 
 /// Morph target set shared by parts, meshes and deformers.
@@ -246,11 +274,15 @@ fn extension_super(extension_guid: usize, drawable_pool: usize) -> XmlElement {
     super_ext
 }
 
-/// `CArtMeshSource` for one quad with a single static form.
+/// `CArtMeshSource` with all recovered forms.
+#[allow(clippy::too_many_arguments)]
 pub fn art_mesh_source(
     mesh: &crate::model::ArtMeshOut,
     ids: &MeshIds,
+    forms: &[MeshFormInput],
     part_guids: &[usize],
+    drawable_guids: &[usize],
+    deformer_pools: &[(String, usize)],
     deformer_root: usize,
     shared: &SharedIds,
 ) -> XmlElement {
@@ -265,11 +297,14 @@ pub fn art_mesh_source(
         _ => part_guids.first().copied().unwrap_or(0),
     };
     controllable.push(reference("CPartGuid", "parentGuid", parent_part_pool));
-    controllable.push(reference(
-        "KeyformGridSource",
-        "keyformGridSource",
-        ids.grid_source_id,
-    ));
+    match ids.grid_source_id {
+        Some(grid_source_id) => controllable.push(reference(
+            "KeyformGridSource",
+            "keyformGridSource",
+            grid_source_id,
+        )),
+        None => controllable.push(null_leaf("keyformGridSource")),
+    }
     controllable.push(morph_target_set());
     let extension_count = if ids.texture_input_id.is_some() { 3 } else { 2 };
     let mut extensions = XmlElement::new("carray_list")
@@ -293,17 +328,21 @@ pub fn art_mesh_source(
             .attr("idstr", &mesh.name),
     );
     source.push(reference("CDrawableGuid", "guid", ids.drawable_pool));
-    source.push(reference(
-        "CDeformerGuid",
-        "targetDeformerGuid",
-        deformer_root,
-    ));
+    let parent_deformer = match &mesh.parent {
+        ParentRef::Warp(semantic) | ParentRef::Rotation(semantic) => deformer_pools
+            .iter()
+            .find(|(name, _)| name == semantic)
+            .map(|(_, id)| *id),
+        _ => None,
+    };
+    source.push(deformer_reference(parent_deformer, deformer_root));
     let mut clip = XmlElement::new("carray_list")
         .attr("xs.n", "clipGuidList")
-        .attr("count", "0");
-    if let Some(target) = mesh.mask_refs.first() {
-        clip = clip.attr("count", "1");
-        clip.push(reference_anon("CDrawableGuid", *target));
+        .attr("count", mesh.mask_refs.len().to_string());
+    for mask in &mesh.mask_refs {
+        if let Some(target) = drawable_guids.get(*mask).copied() {
+            clip.push(reference_anon("CDrawableGuid", target));
+        }
     }
     source.push(clip);
     source.push(bool_leaf("invertClippingMask", mesh.inverted_mask));
@@ -311,53 +350,48 @@ pub fn art_mesh_source(
     source.push(int_array("indices", &indices));
     let mut keyforms = XmlElement::new("carray_list")
         .attr("xs.n", "keyforms")
-        .attr("count", "1");
-    let mut form_element = XmlElement::new("CArtMeshForm");
-    let mut drawable_form = XmlElement::new("ACDrawableForm").attr("xs.n", "super");
-    let mut aform = XmlElement::new("ACForm").attr("xs.n", "super");
-    aform.push(reference("CFormGuid", "guid", ids.form_guid));
-    aform.push(bool_leaf("isAnimatedForm", false));
-    aform.push(bool_leaf("isLocalAnimatedForm", false));
-    aform.push(reference("CArtMeshSource", "_source", ids.drawable_pool));
-    aform.push(null_leaf("name"));
-    aform.push(string_leaf("notes", ""));
-    drawable_form.push(aform);
-    drawable_form.push(int_leaf("drawOrder", 500));
-    drawable_form.push(float_leaf("opacity", 1.0));
-    drawable_form.push(white_color("multiplyColor"));
-    drawable_form.push(white_color("screenColor"));
-    drawable_form.push(reference(
-        "CoordType",
-        "coordType",
-        shared.coord_deformer_local,
-    ));
-    form_element.push(drawable_form);
-    let flat: Vec<f32> = mesh
+        .attr("count", forms.len().to_string());
+    for form in forms {
+        let mut form_element = XmlElement::new("CArtMeshForm");
+        let mut drawable_form = XmlElement::new("ACDrawableForm").attr("xs.n", "super");
+        let mut aform = XmlElement::new("ACForm").attr("xs.n", "super");
+        aform.push(reference("CFormGuid", "guid", form.form_guid));
+        aform.push(bool_leaf("isAnimatedForm", false));
+        aform.push(bool_leaf("isLocalAnimatedForm", false));
+        aform.push(reference("CArtMeshSource", "_source", ids.drawable_pool));
+        aform.push(null_leaf("name"));
+        aform.push(string_leaf("notes", ""));
+        drawable_form.push(aform);
+        drawable_form.push(int_leaf("drawOrder", form.draw_order.round() as i64));
+        drawable_form.push(float_leaf("opacity", form.opacity));
+        drawable_form.push(white_color("multiplyColor"));
+        drawable_form.push(white_color("screenColor"));
+        drawable_form.push(reference(
+            "CoordType",
+            "coordType",
+            shared.coord_deformer_local,
+        ));
+        form_element.push(drawable_form);
+        form_element.push(float_array("positions", &form.positions));
+        keyforms.push(form_element);
+    }
+    source.push(keyforms);
+    let base: Vec<f32> = mesh
         .positions
         .iter()
         .flat_map(|position| [position[0], position[1]])
         .collect();
-    form_element.push(float_array("positions", &flat));
-    keyforms.push(form_element);
-    source.push(keyforms);
-    source.push(float_array("positions", &flat));
+    source.push(float_array("positions", &base));
     let uvs: Vec<f32> = mesh.uvs.iter().flat_map(|uv| [uv[0], uv[1]]).collect();
     source.push(float_array("uvs", &uvs));
     match ids.texture_pool {
         Some(texture_pool) => source.push(reference("GTexture2D", "texture", texture_pool)),
         None => source.push(null_leaf("texture")),
     }
-    let composition = if mesh.additive {
-        "ADD"
-    } else if mesh.multiplicative {
-        "MULTIPLY"
-    } else {
-        "NORMAL"
-    };
     source.push(
         XmlElement::new("ColorComposition")
             .attr("xs.n", "colorComposition")
-            .attr("v", composition),
+            .attr("v", &mesh.composition),
     );
     source.push(bool_leaf("culling", !mesh.double_sided));
     source.push(
@@ -369,7 +403,175 @@ pub fn art_mesh_source(
     source
 }
 
-/// `CPartSource` with child GUID references and static forms.
+#[allow(clippy::too_many_arguments)]
+fn deformer_super(
+    local_name: &str,
+    parent_part_pool: usize,
+    grid_source_id: Option<usize>,
+) -> XmlElement {
+    let mut super_controllable =
+        XmlElement::new("ACParameterControllableSource").attr("xs.n", "super");
+    super_controllable.push(string_leaf("localName", local_name));
+    super_controllable.push(bool_leaf("isVisible", true));
+    super_controllable.push(bool_leaf("isLocked", false));
+    super_controllable.push(reference("CPartGuid", "parentGuid", parent_part_pool));
+    match grid_source_id {
+        Some(grid_source_id) => super_controllable.push(reference(
+            "KeyformGridSource",
+            "keyformGridSource",
+            grid_source_id,
+        )),
+        None => super_controllable.push(null_leaf("keyformGridSource")),
+    }
+    super_controllable.push(morph_target_set());
+    super_controllable.push(empty_carray("_extensions"));
+    super_controllable.push(null_leaf("internalColor_direct_argb"));
+    let mut super_deformer = XmlElement::new("ACDeformerSource").attr("xs.n", "super");
+    super_deformer.push(super_controllable);
+    super_deformer.push(null_leaf("internalColor_indirect_argb"));
+    super_deformer
+}
+
+#[allow(clippy::too_many_arguments)]
+fn deformer_form_super(
+    form_guid: usize,
+    owner_pool: usize,
+    owner_tag: &str,
+    opacity: f32,
+    coord_deformer_local: usize,
+) -> XmlElement {
+    let mut super_element = XmlElement::new("ACDeformerForm").attr("xs.n", "super");
+    let mut aform = XmlElement::new("ACForm").attr("xs.n", "super");
+    aform.push(reference("CFormGuid", "guid", form_guid));
+    aform.push(bool_leaf("isAnimatedForm", false));
+    aform.push(bool_leaf("isLocalAnimatedForm", false));
+    aform.push(reference(owner_tag, "_source", owner_pool));
+    aform.push(null_leaf("name"));
+    aform.push(string_leaf("notes", ""));
+    super_element.push(aform);
+    super_element.push(float_leaf("opacity", opacity));
+    super_element.push(white_color("multiplyColor"));
+    super_element.push(white_color("screenColor"));
+    super_element.push(reference("CoordType", "coordType", coord_deformer_local));
+    super_element
+}
+
+/// `CWarpDeformerSource` with all recovered forms.
+#[allow(clippy::too_many_arguments)]
+pub fn warp_deformer_source(
+    warp: &WarpOut,
+    ids: &DeformerIds,
+    part_guids: &[usize],
+    parent_deformer_pool: Option<usize>,
+    deformer_root: usize,
+    shared: &SharedIds,
+) -> XmlElement {
+    let mut source = XmlElement::new("CWarpDeformerSource");
+    let parent_part_pool = match &warp.parent {
+        ParentRef::Part(index) => part_guids.get(*index).copied().unwrap_or(0),
+        _ => part_guids.first().copied().unwrap_or(0),
+    };
+    source.push(deformer_super(
+        &warp.name,
+        parent_part_pool,
+        ids.grid_source_id,
+    ));
+    source.push(reference("CDeformerGuid", "guid", ids.guid_pool));
+    source.push(
+        XmlElement::new("CDeformerId")
+            .attr("xs.n", "id")
+            .attr("idstr", &warp.name),
+    );
+    source.push(deformer_reference(parent_deformer_pool, deformer_root));
+    source.push(int_leaf("col", i64::from(warp.columns)));
+    source.push(int_leaf("row", i64::from(warp.rows)));
+    source.push(bool_leaf("isQuadTransform", warp.quad_transform));
+    let mut keyforms = XmlElement::new("carray_list")
+        .attr("xs.n", "keyforms")
+        .attr("count", warp.forms.len().to_string());
+    for (index, form) in warp.forms.iter().enumerate() {
+        let Some(form_guid) = ids.form_guids.get(index).copied() else {
+            continue;
+        };
+        let mut element = XmlElement::new("CWarpDeformerForm");
+        element.push(deformer_form_super(
+            form_guid,
+            ids.guid_pool,
+            "CWarpDeformerSource",
+            form.opacity,
+            shared.coord_deformer_local,
+        ));
+        let flat: Vec<f32> = form
+            .positions
+            .iter()
+            .flat_map(|position| [position[0], position[1]])
+            .collect();
+        element.push(float_array("positions", &flat));
+        keyforms.push(element);
+    }
+    source.push(keyforms);
+    source
+}
+
+/// `CRotationDeformerSource` with all recovered forms.
+#[allow(clippy::too_many_arguments)]
+pub fn rotation_deformer_source(
+    rotation: &RotationOut,
+    ids: &DeformerIds,
+    part_guids: &[usize],
+    parent_deformer_pool: Option<usize>,
+    deformer_root: usize,
+    shared: &SharedIds,
+) -> XmlElement {
+    let mut source = XmlElement::new("CRotationDeformerSource");
+    let parent_part_pool = match &rotation.parent {
+        ParentRef::Part(index) => part_guids.get(*index).copied().unwrap_or(0),
+        _ => part_guids.first().copied().unwrap_or(0),
+    };
+    source.push(deformer_super(
+        &rotation.name,
+        parent_part_pool,
+        ids.grid_source_id,
+    ));
+    source.push(reference("CDeformerGuid", "guid", ids.guid_pool));
+    source.push(
+        XmlElement::new("CDeformerId")
+            .attr("xs.n", "id")
+            .attr("idstr", &rotation.name),
+    );
+    source.push(deformer_reference(parent_deformer_pool, deformer_root));
+    source.push(bool_leaf("useBoneUi_testImpl", true));
+    let mut keyforms = XmlElement::new("carray_list")
+        .attr("xs.n", "keyforms")
+        .attr("count", rotation.forms.len().to_string());
+    for (index, form) in rotation.forms.iter().enumerate() {
+        let Some(form_guid) = ids.form_guids.get(index).copied() else {
+            continue;
+        };
+        let mut element = XmlElement::new("CRotationDeformerForm")
+            .attr("angle", crate::xml::format_float(form.angle))
+            .attr("originX", crate::xml::format_float(form.origin[0]))
+            .attr("originY", crate::xml::format_float(form.origin[1]))
+            .attr("scale", crate::xml::format_float(form.scale))
+            .attr("isReflectX", if form.reflect_x { "true" } else { "false" })
+            .attr("isReflectY", if form.reflect_y { "true" } else { "false" });
+        element.push(deformer_form_super(
+            form_guid,
+            ids.guid_pool,
+            "CRotationDeformerSource",
+            form.opacity,
+            shared.coord_deformer_local,
+        ));
+        keyforms.push(element);
+    }
+    source.push(keyforms);
+    source.push(float_leaf("handleLengthOnCanvas", 200.0));
+    source.push(float_leaf("circleRadiusOnCanvas", 100.0));
+    source.push(float_leaf("baseAngle", rotation.base_angle));
+    source
+}
+
+/// `CPartSource` with child GUID references and recovered draw orders.
 #[allow(clippy::too_many_arguments)]
 pub fn part_source(
     part: &PartOut,
@@ -377,8 +579,9 @@ pub fn part_source(
     parent_pool: Option<usize>,
     child_refs: &[XmlElement],
     form_guids: &[usize],
+    draw_orders: &[f32],
+    grid_source_id: Option<usize>,
     deformer_root: usize,
-    root_part_id: &str,
 ) -> XmlElement {
     let mut source = XmlElement::new("CPartSource");
     let mut super_part = XmlElement::new("ACParameterControllableSource").attr("xs.n", "super");
@@ -389,7 +592,14 @@ pub fn part_source(
         Some(parent) => super_part.push(reference("CPartGuid", "parentGuid", parent)),
         None => super_part.push(null_leaf("parentGuid")),
     }
-    super_part.push(null_leaf("keyformGridSource"));
+    match grid_source_id {
+        Some(grid_source_id) => super_part.push(reference(
+            "KeyformGridSource",
+            "keyformGridSource",
+            grid_source_id,
+        )),
+        None => super_part.push(null_leaf("keyformGridSource")),
+    }
     super_part.push(morph_target_set());
     super_part.push(empty_carray("_extensions"));
     super_part.push(null_leaf("internalColor_direct_argb"));
@@ -398,7 +608,7 @@ pub fn part_source(
     source.push(XmlElement::new("CPartId").attr("xs.n", "id").attr(
         "idstr",
         if part.is_root {
-            root_part_id
+            ROOT_PART_ID
         } else {
             &part.name
         },
@@ -414,15 +624,12 @@ pub fn part_source(
         children.push(child.clone());
     }
     source.push(children);
-    source.push(reference(
-        "CDeformerGuid",
-        "targetDeformerGuid",
-        deformer_root,
-    ));
+    source.push(deformer_reference(None, deformer_root));
     let mut keyforms = XmlElement::new("carray_list")
         .attr("xs.n", "keyforms")
         .attr("count", form_guids.len().to_string());
-    for form_guid in form_guids {
+    for (index, form_guid) in form_guids.iter().enumerate() {
+        let draw_order = draw_orders.get(index).copied().unwrap_or(500.0);
         let mut form_element = XmlElement::new("CPartForm");
         let mut aform = XmlElement::new("ACForm").attr("xs.n", "super");
         aform.push(reference("CFormGuid", "guid", *form_guid));
@@ -432,7 +639,7 @@ pub fn part_source(
         aform.push(null_leaf("name"));
         aform.push(string_leaf("notes", ""));
         form_element.push(aform);
-        form_element.push(int_leaf("drawOrder", 500));
+        form_element.push(int_leaf("drawOrder", draw_order.round() as i64));
         keyforms.push(form_element);
     }
     source.push(keyforms);
@@ -444,6 +651,7 @@ pub fn child_guid(
     child: &ChildRef,
     part_guids: &[usize],
     drawable_guids: &[usize],
+    deformer_pools: &[(String, usize)],
 ) -> Option<XmlElement> {
     match child {
         ChildRef::Part(index) => part_guids
@@ -452,8 +660,91 @@ pub fn child_guid(
         ChildRef::Mesh(index) => drawable_guids
             .get(*index)
             .map(|id| reference_anon("CDrawableGuid", *id)),
-        ChildRef::Warp(_) | ChildRef::Rotation(_) => None, // deformers deferred
+        ChildRef::Warp(semantic) | ChildRef::Rotation(semantic) => deformer_pools
+            .iter()
+            .find(|(name, _)| name == semantic)
+            .map(|(_, id)| reference_anon("CDeformerGuid", *id)),
     }
+}
+
+/// `KeyformGridSource` with recovered forms and key indices.
+pub fn keyform_grid_source(
+    grid_id: usize,
+    forms: &[(usize, Vec<(usize, usize)>)],
+    binding_pool_ids: &[usize],
+) -> XmlElement {
+    let mut grid = XmlElement::new("KeyformGridSource")
+        .attr("xs.id", format!("#{grid_id}"))
+        .attr("xs.idx", grid_id.to_string());
+    let mut on_grid = XmlElement::new("array_list")
+        .attr("xs.n", "keyformsOnGrid")
+        .attr("count", forms.len().to_string());
+    for (form_guid, key_indices) in forms {
+        let mut access_key = XmlElement::new("KeyformGridAccessKey").attr("xs.n", "accessKey");
+        let mut key_list = XmlElement::new("array_list")
+            .attr("xs.n", "_keyOnParameterList")
+            .attr("count", key_indices.len().to_string());
+        for (binding_index, key_index) in key_indices {
+            let Some(binding_pool) = binding_pool_ids.get(*binding_index).copied() else {
+                continue;
+            };
+            key_list.push(
+                XmlElement::new("KeyOnParameter")
+                    .child(reference("KeyformBindingSource", "binding", binding_pool))
+                    .child(int_leaf("keyIndex", *key_index as i64)),
+            );
+        }
+        access_key.push(key_list);
+        let mut entry = XmlElement::new("KeyformOnGrid").child(access_key);
+        entry.push(reference("CFormGuid", "keyformGuid", *form_guid));
+        on_grid.push(entry);
+    }
+    grid.push(on_grid);
+    let mut bindings_list = XmlElement::new("array_list")
+        .attr("xs.n", "keyformBindings")
+        .attr("count", binding_pool_ids.len().to_string());
+    for binding_pool in binding_pool_ids {
+        bindings_list.push(reference_anon("KeyformBindingSource", *binding_pool));
+    }
+    grid.push(bindings_list);
+    grid
+}
+
+/// `KeyformBindingSource` with stored keys verbatim.
+pub fn keyform_binding_source(
+    binding_id: usize,
+    grid_id: usize,
+    parameter_guid: usize,
+    keys: &[f32],
+) -> XmlElement {
+    let mut binding = XmlElement::new("KeyformBindingSource")
+        .attr("xs.id", format!("#{binding_id}"))
+        .attr("xs.idx", binding_id.to_string());
+    binding.push(reference("KeyformGridSource", "_gridSource", grid_id));
+    binding.push(reference("CParameterGuid", "parameterGuid", parameter_guid));
+    let mut key_values = XmlElement::new("array_list")
+        .attr("xs.n", "keys")
+        .attr("count", keys.len().to_string());
+    for key in keys {
+        key_values.push(XmlElement::new("f").attr("v", crate::xml::format_float(*key)));
+    }
+    binding.push(key_values);
+    // Writer-required LINEAR default (traced in the writer model; never
+    // presented as recovered interpolation).
+    binding.push(
+        XmlElement::new("InterpolationType")
+            .attr("xs.n", "interpolationType")
+            .attr("v", "LINEAR"),
+    );
+    binding.push(
+        XmlElement::new("ExtendedInterpolationType")
+            .attr("xs.n", "extendedInterpolationType")
+            .attr("v", "LINEAR"),
+    );
+    binding.push(int_leaf("insertPointCount", 1));
+    binding.push(float_leaf("extendedInterpolationScale", 1.0));
+    binding.push(string_leaf("description", ""));
+    binding
 }
 
 /// `GTexture2D` for one image resource.
@@ -613,7 +904,6 @@ pub fn model_image_env(
     let mut values = XmlElement::new("hash_map")
         .attr("xs.n", "envValues")
         .attr("count", "2");
-    // Entry 1: current layered image.
     let mut guid_value = XmlElement::new("EnvValueSet").attr("xs.n", "value");
     guid_value.push(reference("FilterValueId", "id", key_current_guid));
     guid_value.push(reference("CLayeredImageGuid", "value", layered_guid));
@@ -627,7 +917,6 @@ pub fn model_image_env(
             .child(reference("FilterValueId", "key", key_current_guid))
             .child(guid_value),
     );
-    // Entry 2: layer selection map.
     let mut map = XmlElement::new("CLayerSelectorMap").attr("xs.n", "value");
     let mut linked = XmlElement::new("linked_map")
         .attr("xs.n", "_imageToLayerInput")
@@ -681,8 +970,7 @@ pub fn layered_image_wrapper(layered_image_id: usize) -> XmlElement {
         .child(bool_leaf("isReplaced", false))
 }
 
-/// ACLayerEntry super used by the root group and layers. `group` is the
-/// owning `CLayerGroup` for ordinary layers and `None` (null) for the root.
+/// ACLayerEntry super used by the root group and layers.
 pub fn layer_entry_super(
     name: &str,
     guid_note: &str,
@@ -718,7 +1006,6 @@ pub fn layer_entry_super(
 }
 
 /// Filter output connector shared by the two filter instances.
-#[allow(clippy::too_many_arguments)]
 pub fn filter_output_connector(
     connector_id: usize,
     selector_id: usize,
