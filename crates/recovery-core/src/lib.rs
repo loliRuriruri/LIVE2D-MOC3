@@ -219,3 +219,29 @@ pub fn export_ir_json(model: &Live2DModel, pretty: bool) -> Result<String, IrExp
 pub fn import_ir_json(text: &str) -> Result<Live2DModel, IrImportError> {
     live2d_ir::from_json_str(text)
 }
+
+/// Recover the semantic keyform model from an IR document (AGENT.4).
+///
+/// The optional recovered project is used for cross-layer checks only.
+pub fn recover_keyforms(
+    model: &Live2DModel,
+    project: Option<&hierarchy_recovery::RecoveredProject>,
+) -> keyform_recovery::RecoveredKeyformModel {
+    keyform_recovery::recover(model, project)
+}
+
+/// Serialize a recovered keyform document to canonical JSON (refusing fatal
+/// diagnostics).
+pub fn export_keyforms_json(
+    document: &keyform_recovery::RecoveredKeyformModel,
+    pretty: bool,
+) -> Result<String, keyform_recovery::KeyformExportError> {
+    keyform_recovery::to_json_str(document, pretty)
+}
+
+/// Parse a recovered keyform document from canonical JSON.
+pub fn import_keyforms_json(
+    text: &str,
+) -> Result<keyform_recovery::RecoveredKeyformModel, keyform_recovery::KeyformImportError> {
+    keyform_recovery::from_json_str(text)
+}

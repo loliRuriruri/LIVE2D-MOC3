@@ -243,6 +243,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyform-recovery"
+version = "0.1.0"
+dependencies = [
+ "hierarchy-recovery",
+ "live2d-ir",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "live2d-ir"
 version = "0.1.0"
 dependencies = [
@@ -322,6 +332,7 @@ dependencies = [
  "env_logger",
  "fixture-gen",
  "hierarchy-recovery",
+ "keyform-recovery",
  "live2d-ir",
  "log",
  "moc3-ingest",
@@ -335,6 +346,7 @@ version = "0.1.0"
 dependencies = [
  "fixture-gen",
  "hierarchy-recovery",
+ "keyform-recovery",
  "live2d-ir",
  "moc3-ingest",
  "serde",
@@ -347,6 +359,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "hierarchy-recovery",
+ "keyform-recovery",
  "live2d-ir",
  "recovery-core",
  "serde",

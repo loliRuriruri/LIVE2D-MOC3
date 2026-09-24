@@ -16,6 +16,7 @@ env_logger.workspace = true
 log.workspace = true
 serde_json.workspace = true
 hierarchy-recovery.workspace = true
+keyform-recovery.workspace = true
 live2d-ir.workspace = true
 moc3-ingest.workspace = true
 recovery-core.workspace = true

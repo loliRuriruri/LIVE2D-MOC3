@@ -5,6 +5,7 @@ members = [
   "crates/moc3-ingest",
   "crates/live2d-ir",
   "crates/hierarchy-recovery",
+  "crates/keyform-recovery",
   "crates/cmo3-writer",
   "crates/project-validator",
   "crates/texture-tools",
@@ -27,6 +28,7 @@ clap = { version = "4", features = ["derive"] }
 log = "0.4"
 env_logger = "0.11"
 hierarchy-recovery = { path = "crates/hierarchy-recovery" }
+keyform-recovery = { path = "crates/keyform-recovery" }
 live2d-ir = { path = "crates/live2d-ir" }
 moc3-ingest = { path = "crates/moc3-ingest" }
 recovery-core = { path = "crates/recovery-core" }

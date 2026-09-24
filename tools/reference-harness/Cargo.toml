@@ -17,6 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 clap.workspace = true
 hierarchy-recovery.workspace = true
+keyform-recovery.workspace = true
 live2d-ir.workspace = true
 recovery-core.workspace = true
 serde.workspace = true
