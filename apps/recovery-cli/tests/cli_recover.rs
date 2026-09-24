@@ -53,7 +53,10 @@ fn recover_writes_cmo3_and_report() {
     assert!(report.exists());
     let text = String::from_utf8(result.stdout).unwrap();
     assert!(text.contains("Structural validation:"));
-    assert!(text.contains("NOT_TESTED"));
+    assert!(text.contains("PASS"));
+    assert!(text.contains("Cubism validation:"));
+    assert!(text.contains("NOT TESTED"));
+    assert!(!text.to_lowercase().contains("cubism compatible"));
     let report_value: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&report).unwrap()).unwrap();
     assert_eq!(
@@ -204,4 +207,66 @@ fn inputs_are_never_modified() {
         std::fs::read(dir.join("page0.png")).unwrap(),
         texture_before
     );
+}
+
+#[test]
+fn version_and_self_test_work() {
+    let version = run(&["--version"]);
+    assert!(version.status.success());
+    let text = String::from_utf8(version.stdout).unwrap();
+    assert!(text.contains("0.1.0-alpha"), "{text}");
+    assert!(text.contains("commit"), "long version expected: {text}");
+
+    let self_test = run(&["self-test"]);
+    assert!(self_test.status.success(), "{self_test:?}");
+    let text = String::from_utf8(self_test.stdout).unwrap();
+    assert!(text.contains("SELF TEST PASS"), "{text}");
+}
+
+#[test]
+fn unicode_and_space_paths_are_supported() {
+    let dir = std::env::temp_dir().join("Live2D 복구 (test) 1.0");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("textures")).unwrap();
+    write_textures(&dir.join("textures"), 1, 800, 600);
+    let moc = dir.join("my model (v1.0.0).moc3");
+    std::fs::copy(fixtures_dir().join("fixture-002-artmesh-param.moc3"), &moc).unwrap();
+    let output = dir.join("recovered (draft).cmo3");
+    let result = run(&[
+        "recover",
+        moc.to_str().unwrap(),
+        "--textures",
+        dir.join("textures").to_str().unwrap(),
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert!(result.status.success(), "{result:?}");
+    assert!(output.exists());
+}
+
+#[test]
+#[allow(clippy::permissions_set_readonly_false)]
+fn read_only_source_files_are_supported() {
+    let dir = temp_dir("readonly");
+    write_textures(&dir, 1, 800, 600);
+    let moc = dir.join("model.moc3");
+    std::fs::copy(fixtures_dir().join("fixture-002-artmesh-param.moc3"), &moc).unwrap();
+    let mut permissions = std::fs::metadata(&moc).unwrap().permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(&moc, permissions).unwrap();
+    let before = std::fs::read(&moc).unwrap();
+    let output = dir.join("out.cmo3");
+    let result = run(&[
+        "recover",
+        moc.to_str().unwrap(),
+        "--textures",
+        dir.to_str().unwrap(),
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert!(result.status.success(), "{result:?}");
+    assert_eq!(std::fs::read(&moc).unwrap(), before);
+    let mut permissions = std::fs::metadata(&moc).unwrap().permissions();
+    permissions.set_readonly(false);
+    let _ = std::fs::set_permissions(&moc, permissions);
 }

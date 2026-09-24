@@ -317,14 +317,43 @@ pub fn run_recover(
         }
     }
 
+    println!("Recovery completed.");
+    println!();
     println!("Output:");
     println!("{}", output.display());
     println!();
     println!("Structural validation:");
     println!("PASS");
     println!();
+    println!("Parts:          {}", model.parts.len());
+    println!("ArtMeshes:      {}", model.art_meshes.len());
+    println!(
+        "Warp:           {}",
+        model
+            .deformers
+            .iter()
+            .filter(|deformer| matches!(deformer, live2d_ir::Deformer::Warp(_)))
+            .count()
+    );
+    println!(
+        "Rotation:       {}",
+        model
+            .deformers
+            .iter()
+            .filter(|deformer| matches!(deformer, live2d_ir::Deformer::Rotation(_)))
+            .count()
+    );
+    println!("Parameters:     {}", model.parameters.len());
+    println!("Keyform grids:  {}", keyforms.statistics.targets);
+    println!();
+    println!(
+        "Unresolved entries: {} (grids: {})",
+        keyforms.statistics.unresolved_entries, keyforms.statistics.unresolved_grids
+    );
+    println!("Writer defaults:    {}", project.defaults.len());
+    println!();
     println!("Cubism validation:");
-    println!("NOT_TESTED");
+    println!("NOT TESTED");
     if project.best_effort {
         println!();
         println!("BEST_EFFORT_OUTPUT");
@@ -513,6 +542,132 @@ pub fn run_inspect_cmo3(file: &Path, json_output: bool) -> ExitCode {
     if validation.is_valid() && scan.is_valid() {
         ExitCode::SUCCESS
     } else {
+        ExitCode::FAILURE
+    }
+}
+
+/// Run `self-test`: verify the binary end to end on an embedded synthetic
+/// model (parser -> IR -> hierarchy -> keyforms -> CMO3 -> CAFF -> XML).
+pub fn run_self_test() -> ExitCode {
+    const FIXTURE: &[u8] =
+        include_bytes!("../../../fixtures/synthetic/fixture-002-artmesh-param.moc3");
+    println!("Self test (embedded synthetic fixture-002, 800x600 canvas)");
+    let mut failures = 0usize;
+    let mut step = |name: &str, ok: bool, detail: String| {
+        if ok {
+            println!("  PASS {name}: {detail}");
+        } else {
+            println!("  FAIL {name}: {detail}");
+            failures += 1;
+        }
+    };
+
+    let options = InspectOptions::default();
+    let model = match recovery_core::build_ir_from_bytes(FIXTURE, &options) {
+        Ok(model) => {
+            step(
+                "ir",
+                !has_fatal(&model.diagnostics),
+                format!(
+                    "{} parameter(s), {} part(s), {} art mesh(es)",
+                    model.parameters.len(),
+                    model.parts.len(),
+                    model.art_meshes.len()
+                ),
+            );
+            model
+        }
+        Err(error) => {
+            step("ir", false, error.to_string());
+            println!();
+            println!("SELF TEST FAIL");
+            return ExitCode::FAILURE;
+        }
+    };
+    let hierarchy = reconstruct(&model, &RecoveryPolicy::default());
+    step(
+        "hierarchy",
+        !has_fatal(&hierarchy.diagnostics),
+        format!("{} node(s)", hierarchy.nodes.len()),
+    );
+    let keyforms = recover(&model, Some(&hierarchy));
+    step(
+        "keyforms",
+        keyforms.statistics.targets > 0,
+        format!(
+            "{} target(s), {} stored form(s)",
+            keyforms.statistics.targets, keyforms.statistics.stored_keyforms
+        ),
+    );
+    let assets = {
+        let mut assets = TextureAssets::new();
+        assets.push(TextureAsset {
+            page: 0,
+            bytes: png::solid_png(800, 600, [80, 140, 200, 255]),
+            source_path: Some("self-test://page0.png".to_string()),
+            width: Some(800),
+            height: Some(600),
+        });
+        assets
+    };
+    let project = match build_project(
+        &model,
+        &hierarchy,
+        &keyforms,
+        &assets,
+        &MapOptions::default(),
+    ) {
+        Ok(project) => project,
+        Err(error) => {
+            step("mapping", false, error.to_string());
+            println!();
+            println!("SELF TEST FAIL");
+            return ExitCode::FAILURE;
+        }
+    };
+    step(
+        "mapping",
+        true,
+        format!("{} default(s) traced", project.defaults.len()),
+    );
+    let identity = IdentityOptions::default();
+    let first = match write_minimal_cmo3(&project, &identity, &assets) {
+        Ok(written) => written,
+        Err(error) => {
+            step("cmo3", false, error.to_string());
+            println!();
+            println!("SELF TEST FAIL");
+            return ExitCode::FAILURE;
+        }
+    };
+    step("cmo3", true, format!("{} bytes", first.bytes.len()));
+    step(
+        "caff",
+        caff::decode_strict_raw(&first.bytes)
+            .map(|decoded| decoded.payload(caff::MAIN_XML_PATH).is_some())
+            .unwrap_or(false),
+        "archive decodes with main.xml".to_string(),
+    );
+    let scan = validate::scan_xml(&first.xml);
+    step(
+        "xml_refs",
+        scan.is_valid(),
+        format!("{} ref(s), 0 dangling", scan.refs.len()),
+    );
+    let second = write_minimal_cmo3(&project, &identity, &assets)
+        .map(|written| written.bytes)
+        .unwrap_or_default();
+    step(
+        "determinism",
+        first.bytes == second,
+        "two writes byte-identical".to_string(),
+    );
+    println!();
+    if failures == 0 {
+        println!("SELF TEST PASS");
+        ExitCode::SUCCESS
+    } else {
+        println!("SELF TEST FAIL ({failures} step(s))");
         ExitCode::FAILURE
     }
 }

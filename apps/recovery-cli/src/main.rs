@@ -35,9 +35,19 @@ use serde_json::json;
 
 #[derive(Parser)]
 #[command(
-    name = "recovery",
-    version,
-    about = "Live2D recovery toolkit (inspection and IR phases)"
+    name = "Live2DRecovery",
+    version = env!("CARGO_PKG_VERSION"),
+    long_version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (commit ",
+        env!("BUILD_GIT"),
+        ", ",
+        env!("BUILD_PROFILE"),
+        ", ",
+        env!("BUILD_TARGET"),
+        ")"
+    ),
+    about = "Live2D recovery toolkit (EXPERIMENTAL 0.1.0-alpha; structural validation only)"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -141,6 +151,8 @@ enum Command {
         #[arg(long, value_name = "BYTES")]
         max_file_size: Option<u64>,
     },
+    /// Verify that this binary works end to end (embedded synthetic model).
+    SelfTest,
     /// Inspect a generated .cmo3 (archive + semantic counts).
     InspectCmo3 {
         /// Path to the .cmo3 file.
@@ -263,6 +275,7 @@ fn main() -> ExitCode {
             force,
             max_file_size,
         ),
+        Command::SelfTest => recover::run_self_test(),
         Command::InspectCmo3 { file, json } => recover::run_inspect_cmo3(&file, json),
     }
 }
