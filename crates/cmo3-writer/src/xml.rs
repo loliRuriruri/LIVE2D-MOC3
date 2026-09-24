@@ -94,6 +94,13 @@ pub fn escape(value: &str) -> String {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str("&apos;"),
+            '\r' => out.push_str("&#13;"),
+            '\n' => out.push_str("&#10;"),
+            '\t' => out.push_str("&#9;"),
+            other if (other as u32) < 0x20 => {
+                // Control characters are not representable in XML 1.0.
+                out.push('\u{FFFD}');
+            }
             other => out.push(other),
         }
     }
@@ -150,6 +157,10 @@ pub fn float_array(name: &str, values: &[f32]) -> XmlElement {
 
 /// Canonical float formatting: shortest representation, `f32` source values.
 pub fn format_float(value: f32) -> String {
+    debug_assert!(
+        value.is_finite(),
+        "non-finite floats must be rejected by the mapping layer before serialization"
+    );
     if value == 0.0 {
         return "0.0".to_string();
     }

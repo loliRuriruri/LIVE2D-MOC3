@@ -113,9 +113,12 @@ pub fn validate_archive(bytes: &[u8]) -> CaffResult<ArchiveValidation> {
                 detail: "entry with empty path".to_string(),
             });
         }
-        if entry.path.starts_with('/')
-            || entry.path.contains('\\')
-            || entry.path.split('/').any(|part| part == "..")
+        if entry.path.is_empty()
+            || entry.path.contains("..")
+            || !entry
+                .path
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
         {
             findings.push(ArchiveFinding {
                 code: "caff_unsafe_path",

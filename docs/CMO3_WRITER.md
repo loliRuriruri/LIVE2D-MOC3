@@ -30,7 +30,7 @@ Dependency direction: `cmo3-writer` depends on `live2d-ir`,
 | XML writer | DONE | typed element tree, full escaping of `& < > " '`, no DTD/entities ever |
 | Version profile | DONE | single Cubism Editor 5.x profile, `docs/CMO3_VERSION_PROFILE.md` |
 | Texture asset model | DONE | assets supplied separately, page-derived internal archive names, FNV-1a dedup identity, no placeholder images |
-| Semantic mapping | DONE (strict/best-effort) | `map::build_project`: strict fails on missing texture/unresolved grid/dangling parameter/non-finite or invalid geometry; best-effort records what was omitted and marks BEST_EFFORT |
+| Semantic mapping | DONE (strict/best-effort) | `map::build_project`: strict fails on missing texture asset, unresolved texture reference, unresolved keyform grid/band/parameter, non-finite floats (parameters, canvas, rotations, forms, geometry) and invalid geometry; best-effort records what was omitted (and rolls back partially built bindings) and marks BEST_EFFORT |
 | `main.xml` serializer | NOT IMPLEMENTED | design + field-level evidence complete (`docs/CMO3_MINIMAL_REQUIREMENTS.md`); a draft was discarded rather than shipping dangling `xs.ref` values |
 | Object-pool/semantic validators | PLANNED | specified in `docs/CMO3_VALIDATION.md`; CAFF validation exists today |
 | CLI `write-cmo3` / `inspect-cmo3` | NOT IMPLEMENTED | gated on the serializer |
@@ -41,14 +41,17 @@ Anything the writer must choose because the file does not store it is
 recorded as a `WriterDefault` trace entry (`field`, `reason`, `semantic`)
 and is never presented as recovered data. Current defaults: placeholder
 names (`Part_000001`, `WarpDeformer_000001`, `ArtMesh_000001`,
-`Param_000001`), the synthetic model name, base art-mesh positions when no
-form exists, and multi-axis keyform ordering for dense grids
-(fastest-first, matching both pinned writers' enumeration; the recovered
-document deliberately reports ordering as unknown).
+`Param_000001`), the synthetic model name, base art-mesh positions (first
+stored form, or a zeroed placeholder when no form exists), and multi-axis
+keyform ordering for dense grids (fastest-first, matching both pinned
+writers' enumeration; the recovered document deliberately reports ordering
+as unknown).
 
-Interpolation metadata is emitted only as the serialization-required
-`LINEAR` constant, and the recovered document does not claim it
-(work order sections 40-41).
+Interpolation metadata: the recovered keyform document does not determine
+an interpolation type; when the serializer is implemented it must resolve
+the `LINEAR` question explicitly (serialization-required default, traced -
+never claimed as recovered, per work order sections 40-41). Nothing is
+emitted today.
 
 ## Evidence base
 

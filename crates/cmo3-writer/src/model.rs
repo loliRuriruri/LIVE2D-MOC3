@@ -94,6 +94,32 @@ pub enum TargetOut {
     ArtMesh(usize),
 }
 
+/// Resolved hierarchy parent (never a mixed index space).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParentRef {
+    /// Synthetic root part (index 0).
+    Root,
+    /// Part index.
+    Part(usize),
+    /// Warp deformer semantic id.
+    Warp(String),
+    /// Rotation deformer semantic id.
+    Rotation(String),
+}
+
+/// One child reference for `_childGuids` lists.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChildRef {
+    /// Part index.
+    Part(usize),
+    /// Warp deformer semantic id.
+    Warp(String),
+    /// Rotation deformer semantic id.
+    Rotation(String),
+    /// Art mesh index.
+    Mesh(usize),
+}
+
 /// One part.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PartOut {
@@ -101,16 +127,10 @@ pub struct PartOut {
     pub semantic: String,
     /// Editor name.
     pub name: String,
-    /// Parent part index (`None` for the root part).
-    pub parent: Option<usize>,
-    /// Child part indices.
-    pub children_parts: Vec<usize>,
-    /// Child deformer indices (warp/rotation share the space).
-    pub children_deformers: Vec<usize>,
-    /// Child art mesh indices.
-    pub children_meshes: Vec<usize>,
-    /// Target deformer index when stored.
-    pub target_deformer: Option<usize>,
+    /// Hierarchy parent (root for top-level parts).
+    pub parent: ParentRef,
+    /// Children in deterministic order (parts, deformers, meshes).
+    pub children: Vec<ChildRef>,
     /// Keyform draw orders (one per stored form).
     pub draw_orders: Vec<f32>,
     /// Grid semantic id when the part is bound.
@@ -132,10 +152,8 @@ pub struct ArtMeshOut {
     pub semantic: String,
     /// Editor name.
     pub name: String,
-    /// Parent part index.
-    pub parent_part: Option<usize>,
-    /// Target deformer index.
-    pub target_deformer: Option<usize>,
+    /// Hierarchy parent (part or deformer; root when top-level).
+    pub parent: ParentRef,
     /// Texture page index.
     pub texture: Option<usize>,
     /// Base vertex positions (editor space, verbatim).
@@ -182,14 +200,10 @@ pub struct WarpOut {
     pub semantic: String,
     /// Editor name.
     pub name: String,
-    /// Parent part index.
-    pub parent_part: Option<usize>,
-    /// Parent deformer index.
-    pub parent_deformer: Option<usize>,
-    /// Child deformer indices.
-    pub children_deformers: Vec<usize>,
-    /// Child art mesh indices.
-    pub children_meshes: Vec<usize>,
+    /// Hierarchy parent.
+    pub parent: ParentRef,
+    /// Children in deterministic order.
+    pub children: Vec<ChildRef>,
     /// Grid columns.
     pub columns: u32,
     /// Grid rows.
@@ -220,14 +234,10 @@ pub struct RotationOut {
     pub semantic: String,
     /// Editor name.
     pub name: String,
-    /// Parent part index.
-    pub parent_part: Option<usize>,
-    /// Parent deformer index.
-    pub parent_deformer: Option<usize>,
-    /// Child deformer indices.
-    pub children_deformers: Vec<usize>,
-    /// Child art mesh indices.
-    pub children_meshes: Vec<usize>,
+    /// Hierarchy parent.
+    pub parent: ParentRef,
+    /// Children in deterministic order.
+    pub children: Vec<ChildRef>,
     /// Base angle.
     pub base_angle: f32,
     /// Forms.

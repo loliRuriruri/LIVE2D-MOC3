@@ -10,8 +10,6 @@ publish.workspace = true
 hierarchy-recovery.workspace = true
 keyform-recovery.workspace = true
 live2d-ir.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 
 [lints]
 workspace = true

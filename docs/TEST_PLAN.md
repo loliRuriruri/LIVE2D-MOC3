@@ -4,7 +4,7 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**264 tests, all passing** (44 synthetic fixtures). AGENT.5 is PARTIAL: only
+**268 tests, all passing** (44 synthetic fixtures). AGENT.5 is PARTIAL: only
 the CAFF/identity/XML/profile/mapping layers exist (see
 `docs/CMO3_VALIDATION.md`).
 

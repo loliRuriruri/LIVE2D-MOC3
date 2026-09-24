@@ -9,7 +9,8 @@ reference facts, a mapping plan and a failure checklist.
 - `docs/CMO3_MAPPING_PLAN.md` - recovered-structure -> CMO3 concept mapping,
   confirmed-at-audit facts (`CModelSource`, `CPartSource`, `EditorEdition=15`,
   `targetVersionNo=3000`, `latestVersionOfModelerNo=5000000`,
-  `useLegacyDrawOrder__testImpl=false`, CAFF obfuscation key `0x42`), the
+  `useLegacyDrawOrder__testImpl=false`, CAFF obfuscation key decimal 42 =
+  `0x2A`), the
   AGENT.4 `RecoveredKeyformModel` -> CMO3 keyform concept mapping, fidelity
   sequencing constraints, open questions and prohibited practices.
 - `docs/KEYFORM_RECOVERY.md` - the semantic input contract

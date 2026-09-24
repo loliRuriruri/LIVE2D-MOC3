@@ -262,3 +262,115 @@ fn archive_entry_names_are_internal_and_page_derived() {
         .iter()
         .any(|texture| texture.archive_name.contains('/') || texture.archive_name.contains("..")));
 }
+
+#[test]
+fn unresolved_texture_reference_fails_strict_mode() {
+    let mut model = base_model();
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        mesh.texture = Some(TextureId::new("texture:missing"));
+    }
+    let (project, keyforms) = pipeline(&model);
+    let mut assets = TextureAssets::new();
+    assets.push(TextureAsset {
+        page: 0,
+        bytes: vec![1],
+        source_path: None,
+        width: None,
+        height: None,
+    });
+    let result = build_project(&model, &project, &keyforms, &assets, &MapOptions::default());
+    assert_eq!(
+        result.err().map(|error| error.code),
+        Some("UnresolvedTexture")
+    );
+}
+
+#[test]
+fn interleaved_deformer_parents_use_typed_refs() {
+    use cmo3_writer::model::{ChildRef, ParentRef};
+    use live2d_ir::model::{
+        DeformerCommon, RotationDeformer, RotationKeyform, WarpDeformer, WarpKeyform,
+    };
+    use live2d_ir::DeformerId;
+
+    let mut model = base_model();
+    let common = |id: &str, parent: Option<&str>| DeformerCommon {
+        id: DeformerId::new(id),
+        source_name: Some(id.to_string()),
+        parent_part: None,
+        parent_deformer: parent.map(DeformerId::new),
+        children_deformers: Vec::new(),
+        children_art_meshes: Vec::new(),
+        binding: None,
+        visible: true,
+        enabled: true,
+        field_provenance: Vec::new(),
+        provenance: Provenance::exact("moc3:deformer"),
+    };
+    model.deformers = vec![
+        live2d_ir::Deformer::Warp(WarpDeformer {
+            common: common("Warp_00", None),
+            rows: 1,
+            columns: 1,
+            vertex_count: 4,
+            quad_transform: false,
+            keyforms: vec![WarpKeyform {
+                index: 0,
+                opacity: 1.0,
+                positions: vec![Vec2 { x: 0.0, y: 0.0 }; 4],
+            }],
+        }),
+        live2d_ir::Deformer::Rotation(RotationDeformer {
+            common: common("Rotation_00", Some("Warp_01")),
+            base_angle: 0.0,
+            keyforms: vec![RotationKeyform {
+                index: 0,
+                opacity: 1.0,
+                angle: 0.0,
+                origin: Vec2 { x: 0.0, y: 0.0 },
+                scale: 1.0,
+                reflect_x: false,
+                reflect_y: false,
+            }],
+        }),
+        live2d_ir::Deformer::Warp(WarpDeformer {
+            common: common("Warp_01", Some("Warp_00")),
+            rows: 1,
+            columns: 1,
+            vertex_count: 4,
+            quad_transform: false,
+            keyforms: vec![WarpKeyform {
+                index: 0,
+                opacity: 1.0,
+                positions: vec![Vec2 { x: 0.0, y: 0.0 }; 4],
+            }],
+        }),
+    ];
+    let (project, keyforms) = pipeline(&model);
+    let mut assets = TextureAssets::new();
+    assets.push(TextureAsset {
+        page: 0,
+        bytes: vec![1],
+        source_path: None,
+        width: None,
+        height: None,
+    });
+    let mapped = build_project(&model, &project, &keyforms, &assets, &MapOptions::default())
+        .expect("mapping");
+    assert_eq!(mapped.warps.len(), 2);
+    assert_eq!(mapped.rotations.len(), 1);
+    assert_eq!(
+        mapped.warps[1].parent,
+        ParentRef::Warp("Warp_00".to_string())
+    );
+    assert_eq!(
+        mapped.rotations[0].parent,
+        ParentRef::Warp("Warp_01".to_string())
+    );
+    assert!(mapped.warps[0]
+        .children
+        .contains(&ChildRef::Warp("Warp_01".to_string())));
+    assert!(mapped.warps[1]
+        .children
+        .contains(&ChildRef::Rotation("Rotation_00".to_string())));
+}

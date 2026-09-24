@@ -116,12 +116,20 @@ impl GuidAllocator {
         match self.mode {
             GuidMode::Deterministic => {
                 let mut bytes = [0u8; 16];
+                // The occurrence counter keeps repeated (kind, semantic)
+                // allocations collision-free while staying deterministic.
+                let counter = self
+                    .counters
+                    .entry(format!("{kind}:{semantic}"))
+                    .or_insert(0);
+                *counter += 1;
                 let seed = self
                     .namespace
                     .rotate_left(13)
                     .wrapping_mul(0x9E37_79B9_7F4A_7C15)
                     ^ fnv1a64(kind.as_bytes())
-                    ^ fnv1a64(semantic.as_bytes());
+                    ^ fnv1a64(semantic.as_bytes())
+                    ^ splitmix64(*counter);
                 let mut state = seed;
                 for chunk in bytes.chunks_mut(8) {
                     state = splitmix64(state);

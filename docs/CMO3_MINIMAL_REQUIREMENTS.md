@@ -97,16 +97,24 @@ pinned sources).
 - Unknown elements are ignored and missing elements default (Java
   deserializer), except the documented `checkNotNull` fields.
 
-## 6. What AGENT.5 emits vs defers
+## 6. What exists today vs what the serializer will emit
 
-Emitted by this writer (structurally validated): the full skeleton,
+**Exists today (structurally validated):** the CAFF encoder/decoder and
+validator, the object-pool identity allocator with deterministic GUIDs, the
+typed XML writer, the pinned version profile, the texture-asset input
+model, and the strict/best-effort semantic mapping model with typed
+parent/child references. **No `main.xml` is produced yet** - the serializer
+is not implemented (`docs/CMO3_VALIDATION.md`, Gate 5B NOT REACHED).
+
+**Planned serializer output (not yet written):** the full skeleton,
 identities, parameters, parts with child GUID lists and forms, art meshes
-with geometry/keyforms/editable-mesh/mesh-generator extensions, deformers
-with forms, keyform grids/bindings/forms, texture resources
+with geometry/keyforms and the editable-mesh/mesh-generator extensions,
+deformers with forms, keyform grids/bindings/forms, texture resources
 (`CImageResource` + `GTexture2D`) and CAFF entries.
 
-Deferred with explicit status (never faked): the ModelImage filter graph,
-the layered-image chain (texture rendering in the editor), texture-input
-extensions and preview entries. These are **C/U** above and are the
-blocking reason Gate 5B is reported as NOT REACHED for an editor-open
-document (see `docs/CMO3_VALIDATION.md`).
+**Deferred with explicit status (never faked):** the ModelImage filter
+graph, the layered-image chain (texture rendering in the editor),
+texture-input extensions and preview entries. These are **C/U** above and
+must be resolved (owned `.cmo3` reference or deeper pinned-source
+extraction) before the serializer can claim a structurally complete
+editor-grade document.

@@ -219,16 +219,42 @@ mod tests {
     }
 
     #[test]
-    fn compressed_mode_is_recognised_but_undecoded() {
+    fn compressed_entries_are_rejected_by_the_encoder() {
         let mut entry = CaffEntry::raw("imageFileBuf_0.png", "", vec![1, 2, 3]);
         entry.compression = Compression::Fast;
-        let bytes = encode(DEFAULT_KEY, &[entry]).expect("encode");
-        let decoded = decode(&bytes).expect("decode");
+        assert!(matches!(
+            encode(DEFAULT_KEY, &[entry]),
+            Err(CaffError::UnsupportedCompression { mode: 33, .. })
+        ));
+    }
+
+    #[test]
+    fn decoder_recognises_foreign_compressed_entries_without_guessing() {
+        // Build a valid RAW archive, then flip the first entry's mode byte to
+        // FAST: the decoder must report UNSUPPORTED instead of decoding.
+        let bytes = encode(DEFAULT_KEY, &sample_entries()).expect("encode");
+        let _ = decode_strict_raw(&bytes).expect("decode");
+        let size_offset =
+            26 + 28 + 4 + (1 + MAIN_XML_PATH.len()) + (1 + MAIN_XML_TAG.len()) + 8 + 4 + 1;
+        let mut corrupted = bytes.clone();
+        corrupted[size_offset] = (33u8) ^ (DEFAULT_KEY as u8);
+        let decoded = decode(&corrupted).expect("decode");
         assert_eq!(decoded.entries[0].compression, 33);
         assert!(decoded.payloads[0].is_none());
         assert!(matches!(
-            decode_strict_raw(&bytes),
-            Err(CaffError::UnsupportedCompression { .. })
+            decode_strict_raw(&corrupted),
+            Err(CaffError::UnsupportedCompression { mode: 33, .. })
         ));
+    }
+
+    #[test]
+    fn negative_key_covers_multi_byte_varints() {
+        let path = "p".repeat(300);
+        let entry = CaffEntry::raw(path.clone(), "", vec![9, 9]);
+        let bytes = encode(-1, &[entry]).expect("encode");
+        let decoded = decode_strict_raw(&bytes).expect("decode");
+        assert_eq!(decoded.header.key, -1);
+        assert_eq!(decoded.entries[0].path.len(), 300);
+        assert_eq!(decoded.payload(&path), Some(&[9, 9][..]));
     }
 }

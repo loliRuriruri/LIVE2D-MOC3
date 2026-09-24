@@ -19,7 +19,7 @@ same CMO3-adjacent material used in AGENT.0. Facts below are observations at
 | Target model version attribute | `targetVersionNo="3000"` | E3 |
 | Modeler version attribute | `latestVersionOfModelerNo="5000000"` | E3 |
 | Draw-order compatibility flag | `useLegacyDrawOrder__testImpl="false"` | E3 |
-| CAFF obfuscation key | `0x42` (as seen in reference writers) | E3 |
+| CAFF obfuscation key | decimal `42` = `0x2A` (both pinned writers; an earlier note mis-stated hex `0x42`) | E2 |
 | Import sidecar naming | `.cmo3` with CAFF container + XML payload | E3 (moc2cmo, caff-archive) |
 
 Attribute/element names not listed above are **not** confirmed; do not

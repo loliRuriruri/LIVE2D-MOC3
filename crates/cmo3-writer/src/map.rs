@@ -3,7 +3,9 @@
 //! Every required semantic that is unresolved fails in strict mode (default)
 //! and is reported as unsupported in best-effort mode (work order sections
 //! 37-38, 81-82). Nothing is fabricated: writer-required defaults are
-//! recorded in [`Cmo3Project::defaults`].
+//! recorded in [`Cmo3Project::defaults`]. Deformer/part references are
+//! resolved into a typed [`ParentRef`], so warp and rotation index spaces can
+//! never be mixed.
 
 use std::collections::BTreeMap;
 
@@ -12,9 +14,9 @@ use keyform_recovery::{GridLayout, RecoveredKeyformModel, TargetKeyforms};
 use live2d_ir::{Deformer, Live2DModel};
 
 use crate::model::{
-    ArtMeshFormOut, ArtMeshOut, BindingOut, CanvasOut, Cmo3Project, GridFormOut, GridOut,
-    ParameterOut, PartOut, RotationFormOut, RotationOut, TargetOut, TextureOut, UnsupportedNote,
-    WarpFormOut, WarpOut, WriterDefault,
+    ArtMeshFormOut, ArtMeshOut, BindingOut, CanvasOut, ChildRef, Cmo3Project, GridFormOut, GridOut,
+    ParameterOut, ParentRef, PartOut, RotationFormOut, RotationOut, TargetOut, TextureOut,
+    UnsupportedNote, WarpFormOut, WarpOut, WriterDefault,
 };
 use crate::textures::TextureAssets;
 
@@ -51,6 +53,24 @@ fn error(code: &'static str, message: impl Into<String>) -> WriteError {
     }
 }
 
+fn finite(value: f32, semantic: &str, field: &str) -> Result<f32, WriteError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(error(
+            "NonFiniteValue",
+            format!("'{semantic}' field '{field}' is not finite"),
+        ))
+    }
+}
+
+fn finite_all(values: &[f32], semantic: &str, field: &str) -> Result<(), WriteError> {
+    for value in values {
+        finite(*value, semantic, field)?;
+    }
+    Ok(())
+}
+
 /// Build the writer project model from the semantic layers.
 pub fn build_project(
     model: &Live2DModel,
@@ -77,8 +97,18 @@ pub fn build_project(
                 reason: "no stored parameter name; deterministic placeholder generated",
             });
         }
+        let semantic = parameter.id.as_str();
+        finite(parameter.minimum, semantic, "minimum")?;
+        finite(parameter.maximum, semantic, "maximum")?;
+        finite(parameter.default, semantic, "default")?;
+        finite_all(&parameter.key_values, semantic, "key_values")?;
+        finite_all(
+            &parameter.extension_key_values,
+            semantic,
+            "extension_key_values",
+        )?;
         parameters.push(ParameterOut {
-            semantic: parameter.id.as_str().to_string(),
+            semantic: semantic.to_string(),
             name,
             minimum: parameter.minimum,
             maximum: parameter.maximum,
@@ -115,14 +145,31 @@ pub fn build_project(
         .enumerate()
         .map(|(index, part)| (part.id.as_str(), index + 1))
         .collect();
-    let deformer_by_id: BTreeMap<&str, (bool, usize)> = model
+    let warp_ids: Vec<&str> = model
         .deformers
         .iter()
-        .enumerate()
-        .map(|(index, deformer)| match deformer {
-            Deformer::Warp(warp) => (warp.common.id.as_str(), (true, index)),
-            Deformer::Rotation(rotation) => (rotation.common.id.as_str(), (false, index)),
+        .filter_map(|deformer| match deformer {
+            Deformer::Warp(warp) => Some(warp.common.id.as_str()),
+            Deformer::Rotation(_) => None,
         })
+        .collect();
+    let rotation_ids: Vec<&str> = model
+        .deformers
+        .iter()
+        .filter_map(|deformer| match deformer {
+            Deformer::Rotation(rotation) => Some(rotation.common.id.as_str()),
+            Deformer::Warp(_) => None,
+        })
+        .collect();
+    let warp_by_id: BTreeMap<&str, usize> = warp_ids
+        .iter()
+        .enumerate()
+        .map(|(index, id)| (*id, index))
+        .collect();
+    let rotation_by_id: BTreeMap<&str, usize> = rotation_ids
+        .iter()
+        .enumerate()
+        .map(|(index, id)| (*id, index))
         .collect();
     let mesh_by_id: BTreeMap<&str, usize> = model
         .art_meshes
@@ -131,16 +178,29 @@ pub fn build_project(
         .map(|(index, mesh)| (mesh.id.as_str(), index))
         .collect();
 
+    let classify_parent = |id: &str| -> ParentRef {
+        if let Some(index) = part_by_id.get(id).copied() {
+            return ParentRef::Part(index);
+        }
+        if warp_by_id.contains_key(id) {
+            return ParentRef::Warp(id.to_string());
+        }
+        if rotation_by_id.contains_key(id) {
+            return ParentRef::Rotation(id.to_string());
+        }
+        ParentRef::Root
+    };
+    let parent_of = |id: &str| -> ParentRef {
+        classify_parent(node_parent.get(id).copied().unwrap_or("$root"))
+    };
+
     // ---- parts -----------------------------------------------------------
     let mut parts: Vec<PartOut> = Vec::with_capacity(model.parts.len() + 1);
     parts.push(PartOut {
         semantic: "$root".to_string(),
         name: "Root".to_string(),
-        parent: None,
-        children_parts: Vec::new(),
-        children_deformers: Vec::new(),
-        children_meshes: Vec::new(),
-        target_deformer: None,
+        parent: ParentRef::Root,
+        children: Vec::new(),
         draw_orders: Vec::new(),
         grid: None,
         visible: true,
@@ -160,18 +220,12 @@ pub fn build_project(
                 reason: "no stored part name; deterministic placeholder generated",
             });
         }
-        // Hierarchy parent: resolved parent part, else the synthetic root.
-        let parent = node_parent
-            .get(part.id.as_str())
-            .and_then(|parent| part_by_id.get(parent).copied());
+        finite_all(&part.keyform_draw_orders, part.id.as_str(), "draw_orders")?;
         parts.push(PartOut {
             semantic: part.id.as_str().to_string(),
             name,
-            parent,
-            children_parts: Vec::new(),
-            children_deformers: Vec::new(),
-            children_meshes: Vec::new(),
-            target_deformer: None,
+            parent: parent_of(part.id.as_str()),
+            children: Vec::new(),
             draw_orders: part.keyform_draw_orders.clone(),
             grid: None,
             visible: part.visible,
@@ -199,33 +253,23 @@ pub fn build_project(
                         reason: "no stored deformer name; deterministic placeholder generated",
                     });
                 }
-                let parent_part = node_parent
-                    .get(warp.common.id.as_str())
-                    .and_then(|parent| part_by_id.get(parent).copied())
-                    .or_else(|| {
-                        warp.common
-                            .parent_part
-                            .as_ref()
-                            .and_then(|part| part_by_id.get(part.as_str()).copied())
-                    });
                 let forms: Result<Vec<WarpFormOut>, WriteError> = warp
                     .keyforms
                     .iter()
                     .map(|form| {
-                        let positions = to_positions(&form.positions)?;
+                        finite(form.opacity, warp.common.id.as_str(), "opacity")?;
                         Ok(WarpFormOut {
                             opacity: form.opacity,
-                            positions,
+                            positions: to_positions(&form.positions)?,
                         })
                     })
                     .collect();
+                let parent = deformer_parent(model, &parent_of, warp.common.id.as_str());
                 warps.push(WarpOut {
                     semantic: warp.common.id.as_str().to_string(),
                     name,
-                    parent_part,
-                    parent_deformer: None,
-                    children_deformers: Vec::new(),
-                    children_meshes: Vec::new(),
+                    parent,
+                    children: Vec::new(),
                     columns: warp.columns,
                     rows: warp.rows,
                     quad_transform: warp.quad_transform,
@@ -247,61 +291,41 @@ pub fn build_project(
                         reason: "no stored deformer name; deterministic placeholder generated",
                     });
                 }
-                let parent_part = node_parent
-                    .get(rotation.common.id.as_str())
-                    .and_then(|parent| part_by_id.get(parent).copied())
-                    .or_else(|| {
-                        rotation
-                            .common
-                            .parent_part
-                            .as_ref()
-                            .and_then(|part| part_by_id.get(part.as_str()).copied())
-                    });
+                finite(
+                    rotation.base_angle,
+                    rotation.common.id.as_str(),
+                    "base_angle",
+                )?;
                 rotations.push(RotationOut {
                     semantic: rotation.common.id.as_str().to_string(),
                     name,
-                    parent_part,
-                    parent_deformer: None,
-                    children_deformers: Vec::new(),
-                    children_meshes: Vec::new(),
+                    parent: deformer_parent(model, &parent_of, rotation.common.id.as_str()),
+                    children: Vec::new(),
                     base_angle: rotation.base_angle,
                     forms: rotation
                         .keyforms
                         .iter()
-                        .map(|form| RotationFormOut {
-                            opacity: form.opacity,
-                            angle: form.angle,
-                            origin: [form.origin.x, form.origin.y],
-                            scale: form.scale,
-                            reflect_x: form.reflect_x,
-                            reflect_y: form.reflect_y,
+                        .map(|form| {
+                            Ok(RotationFormOut {
+                                opacity: finite(
+                                    form.opacity,
+                                    rotation.common.id.as_str(),
+                                    "opacity",
+                                )?,
+                                angle: finite(form.angle, rotation.common.id.as_str(), "angle")?,
+                                origin: [
+                                    finite(form.origin.x, rotation.common.id.as_str(), "origin_x")?,
+                                    finite(form.origin.y, rotation.common.id.as_str(), "origin_y")?,
+                                ],
+                                scale: finite(form.scale, rotation.common.id.as_str(), "scale")?,
+                                reflect_x: form.reflect_x,
+                                reflect_y: form.reflect_y,
+                            })
                         })
-                        .collect(),
+                        .collect::<Result<Vec<_>, WriteError>>()?,
                     grid: None,
                     synthetic_name,
                 });
-            }
-        }
-    }
-    // Deformer parents may be deformers; resolve now.
-    for (index, deformer) in model.deformers.iter().enumerate() {
-        let id = match deformer {
-            Deformer::Warp(warp) => warp.common.id.as_str(),
-            Deformer::Rotation(rotation) => rotation.common.id.as_str(),
-        };
-        let parent_id = node_parent.get(id).copied().unwrap_or("$root");
-        if let Some((is_warp, parent_index)) = deformer_by_id.get(parent_id).copied() {
-            if parent_index == index {
-                continue;
-            }
-            if is_warp {
-                if let Some(entry) = warps.get_mut(index) {
-                    entry.parent_deformer = Some(parent_index);
-                    entry.parent_part = None;
-                }
-            } else if let Some(entry) = rotations.get_mut(index) {
-                entry.parent_deformer = Some(parent_index);
-                entry.parent_part = None;
             }
         }
     }
@@ -315,13 +339,14 @@ pub fn build_project(
         .map(|(index, asset)| (asset.page, index))
         .collect();
     for (index, mesh) in model.art_meshes.iter().enumerate() {
+        let semantic = mesh.id.as_str();
         let (name, synthetic_name) = match &mesh.source_name {
             Some(name) if !name.is_empty() => (name.clone(), false),
             _ => (format!("ArtMesh_{:06}", index + 1), true),
         };
         if synthetic_name {
             defaults.push(WriterDefault {
-                semantic: mesh.id.as_str().to_string(),
+                semantic: semantic.to_string(),
                 field: "art_mesh.name",
                 reason: "no stored mesh name; deterministic placeholder generated",
             });
@@ -332,8 +357,7 @@ pub fn build_project(
             return Err(error(
                 "InvalidGeometry",
                 format!(
-                    "art mesh '{}' has {} base positions for {} vertices",
-                    mesh.id.as_str(),
+                    "art mesh '{semantic}' has {} base positions for {} vertices",
                     base_positions.len(),
                     mesh.vertex_count
                 ),
@@ -341,9 +365,15 @@ pub fn build_project(
         }
         if !mesh.keyforms.is_empty() {
             defaults.push(WriterDefault {
-                semantic: mesh.id.as_str().to_string(),
+                semantic: semantic.to_string(),
                 field: "art_mesh.base_positions",
                 reason: "the IR stores no explicit base geometry; the first stored form is used",
+            });
+        } else {
+            defaults.push(WriterDefault {
+                semantic: semantic.to_string(),
+                field: "art_mesh.base_positions",
+                reason: "no stored form exists; a zeroed base geometry placeholder is written",
             });
         }
         if mesh
@@ -353,66 +383,64 @@ pub fn build_project(
         {
             return Err(error(
                 "InvalidGeometry",
-                format!("art mesh '{}' has out-of-range indices", mesh.id.as_str()),
+                format!("art mesh '{semantic}' has out-of-range indices"),
             ));
         }
         let forms: Result<Vec<ArtMeshFormOut>, WriteError> = mesh
             .keyforms
             .iter()
             .map(|form| {
-                let positions = to_positions(&form.positions)?;
+                finite(form.opacity, semantic, "opacity")?;
+                finite(form.draw_order, semantic, "draw_order")?;
                 Ok(ArtMeshFormOut {
                     draw_order: form.draw_order,
                     opacity: form.opacity,
-                    positions,
+                    positions: to_positions(&form.positions)?,
                 })
             })
             .collect();
-        let texture = match mesh
-            .texture
-            .as_ref()
-            .map(|texture| texture_page_of(model, texture.as_str()))
-        {
-            Some(Some(page)) => match texture_page_to_index.get(&page).copied() {
-                Some(index) => Some(index),
+        let texture = match mesh.texture.as_ref() {
+            None => None,
+            Some(texture) => match texture_page_of(model, texture.as_str()) {
                 None => {
                     if best_effort {
                         unsupported.push(UnsupportedNote {
-                            subject: mesh.id.as_str().to_string(),
-                            reason: format!("texture page {page} has no supplied asset"),
+                            subject: semantic.to_string(),
+                            reason: "texture reference does not resolve to a texture entity"
+                                .to_string(),
                         });
                         None
                     } else {
                         return Err(error(
-                            "MissingTextureAsset",
+                            "UnresolvedTexture",
                             format!(
-                                "art mesh '{}' references texture page {page} but no asset was supplied",
-                                mesh.id.as_str()
+                                "art mesh '{semantic}' references texture '{}' which does not exist",
+                                texture.as_str()
                             ),
                         ));
                     }
                 }
+                Some(page) => match texture_page_to_index.get(&page).copied() {
+                    Some(index) => Some(index),
+                    None => {
+                        if best_effort {
+                            unsupported.push(UnsupportedNote {
+                                subject: semantic.to_string(),
+                                reason: format!("texture page {page} has no supplied asset"),
+                            });
+                            None
+                        } else {
+                            return Err(error(
+                                "MissingTextureAsset",
+                                format!(
+                                    "art mesh '{semantic}' references texture page {page} but no asset was supplied"
+                                ),
+                            ));
+                        }
+                    }
+                },
             },
-            _ => None,
         };
-        let parent_part = node_parent
-            .get(mesh.id.as_str())
-            .and_then(|parent| part_by_id.get(parent).copied())
-            .or_else(|| {
-                mesh.parent_part
-                    .as_ref()
-                    .and_then(|part| part_by_id.get(part.as_str()).copied())
-            });
-        let target_deformer = node_parent
-            .get(mesh.id.as_str())
-            .and_then(|parent| deformer_by_id.get(parent).map(|(_, index)| *index))
-            .or_else(|| {
-                mesh.parent_deformer.as_ref().and_then(|deformer| {
-                    deformer_by_id
-                        .get(deformer.as_str())
-                        .map(|(_, index)| *index)
-                })
-            });
         let mask_refs = mesh
             .mask_groups
             .iter()
@@ -426,10 +454,9 @@ pub fn build_project(
             .filter_map(|source| mesh_by_id.get(source.as_str()).copied())
             .collect();
         meshes.push(ArtMeshOut {
-            semantic: mesh.id.as_str().to_string(),
+            semantic: semantic.to_string(),
             name,
-            parent_part,
-            target_deformer,
+            parent: mesh_parent(model, &parent_of, mesh),
             texture,
             positions: base_positions,
             uvs,
@@ -446,6 +473,34 @@ pub fn build_project(
         });
     }
 
+    // ---- children (second pass, typed refs, no mixed index spaces) -------
+    let part_parents: Vec<ParentRef> = parts.iter().map(|part| part.parent.clone()).collect();
+    for index in 1..parts.len() {
+        let child = ChildRef::Part(index);
+        let parent = part_parents.get(index).cloned().unwrap_or(ParentRef::Root);
+        attach_child(&mut parts, &mut warps, &mut rotations, &parent, child);
+    }
+    for index in 0..warps.len() {
+        let reference = ChildRef::Warp(warps[index].semantic.clone());
+        let parent = warps[index].parent.clone();
+        attach_child(&mut parts, &mut warps, &mut rotations, &parent, reference);
+    }
+    for index in 0..rotations.len() {
+        let reference = ChildRef::Rotation(rotations[index].semantic.clone());
+        let parent = rotations[index].parent.clone();
+        attach_child(&mut parts, &mut warps, &mut rotations, &parent, reference);
+    }
+    let mesh_parents: Vec<ParentRef> = meshes.iter().map(|mesh| mesh.parent.clone()).collect();
+    for (index, parent) in mesh_parents.into_iter().enumerate() {
+        attach_child(
+            &mut parts,
+            &mut warps,
+            &mut rotations,
+            &parent,
+            ChildRef::Mesh(index),
+        );
+    }
+
     // ---- keyform grids and bindings -------------------------------------
     let mut bindings: Vec<BindingOut> = Vec::new();
     let mut grids: Vec<GridOut> = Vec::new();
@@ -459,23 +514,43 @@ pub fn build_project(
         let target_id = entry.target().id_text().to_string();
         let grid_id = entry.grid_id().to_string();
         let Some(grid) = keyforms.grid(&grid_id) else {
-            continue;
+            if best_effort {
+                unsupported.push(UnsupportedNote {
+                    subject: grid_id.clone(),
+                    reason: "keyform grid is missing from the recovered model".to_string(),
+                });
+                continue;
+            }
+            return Err(error(
+                "UnresolvedKeyformGrid",
+                format!("target '{target_id}' references missing grid '{grid_id}'"),
+            ));
         };
         let Some(band) = keyforms.band(&grid.band) else {
-            continue;
+            if best_effort {
+                unsupported.push(UnsupportedNote {
+                    subject: grid_id.clone(),
+                    reason: "keyform band is missing from the recovered model".to_string(),
+                });
+                continue;
+            }
+            return Err(error(
+                "UnresolvedKeyformGrid",
+                format!("grid '{grid_id}' references missing band '{}'", grid.band),
+            ));
         };
         let target = match entry {
             TargetKeyforms::Part(part) => part_by_id
                 .get(part.target.as_str())
                 .copied()
                 .map(TargetOut::Part),
-            TargetKeyforms::WarpDeformer(warp) => warps
-                .iter()
-                .position(|item| item.semantic == warp.target.as_str())
+            TargetKeyforms::WarpDeformer(warp) => warp_by_id
+                .get(warp.target.as_str())
+                .copied()
                 .map(TargetOut::Warp),
-            TargetKeyforms::RotationDeformer(rotation) => rotations
-                .iter()
-                .position(|item| item.semantic == rotation.target.as_str())
+            TargetKeyforms::RotationDeformer(rotation) => rotation_by_id
+                .get(rotation.target.as_str())
+                .copied()
                 .map(TargetOut::Rotation),
             TargetKeyforms::ArtMesh(mesh) => mesh_by_id
                 .get(mesh.target.as_str())
@@ -506,14 +581,6 @@ pub fn build_project(
             continue;
         }
         if band.axes.is_empty() {
-            // Static target: no bindings, no forms mapping needed.
-            let grid_out = GridOut {
-                semantic: grid_id.clone(),
-                target: target.clone(),
-                binding_indices: Vec::new(),
-                forms: Vec::new(),
-                dense: true,
-            };
             attach_grid(
                 &mut parts,
                 &mut warps,
@@ -522,10 +589,17 @@ pub fn build_project(
                 &target,
                 &grid_id,
             );
-            grids.push(grid_out);
+            grids.push(GridOut {
+                semantic: grid_id.clone(),
+                target,
+                binding_indices: Vec::new(),
+                forms: Vec::new(),
+                dense: true,
+            });
             continue;
         }
 
+        let bindings_start = bindings.len();
         let mut binding_indices: Vec<usize> = Vec::new();
         let mut axis_keys: Vec<Vec<f32>> = Vec::new();
         let mut unresolved_axis = false;
@@ -548,6 +622,9 @@ pub fn build_project(
             axis_keys.push(axis.keys.clone());
         }
         if unresolved_axis {
+            // Roll the partially built bindings back: an orphan binding that
+            // no grid references must never reach the serializer.
+            bindings.truncate(bindings_start);
             if !best_effort {
                 return Err(error(
                     "UnresolvedParameter",
@@ -561,10 +638,7 @@ pub fn build_project(
             });
             continue;
         }
-        if bindings
-            .iter()
-            .any(|binding| binding.grid == grid_id && binding.ordering_default)
-        {
+        if band.axes.len() > 1 {
             defaults.push(WriterDefault {
                 semantic: grid_id.clone(),
                 field: "grid.ordering",
@@ -572,8 +646,6 @@ pub fn build_project(
             });
         }
 
-        // Form coordinates: stored order mapped to the writer default
-        // ordering (fastest-first) for dense grids only.
         let strides = fastest_first_strides(&axis_keys);
         let forms: Vec<GridFormOut> = (0..grid.stored_form_count as usize)
             .map(|form_index| GridFormOut {
@@ -616,6 +688,18 @@ pub fn build_project(
         })
         .collect();
 
+    let model_name = match options.model_name.clone() {
+        Some(name) => name,
+        None => {
+            defaults.push(WriterDefault {
+                semantic: "$model".to_string(),
+                field: "model.name",
+                reason: "no stored model name exists; synthetic name 'RecoveredModel' used",
+            });
+            "RecoveredModel".to_string()
+        }
+    };
+
     if best_effort {
         unsupported.push(UnsupportedNote {
             subject: "$output".to_string(),
@@ -626,16 +710,13 @@ pub fn build_project(
 
     Ok(Cmo3Project {
         profile_id: crate::profile::EDITOR_5_PROFILE.id.to_string(),
-        model_name: options
-            .model_name
-            .clone()
-            .unwrap_or_else(|| "RecoveredModel".to_string()),
+        model_name,
         canvas: CanvasOut {
-            width: model.canvas.width.round() as i32,
-            height: model.canvas.height.round() as i32,
-            pixels_per_unit: model.canvas.pixels_per_unit,
-            origin_x: model.canvas.origin.x.round() as i32,
-            origin_y: model.canvas.origin.y.round() as i32,
+            width: round_i32(model.canvas.width, "$canvas", "width")?,
+            height: round_i32(model.canvas.height, "$canvas", "height")?,
+            pixels_per_unit: finite(model.canvas.pixels_per_unit, "$canvas", "pixels_per_unit")?,
+            origin_x: round_i32(model.canvas.origin.x, "$canvas", "origin_x")?,
+            origin_y: round_i32(model.canvas.origin.y, "$canvas", "origin_y")?,
         },
         parameters,
         bindings,
@@ -649,6 +730,144 @@ pub fn build_project(
         unsupported,
         best_effort,
     })
+}
+
+fn round_i32(value: f32, semantic: &str, field: &str) -> Result<i32, WriteError> {
+    let value = finite(value, semantic, field)?;
+    if value < i32::MIN as f32 || value > i32::MAX as f32 {
+        return Err(error(
+            "NumericOverflow",
+            format!("'{semantic}' field '{field}' does not fit an i32"),
+        ));
+    }
+    Ok(value.round() as i32)
+}
+
+fn deformer_parent(
+    model: &Live2DModel,
+    parent_of: &impl Fn(&str) -> ParentRef,
+    id: &str,
+) -> ParentRef {
+    let parent = parent_of(id);
+    if !matches!(parent, ParentRef::Root) {
+        return parent;
+    }
+    // Element-level fallback for hand-built documents without a project node.
+    match model.deformer(&live2d_ir::DeformerId::new(id)) {
+        Some(Deformer::Warp(warp)) => warp
+            .common
+            .parent_deformer
+            .as_ref()
+            .map(|parent| parent_kind(model, parent.as_str()))
+            .unwrap_or_else(|| {
+                warp.common
+                    .parent_part
+                    .as_ref()
+                    .map(|part| {
+                        model
+                            .parts
+                            .iter()
+                            .position(|candidate| candidate.id == *part)
+                            .map(|index| ParentRef::Part(index + 1))
+                            .unwrap_or(ParentRef::Root)
+                    })
+                    .unwrap_or(ParentRef::Root)
+            }),
+        Some(Deformer::Rotation(rotation)) => rotation
+            .common
+            .parent_deformer
+            .as_ref()
+            .map(|parent| parent_kind(model, parent.as_str()))
+            .unwrap_or_else(|| {
+                rotation
+                    .common
+                    .parent_part
+                    .as_ref()
+                    .map(|part| {
+                        model
+                            .parts
+                            .iter()
+                            .position(|candidate| candidate.id == *part)
+                            .map(|index| ParentRef::Part(index + 1))
+                            .unwrap_or(ParentRef::Root)
+                    })
+                    .unwrap_or(ParentRef::Root)
+            }),
+        None => ParentRef::Root,
+    }
+}
+
+fn parent_kind(model: &Live2DModel, id: &str) -> ParentRef {
+    match model.deformer(&live2d_ir::DeformerId::new(id)) {
+        Some(Deformer::Warp(_)) => ParentRef::Warp(id.to_string()),
+        Some(Deformer::Rotation(_)) => ParentRef::Rotation(id.to_string()),
+        None => ParentRef::Root,
+    }
+}
+
+fn mesh_parent(
+    model: &Live2DModel,
+    parent_of: &impl Fn(&str) -> ParentRef,
+    mesh: &live2d_ir::ArtMesh,
+) -> ParentRef {
+    let parent = parent_of(mesh.id.as_str());
+    if !matches!(parent, ParentRef::Root) {
+        return parent;
+    }
+    if let Some(deformer) = &mesh.parent_deformer {
+        let parent = parent_kind(model, deformer.as_str());
+        if !matches!(parent, ParentRef::Root) {
+            return parent;
+        }
+    }
+    if let Some(part) = &mesh.parent_part {
+        if let Some(index) = model
+            .parts
+            .iter()
+            .position(|candidate| candidate.id == *part)
+        {
+            return ParentRef::Part(index + 1);
+        }
+    }
+    ParentRef::Root
+}
+
+fn attach_child(
+    parts: &mut [PartOut],
+    warps: &mut [WarpOut],
+    rotations: &mut [RotationOut],
+    parent: &ParentRef,
+    child: ChildRef,
+) {
+    match parent {
+        ParentRef::Root => {
+            if let Some(root) = parts.first_mut() {
+                root.children.push(child);
+            }
+        }
+        ParentRef::Part(index) => {
+            if let Some(part) = parts.get_mut(*index) {
+                part.children.push(child);
+            }
+        }
+        ParentRef::Warp(id) => {
+            if let Some(index) = warps.iter().position(|warp| warp.semantic == *id) {
+                if let Some(warp) = warps.get_mut(index) {
+                    warp.children.push(child);
+                }
+            }
+        }
+        ParentRef::Rotation(id) => {
+            if let Some(index) = rotations
+                .iter()
+                .position(|rotation| rotation.semantic == *id)
+            {
+                if let Some(rotation) = rotations.get_mut(index) {
+                    rotation.children.push(child);
+                }
+            }
+        }
+    }
 }
 
 fn attach_grid(
@@ -730,9 +949,6 @@ fn to_uvs(mesh: &live2d_ir::ArtMesh) -> Result<Vec<[f32; 2]>, WriteError> {
 }
 
 fn collect_base_positions(mesh: &live2d_ir::ArtMesh) -> Vec<live2d_ir::Vec2> {
-    // The IR stores base geometry implicitly through the first form; when no
-    // form exists the origin is used. This is a documented writer default
-    // (trace entry added by the caller path below).
     mesh.keyforms
         .first()
         .map(|form| form.positions.clone())

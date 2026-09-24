@@ -160,6 +160,13 @@ pub fn decode(bytes: &[u8]) -> CaffResult<DecodedArchive> {
 /// extracted (the writer's own round-trip contract).
 pub fn decode_strict_raw(bytes: &[u8]) -> CaffResult<DecodedArchive> {
     let archive = decode(bytes)?;
+    if !archive.guard_ok {
+        let found = bytes
+            .get(bytes.len().saturating_sub(2)..)
+            .and_then(|slice| <[u8; 2]>::try_from(slice).ok())
+            .unwrap_or([0, 0]);
+        return Err(CaffError::BadGuard { found });
+    }
     for (entry, payload) in archive.entries.iter().zip(archive.payloads.iter()) {
         if payload.is_none() {
             return Err(CaffError::UnsupportedCompression {

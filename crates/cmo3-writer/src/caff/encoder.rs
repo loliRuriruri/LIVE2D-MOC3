@@ -21,6 +21,16 @@ pub fn encode(key: i32, entries: &[CaffEntry]) -> CaffResult<Vec<u8>> {
             field: "entry count exceeds MAX_ENTRIES",
         });
     }
+    // This build only writes RAW entries; compressed payloads would be
+    // written unencoded, so they are rejected instead of guessing.
+    for entry in entries {
+        if !supported_modes().contains(&entry.compression) {
+            return Err(CaffError::UnsupportedCompression {
+                path: entry.path.clone(),
+                mode: entry.compression.mode_byte(),
+            });
+        }
+    }
     let mut out: Vec<u8> = Vec::new();
 
     // Header.

@@ -247,10 +247,12 @@ mod tests {
     }
 
     #[test]
-    fn import_class_list_is_unique_and_sorted_input() {
+    fn import_class_list_is_unique_and_counted() {
         let mut sorted = IMPORT_CLASSES.to_vec();
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted.len(), IMPORT_CLASSES.len(), "duplicate import");
+        // Count pinned by docs/CMO3_VERSION_PROFILE.md.
+        assert_eq!(IMPORT_CLASSES.len(), 124);
     }
 }

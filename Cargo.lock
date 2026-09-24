@@ -114,8 +114,6 @@ dependencies = [
  "hierarchy-recovery",
  "keyform-recovery",
  "live2d-ir",
- "serde",
- "serde_json",
 ]
 
 [[package]]
