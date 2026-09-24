@@ -66,7 +66,9 @@ pub struct EntityCounts {
     pub rotation_deformers: usize,
     /// Number of art meshes.
     pub art_meshes: usize,
-    /// Number of draw order groups.
+    /// Number of draw order groups (defaults to 0 for documents produced
+    /// before this field existed).
+    #[serde(default)]
     pub draw_order_groups: usize,
     /// Number of mask groups.
     pub mask_groups: usize,
@@ -415,9 +417,13 @@ pub struct ArtMesh {
     /// Keyform binding used by this art mesh.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binding: Option<BindingId>,
-    /// Stored visibility flag.
+    /// Stored visibility flag (defaults to `true` when importing documents
+    /// produced before this field existed).
+    #[serde(default = "default_true")]
     pub visible: bool,
-    /// Stored enable flag.
+    /// Stored enable flag (defaults to `true` when importing documents
+    /// produced before this field existed).
+    #[serde(default = "default_true")]
     pub enabled: bool,
     /// Mask groups whose target is this art mesh.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -631,6 +637,10 @@ fn is_zero_usize(value: &usize) -> bool {
     *value == 0
 }
 
+fn default_true() -> bool {
+    true
+}
+
 /// The complete normalized model.
 ///
 /// Field order is the canonical JSON order; arrays are in canonical order:
@@ -661,6 +671,10 @@ pub struct Live2DModel {
     /// later-phase concern).
     pub drawables: Vec<ArtMeshId>,
     /// Draw order groups (source order).
+    ///
+    /// Defaults to empty so documents produced before this field existed
+    /// still import (schema status is experimental).
+    #[serde(default)]
     pub draw_order_groups: Vec<DrawOrderGroup>,
     /// Mask groups (ascending by target art mesh).
     pub mask_groups: Vec<MaskGroup>,

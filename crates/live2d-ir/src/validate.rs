@@ -190,6 +190,17 @@ impl<'a> Validator<'a> {
                 Some(EntityRef::Binding(crate::ids::BindingId::new(duplicate))),
             );
         }
+        let draw_group_duplicates =
+            sets.duplicates_in(self.model.draw_order_groups.iter().map(|group| &group.id.0));
+        for duplicate in draw_group_duplicates {
+            self.fatal(
+                "duplicate_id",
+                format!("duplicate draw order group identifier '{duplicate}'"),
+                Some(EntityRef::DrawOrderGroup(
+                    crate::ids::DrawOrderGroupId::new(duplicate),
+                )),
+            );
+        }
     }
 
     fn check_textures(&mut self) {
@@ -487,15 +498,17 @@ impl<'a> Validator<'a> {
                     );
                 }
             }
-            for (candidate, parent) in &sets.deformer_parents {
-                if *parent == Some(id.as_str()) && !child_deformers.contains(candidate) {
-                    self.fatal(
-                        "inconsistent_reverse_link",
-                        format!(
-                            "deformer '{candidate}' declares '{id}' as its parent but is not listed as a child"
-                        ),
-                        Some(entity.clone()),
-                    );
+            if let Some(claimed) = sets.deformer_children_of.get(id.as_str()) {
+                for candidate in claimed {
+                    if !child_deformers.contains(candidate) {
+                        self.fatal(
+                            "inconsistent_reverse_link",
+                            format!(
+                                "deformer '{candidate}' declares '{id}' as its parent but is not listed as a child"
+                            ),
+                            Some(entity.clone()),
+                        );
+                    }
                 }
             }
 
@@ -527,15 +540,17 @@ impl<'a> Validator<'a> {
                     );
                 }
             }
-            for (mesh, parent) in &sets.mesh_parent_deformer {
-                if *parent == Some(id.as_str()) && !child_meshes.contains(mesh) {
-                    self.fatal(
-                        "inconsistent_reverse_link",
-                        format!(
-                            "art mesh '{mesh}' declares '{id}' as its parent deformer but is not listed as a child"
-                        ),
-                        Some(entity.clone()),
-                    );
+            if let Some(claimed) = sets.mesh_children_of.get(id.as_str()) {
+                for mesh in claimed {
+                    if !child_meshes.contains(mesh) {
+                        self.fatal(
+                            "inconsistent_reverse_link",
+                            format!(
+                                "art mesh '{mesh}' declares '{id}' as its parent deformer but is not listed as a child"
+                            ),
+                            Some(entity.clone()),
+                        );
+                    }
                 }
             }
             if let Some(binding) = &common.binding {
@@ -705,6 +720,29 @@ impl<'a> Validator<'a> {
                     );
                 }
             }
+            if mesh.opacity.is_some() || mesh.draw_order.is_some() {
+                self.fatal(
+                    "field_not_stored",
+                    format!(
+                        "art mesh '{}' has a base opacity/draw order, which is keyform-dependent and not stored in .moc3",
+                        mesh.id
+                    ),
+                    Some(entity.clone()),
+                );
+            } else {
+                expect_field_provenance(
+                    &mut self.out,
+                    mesh.field_provenance.as_slice(),
+                    "opacity",
+                    &entity,
+                );
+                expect_field_provenance(
+                    &mut self.out,
+                    mesh.field_provenance.as_slice(),
+                    "draw_order",
+                    &entity,
+                );
+            }
             if mesh.uvs.len() != mesh.vertex_count {
                 self.fatal(
                     "uv_count_mismatch",
@@ -872,14 +910,8 @@ impl<'a> Validator<'a> {
     }
 
     fn check_draw_order_groups(&mut self, sets: &IdSets) {
-        let group_ids: BTreeSet<&str> = self
-            .model
-            .draw_order_groups
-            .iter()
-            .map(|group| group.id.as_str())
-            .collect();
         for group in &self.model.draw_order_groups {
-            let entity = EntityRef::Model(Default::default());
+            let entity = EntityRef::DrawOrderGroup(group.id.clone());
             for item in &group.items {
                 match &item.object {
                     DrawOrderTarget::Part(id) => {
@@ -918,7 +950,7 @@ impl<'a> Validator<'a> {
                     }
                 }
                 if let Some(nested) = &item.self_group {
-                    if !group_ids.contains(nested.as_str()) {
+                    if !sets.draw_groups.contains(nested.as_str()) {
                         self.fatal(
                             "dangling_reference",
                             format!(
@@ -947,7 +979,9 @@ impl<'a> Validator<'a> {
                 Severity::Warning,
                 "hierarchy_cycle",
                 format!("draw order group '{id}' participates in a nesting cycle"),
-                Some(EntityRef::Model(Default::default())),
+                Some(EntityRef::DrawOrderGroup(
+                    crate::ids::DrawOrderGroupId::new(id),
+                )),
             );
         }
     }
@@ -1209,6 +1243,13 @@ struct IdSets<'a> {
     mask_group_targets: BTreeMap<&'a str, &'a str>,
     /// Art mesh id -> listed mask group ids.
     mesh_mask_groups: BTreeMap<&'a str, &'a [crate::ids::MaskGroupId]>,
+    /// Draw order group ids (uniqueness + reference checks).
+    draw_groups: BTreeSet<&'a str>,
+    /// Parent deformer id -> deformers claiming it as parent (reverse index
+    /// so completeness checks stay O(n log n) on large documents).
+    deformer_children_of: BTreeMap<&'a str, BTreeSet<&'a str>>,
+    /// Parent deformer id -> art meshes claiming it as parent.
+    mesh_children_of: BTreeMap<&'a str, BTreeSet<&'a str>>,
 }
 
 impl<'a> IdSets<'a> {
@@ -1272,6 +1313,13 @@ impl<'a> IdSets<'a> {
                 .iter()
                 .map(|mesh| (mesh.id.as_str(), mesh.mask_groups.as_slice()))
                 .collect(),
+            draw_groups: model
+                .draw_order_groups
+                .iter()
+                .map(|group| group.id.as_str())
+                .collect(),
+            deformer_children_of: collect_deformer_children(model),
+            mesh_children_of: collect_mesh_children(model),
         }
     }
 
@@ -1288,6 +1336,40 @@ impl<'a> IdSets<'a> {
         }
         duplicates
     }
+}
+
+/// Build `parent deformer -> claimed child deformers` once per validation.
+fn collect_deformer_children<'a>(model: &'a Live2DModel) -> BTreeMap<&'a str, BTreeSet<&'a str>> {
+    let mut out: BTreeMap<&'a str, BTreeSet<&'a str>> = BTreeMap::new();
+    for deformer in &model.deformers {
+        let (id, parent) = match deformer {
+            Deformer::Warp(warp) => (
+                warp.common.id.as_str(),
+                warp.common.parent_deformer.as_ref(),
+            ),
+            Deformer::Rotation(rotation) => (
+                rotation.common.id.as_str(),
+                rotation.common.parent_deformer.as_ref(),
+            ),
+        };
+        if let Some(parent) = parent {
+            out.entry(parent.as_str()).or_default().insert(id);
+        }
+    }
+    out
+}
+
+/// Build `parent deformer -> claimed child art meshes` once per validation.
+fn collect_mesh_children<'a>(model: &'a Live2DModel) -> BTreeMap<&'a str, BTreeSet<&'a str>> {
+    let mut out: BTreeMap<&'a str, BTreeSet<&'a str>> = BTreeMap::new();
+    for mesh in &model.art_meshes {
+        if let Some(parent) = &mesh.parent_deformer {
+            out.entry(parent.as_str())
+                .or_default()
+                .insert(mesh.id.as_str());
+        }
+    }
+    out
 }
 
 fn check_keyform_index(

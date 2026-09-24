@@ -4,7 +4,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::ids::{
-    ArtMeshId, BindingId, DeformerId, GlueId, MaskGroupId, ParameterId, PartId, TextureId,
+    ArtMeshId, BindingId, DeformerId, DrawOrderGroupId, GlueId, MaskGroupId, ParameterId, PartId,
+    TextureId,
 };
 
 /// Severity of a diagnostic.
@@ -43,6 +44,8 @@ pub enum EntityRef {
     Glue(GlueId),
     /// A keyform binding.
     Binding(BindingId),
+    /// A draw order group.
+    DrawOrderGroup(DrawOrderGroupId),
 }
 
 /// Unit marker so `EntityRef::Model` serializes as `{"kind":"model","id":null}`.

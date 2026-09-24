@@ -2,7 +2,7 @@
   "schema": "live2d-recovery/inspect-report/1",
   "source": {
     "file_name": "fixture-007-multi-params.moc3",
-    "file_size": 2640
+    "file_size": 2664
   },
   "summary": {
     "moc3_version_byte": 4,
@@ -36,8 +36,8 @@
       "uvs": 16,
       "position_indices": 12,
       "drawable_masks": 0,
-      "draw_order_groups": 1,
-      "draw_order_group_objects": 2,
+      "draw_order_groups": 2,
+      "draw_order_group_objects": 3,
       "glue": 0,
       "glue_info": 0,
       "glue_keyforms": 0,
@@ -165,8 +165,8 @@
       "uvs": 16,
       "position_indices": 12,
       "drawable_masks": 0,
-      "draw_order_groups": 1,
-      "draw_order_group_objects": 2,
+      "draw_order_groups": 2,
+      "draw_order_group_objects": 3,
       "glue": 0,
       "glue_info": 0,
       "glue_keyforms": 0,
@@ -380,6 +380,14 @@
       {
         "index": 0,
         "object_begin": 0,
+        "object_count": 1,
+        "object_total_count": 1,
+        "max_order": 0,
+        "min_order": 0
+      },
+      {
+        "index": 1,
+        "object_begin": 1,
         "object_count": 2,
         "object_total_count": 2,
         "max_order": 0,
@@ -389,12 +397,18 @@
     "draw_order_items": [
       {
         "index": 0,
+        "object_type": 1,
+        "object_index": 0,
+        "self_group": 1
+      },
+      {
+        "index": 1,
         "object_type": 0,
         "object_index": 0,
         "self_group": -1
       },
       {
-        "index": 1,
+        "index": 2,
         "object_type": 0,
         "object_index": 1,
         "self_group": -1
@@ -500,13 +514,13 @@
       },
       {
         "name": "glue.id_runtime",
-        "offset": 2376,
+        "offset": 2400,
         "elements": 0,
         "byte_size": 0
       },
       {
         "name": "parameter.key_runtime",
-        "offset": 2376,
+        "offset": 2400,
         "elements": 5,
         "byte_size": 40
       }

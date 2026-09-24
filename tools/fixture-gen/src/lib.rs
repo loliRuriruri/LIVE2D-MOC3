@@ -1717,7 +1717,20 @@ fn fixture_007() -> SyntheticModel {
             },
         ],
         deformers: Vec::new(),
-        draw_groups: simple_group(2),
+        // Two groups: group 0 nests group 1 through a part item; group 1
+        // holds both art meshes (exercises nested draw order groups).
+        draw_groups: vec![
+            DrawGroupSpec {
+                items: vec![(1, 0, 1)],
+                max_order: 0,
+                min_order: 0,
+            },
+            DrawGroupSpec {
+                items: vec![(0, 0, -1), (0, 1, -1)],
+                max_order: 0,
+                min_order: 0,
+            },
+        ],
         ..SyntheticModel::default()
     }
 }

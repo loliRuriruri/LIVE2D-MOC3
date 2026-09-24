@@ -52,7 +52,11 @@ $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_i
 | 013 glue | 3.3 | two glued art meshes with info entries and one glue keyform |
 
 Fixture 001 additionally exercises non-default drawable flags (additive +
-double sided) and most fixtures carry draw order groups.
+double sided); fixture 007 exercises nested draw order groups (a part item
+nesting a second group); fixture 013 exercises glue. The offscreen-surface
+reference path has no fixture (the parser rejects non-default values when no
+surfaces exist); that gap is documented in LIMITATIONS and covered by
+validator-level tests only.
 
 Corruption fixtures are generated in-test (deterministic patches), so they
 cannot rot and require no binary blobs. Regression rule (master spec

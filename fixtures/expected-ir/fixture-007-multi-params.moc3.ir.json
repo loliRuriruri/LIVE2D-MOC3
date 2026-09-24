@@ -17,7 +17,7 @@
       "warp_deformers": 0,
       "rotation_deformers": 0,
       "art_meshes": 2,
-      "draw_order_groups": 1,
+      "draw_order_groups": 2,
       "mask_groups": 0,
       "textures": 1,
       "glue": 0,
@@ -507,6 +507,24 @@
   "draw_order_groups": [
     {
       "id": "drawgroup:000000",
+      "items": [
+        {
+          "object": {
+            "kind": "part",
+            "id": "Part_Synthetic_00"
+          },
+          "self_group": "drawgroup:000001"
+        }
+      ],
+      "maximum_order": 0,
+      "minimum_order": 0,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:draw_group"
+      }
+    },
+    {
+      "id": "drawgroup:000001",
       "items": [
         {
           "object": {

@@ -204,6 +204,9 @@ pub fn build_ir_from_file(
         path: path.to_path_buf(),
         source,
     })?;
+    // Release the input buffer before mapping so the IR is built with the
+    // parser pools as the only large allocation besides the output.
+    drop(bytes);
     Ok(build_ir(parsed))
 }
 

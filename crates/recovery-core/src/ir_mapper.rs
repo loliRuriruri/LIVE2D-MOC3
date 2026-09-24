@@ -712,7 +712,9 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
             let Some(object) = object else {
                 continue;
             };
-            let is_part = matches!(object, DrawOrderTarget::Part(_));
+            // The parser guarantees part items carry a nested group; a part
+            // item without one can only appear in hand-edited IR and is
+            // rejected by `validate_ir` (`invalid_reference`, Fatal).
             let self_group = if item.self_group >= 0 {
                 usize::try_from(item.self_group)
                     .ok()
@@ -721,18 +723,6 @@ pub fn map_parsed_model(parsed: ParsedModel) -> Live2DModel {
             } else {
                 None
             };
-            if is_part && self_group.is_none() {
-                if let Some(group_id) = draw_group_ids.get(index) {
-                    diagnostics.push(Diagnostic::for_entity(
-                        Severity::Warning,
-                        "invalid_reference",
-                        format!(
-                            "draw order group '{group_id}' has a part item without a nested group"
-                        ),
-                        EntityRef::Model(Default::default()),
-                    ));
-                }
-            }
             items.push(DrawOrderItem { object, self_group });
         }
         if let Some(id) = draw_group_ids.get(index) {

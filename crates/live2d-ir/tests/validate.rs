@@ -236,6 +236,30 @@ fn stored_but_unmodeled_fields_are_rejected_when_filled() {
     model.parts[0].draw_order = Some(1.0);
     let diagnostics = validate_ir(&model);
     assert!(codes(&diagnostics).contains(&"field_not_stored".to_string()));
+
+    let mut model = minimal_model();
+    model.art_meshes[0].opacity = Some(0.5);
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"field_not_stored".to_string()));
+    assert!(has_fatal(&diagnostics));
+}
+
+#[test]
+fn duplicate_draw_order_group_ids_are_fatal() {
+    let mut model = minimal_model();
+    for _ in 0..2 {
+        model.draw_order_groups.push(live2d_ir::DrawOrderGroup {
+            id: live2d_ir::DrawOrderGroupId::new("drawgroup:000000"),
+            items: Vec::new(),
+            maximum_order: 0,
+            minimum_order: 0,
+            provenance: live2d_ir::Provenance::exact("test:draw_group".to_string()),
+        });
+    }
+    model.metadata.entity_counts = model.entity_counts();
+    let diagnostics = validate_ir(&model);
+    assert!(codes(&diagnostics).contains(&"duplicate_id".to_string()));
+    assert!(has_fatal(&diagnostics));
 }
 
 #[test]

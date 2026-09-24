@@ -203,6 +203,20 @@ fn fixture_007_maps_multi_bindings() {
     assert_eq!(model.parts[0].children.len(), 1);
     // The v4.2 color pools are deliberately not mapped yet.
     assert!(has_code(&model, "unmapped_sections"));
+    // Nested draw order groups: group 0 nests group 1 through a part item.
+    assert_eq!(model.draw_order_groups.len(), 2);
+    let outer = &model.draw_order_groups[0];
+    assert_eq!(outer.items.len(), 1);
+    assert_eq!(
+        outer.items[0].object,
+        live2d_ir::DrawOrderTarget::Part(live2d_ir::PartId::new("Part_Synthetic_00"))
+    );
+    assert_eq!(
+        outer.items[0].self_group,
+        Some(model.draw_order_groups[1].id.clone())
+    );
+    assert_eq!(model.draw_order_groups[1].items.len(), 2);
+    assert!(!live2d_ir::has_fatal(&model.diagnostics));
 }
 
 #[test]

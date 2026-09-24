@@ -89,7 +89,9 @@ later-phase concern; ordering here is canonical, not visual.
 2. Otherwise a deterministic fallback is generated from the source index:
    `parameter:000004`, `part:000001`, `artmesh:000012`, `warp:000003`,
    `rotation:000002`, `texture:000000`, `mask:000001`, `glue:000002`,
-   `binding:000005`.
+   `binding:000005`, `drawgroup:000003`.
+   Dangling glue references (defensive, hand-edited IR only) use the
+   documented error placeholder `artmesh:invalid:{side}:{index:06}`.
 3. The first occurrence of a duplicated source name keeps the name; later
    occurrences receive the fallback (`duplicate_source_id`, Recoverable).
 4. `source_name` always preserves the stored text when present, even when the
@@ -142,7 +144,10 @@ never collide with another deformer).
 
 Rules: empty/zero entries are omitted; contents are counts and identifiers
 only (never payload dumps); the whole binary is never embedded. The
-validator and mapper never drop these entries.
+validator and mapper never drop these entries. Full byte-level details of
+unknown regions (for example the offsets of non-zero header padding bytes)
+stay in the AGENT.1 inspection report, which is the designated place for
+byte-level research data.
 
 ## 8. Canonical ordering
 
@@ -198,8 +203,13 @@ Fatal diagnostics block export (`to_json_str` refuses them, `export-ir` exits
 - Library: `export_ir_json` (validates first), `import_ir_json` (schema
   check), `validate_ir`.
 - Round-trip contract: `MOC3 -> IR -> JSON -> IR -> JSON` must be
-  byte-identical at the JSON stage and equal as models (tested for all 12
+  byte-identical at the JSON stage and equal as models (tested for all 13
   fixtures). `IR JSON -> MOC3` is intentionally **not** implemented.
+- `import_ir_json` does not validate and serde currently ignores unknown
+  JSON fields; library embedders must call `validate_ir`, and the CLI
+  `validate-ir` command re-validates every imported document. Fields added
+  during the experimental phase carry `#[serde(default)]` where a safe
+  default exists so older documents keep importing.
 
 ## 11. Example (trimmed from `fixture-002` golden)
 
