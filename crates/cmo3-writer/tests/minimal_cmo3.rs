@@ -227,6 +227,25 @@ fn negative_fixtures_fail_structurally_without_output() {
         Some("MissingTextureAsset")
     );
 
+    // Model-image count mismatch must fail validation, never panic.
+    let model2 = support::base_model(2);
+    let assets2b = support::assets(2);
+    let hierarchy2 = reconstruct(&model2, &RecoveryPolicy::default());
+    let keyforms2 = recover(&model2, Some(&hierarchy2));
+    let mut project2 = build_project(
+        &model2,
+        &hierarchy2,
+        &keyforms2,
+        &assets2b,
+        &cmo3_writer::map::MapOptions::default(),
+    )
+    .expect("mapping");
+    project2.model_images.pop();
+    assert!(write_minimal_cmo3(&project2, &IdentityOptions::default(), &assets2b).is_err());
+    assert!(validate_typed(&project2)
+        .iter()
+        .any(|finding| finding.code == "model_image_count_mismatch"));
+
     // Invalid geometry carries a fatal typed finding at map time already.
     assert!(support::base_model(1).art_meshes[0].uvs.len() == 4);
 }

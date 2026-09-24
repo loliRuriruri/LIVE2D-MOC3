@@ -771,6 +771,32 @@ pub fn build_project(
         });
     }
 
+    // Writer-required keyform/parameter defaults (minimal 5.1 writer).
+    for grid in &grids {
+        defaults.push(WriterDefault {
+            semantic: grid.semantic.clone(),
+            field: "keyform.interpolation",
+            reason: "MOC3 stores no interpolation type; the editor-required enum is a writer-required LINEAR default",
+        });
+        defaults.push(WriterDefault {
+            semantic: grid.semantic.clone(),
+            field: "keyform.keys",
+            reason: "single static form: one synthetic key value [0.0]",
+        });
+        defaults.push(WriterDefault {
+            semantic: grid.semantic.clone(),
+            field: "keyform.forms",
+            reason: "AGENT.4 keyform grids are out of AGENT.5.1 scope; one static form per target",
+        });
+    }
+    if !model.parameters.is_empty() {
+        defaults.push(WriterDefault {
+            semantic: "$parameters".to_string(),
+            field: "parameter.substitution",
+            reason: "recovered parameters are not emitted in the minimal writer; a single synthetic parameter drives the static forms",
+        });
+    }
+
     // ---- textures --------------------------------------------------------
     let textures_out: Vec<TextureOut> = textures
         .assets

@@ -25,7 +25,7 @@ implementation; `UNKNOWN` = not resolvable from the pinned sources.
 | `StaticFilterDefGuid` | `uuid` | GUID | REQUIRED | `5e9fe1ea-...abe301` (`CLayerSelector`) | same value | both | E2 | fixed GUIDs from `profile::fixed_guids` | none |
 | `StaticFilterDefGuid` | `uuid` | GUID | REQUIRED | `4083cd1f-...d55ed8` (`CLayerFilter`) | same value | both | E2 | fixed | none |
 | `FilterValue` ×9 | `name` | string | REQUIRED | 9 names (incl. 2 inline ids) | same set | both | E2 | emitted via `FILTER_VALUE_NAMES` | none |
-| `FilterValue` | `FilterValueId id` | ref or inline | REQUIRED | ref for 7, inline `ilf_outputImageRes`/`ilf_outputTransform` for 2 | same | both | E2 | same split | none |
+| `FilterValue` | `FilterValueId id` | ref or inline | REQUIRED | refs: values 0-5 -> ids 0-5, value 7 -> `mi_output_transform`; inline `ilf_outputImageRes` (value 6) / `ilf_outputTransform` (value 8) | same | both | E2 | explicit index table `FILTER_VALUE_ID_INDEX` | none |
 | `FilterValue` | `defaultValueInitializer` | null | REQUIRED | `<null>` | `<null>` | both | E2 | emitted | none |
 
 Fixed id strings (verbatim order): `ilf_outputLayerData`,

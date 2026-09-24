@@ -54,10 +54,19 @@ impl XmlElement {
         self.attr(name, format!("#{id}"))
     }
 
-    /// Serialize with 2-space indentation and a trailing newline.
+    /// Serialize with 2-space indentation and a trailing newline, including
+    /// the XML declaration.
     pub fn render(&self) -> String {
         let mut out = String::new();
         let _ = writeln!(out, r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+        out.push_str(&self.render_body());
+        out
+    }
+
+    /// Serialize without the XML declaration (callers emit it once when they
+    /// prepend processing instructions).
+    pub fn render_body(&self) -> String {
+        let mut out = String::new();
         render_element(self, 0, &mut out);
         out
     }

@@ -35,7 +35,7 @@ new rule id.
 
 | Field | Value | Class | Reason |
 |---|---|---|---|
-| parameter name/id (single synthetic parameter) | `Param_Minimal`, keys `[0.0]`, min 0/max 1/default 0 | WRITER_REQUIRED_DEFAULT | CMO3 keyform bindings need a parameter; the minimal model carries no recovered parameters |
+| parameter name/id (single synthetic parameter) | `Param_Minimal`, keys `[0.0]`, min 0/max 1/default 0 | WRITER_REQUIRED_DEFAULT | CMO3 keyform bindings need a parameter; recovered parameters are not emitted in the minimal writer (traced as `parameter.substitution`) |
 | keyform binding keys | `[0.0]` | WRITER_REQUIRED_DEFAULT | single static form |
 | `interpolationType`/`extendedInterpolationType` | `LINEAR` | WRITER_REQUIRED_DEFAULT | section above |
 | art-mesh form count | 1 static form (drawOrder 500, opacity 1.0) | WRITER_REQUIRED_DEFAULT | AGENT.4 keyform grids are out of scope for 5.1 |
@@ -43,7 +43,7 @@ new rule id.
 | mesh/part/parameter display names | recovered when stored, else deterministic placeholders (`ArtMesh_000001`, ...) | RECOVERED or SYNTHETIC_IDENTITY | existing rule from AGENT.5 |
 | model name | `RecoveredModel` (or `--name`) | SYNTHETIC_IDENTITY | no stored model name exists |
 | layered image `psdFile`/`name` | `RecoveredLayeredImage.psd` | SYNTHETIC_IDENTITY | no original PSD exists; explicitly synthetic |
-| layer names | mesh names (recovered or placeholder) | RECOVERED / SYNTHETIC_IDENTITY | one layer per visible mesh |
+| layer names | mesh names (recovered or placeholder) | RECOVERED / SYNTHETIC_IDENTITY | one layer per textured mesh |
 | layer ids | `00-00-{index:02}-01` | SYNTHETIC_IDENTITY | pinned writer formats |
 | model-image/group names, `filter0_{i}` ids | deterministic synthetic strings | SYNTHETIC_IDENTITY | object identity only |
 | GUIDs | deterministic mode (default) or random (explicit) | SYNTHETIC_IDENTITY | never enter the IR |

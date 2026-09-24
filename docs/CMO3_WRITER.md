@@ -36,10 +36,11 @@ Dependency direction: `cmo3-writer` depends on `live2d-ir`,
 | XML writer | DONE | typed element tree, full escaping of `& < > " '`, no DTD/entities ever |
 | Version profile | DONE | single Cubism Editor 5.x profile, `docs/CMO3_VERSION_PROFILE.md` |
 | Texture asset model | DONE | assets supplied separately, page-derived internal archive names, FNV-1a dedup identity, no placeholder images |
-| Semantic mapping | DONE (strict/best-effort) | `map::build_project`: strict fails on missing texture asset, unresolved texture reference, unresolved keyform grid/band/parameter, non-finite floats (parameters, canvas, rotations, forms, geometry) and invalid geometry; best-effort records what was omitted (and rolls back partially built bindings) and marks BEST_EFFORT |
-| `main.xml` serializer | NOT IMPLEMENTED | design + field-level evidence complete (`docs/CMO3_MINIMAL_REQUIREMENTS.md`); a draft was discarded rather than shipping dangling `xs.ref` values |
-| Object-pool/semantic validators | PLANNED | specified in `docs/CMO3_VALIDATION.md`; CAFF validation exists today |
-| CLI `write-cmo3` / `inspect-cmo3` | NOT IMPLEMENTED | gated on the serializer |
+| Semantic mapping | DONE (strict/best-effort) | `map::build_project`: strict fails on missing texture asset, unresolved texture reference, unresolved keyform grid/band/parameter, non-finite floats (parameters, canvas, rotations, forms, geometry) and invalid geometry; best-effort records what was omitted (and rolls back partially built bindings) and marks BEST_EFFORT. Also builds the typed image pipeline (resources, one layered image, one layer per textured mesh, model images) |
+| `main.xml` serializer | DONE (minimal MODEL_IMAGE) | `serialize::serialize`: identity/pool allocation, filter graph, layered-image chain, texture inputs, canvas/parameter/part/mesh emission, one static form per target; declaration emitted exactly once |
+| Validators | DONE | `validate_typed` (typed refs, counts, geometry, duplicates) and `scan_xml` (duplicate ids, dangling refs, malformed refs, GUID-type mismatches, single XML declaration) |
+| Minimal `.cmo3` packaging | DONE | `write_minimal_cmo3`: validate -> serialize -> scan -> CAFF encode -> decode/verify; fatal findings produce no bytes |
+| CLI `write-cmo3` / `inspect-cmo3` | NOT IMPLEMENTED | library API only in AGENT.5.1; CLI is AGENT.5 continuation work |
 
 ## Writer-required defaults vs recovered data
 
@@ -54,13 +55,11 @@ writers' enumeration; the recovered document deliberately reports ordering
 as unknown).
 
 Interpolation metadata: the recovered keyform document does not determine
-an interpolation type. How the serializer should handle the
-editor-required `interpolationType`/`extendedInterpolationType` fields is an
-**open spec question**: `docs/CMO3_MAPPING_PLAN.md` records "forcing LINEAR
-for all bindings is prohibited" (AGENT.4 hand-off), while a writer-required
-constant with a trace entry would satisfy work-order sections 40-41 without
-claiming recovered semantics. This must be decided before Gate 5B; nothing
-is emitted today.
+an interpolation type. The decision (recorded in
+`docs/CMO3_WRITER_DEFAULTS.md`) is that `LINEAR` is emitted as a
+**writer-required default with a per-grid trace entry**, never as recovered
+semantics; the AGENT.4 hand-off wording about "forcing LINEAR" concerns
+claiming recovery, which we do not.
 
 ## Evidence base
 
@@ -73,8 +72,9 @@ is emitted today.
 - License discipline: source reading only; no code copied; the LGPL
   Quadrism project remains behavioral-only and was not consulted for code.
 
-## Not implemented on purpose
+## Not implemented on purpose (AGENT.5.1 scope boundary)
 
-- PSD recovery, GUI, preview images, compressed archive entries, the
-  ModelImage filter graph and layered-image chain (evidence gaps, not
-  budget gaps - see `docs/CMO3_MINIMAL_REQUIREMENTS.md` sections 4-6).
+- PSD recovery, GUI, preview images, compressed archive entries.
+- Deformers, AGENT.4 keyform grids, draw-order groups, masks beyond the
+  first GUID, and all sample/editor metadata: explicitly deferred to the
+  AGENT.5 continuation (evidence exists; scope does not).

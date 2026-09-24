@@ -681,12 +681,15 @@ pub fn layered_image_wrapper(layered_image_id: usize) -> XmlElement {
         .child(bool_leaf("isReplaced", false))
 }
 
-/// ACLayerEntry super used by the root group and layers.
+/// ACLayerEntry super used by the root group and layers. `group` is the
+/// owning `CLayerGroup` for ordinary layers and `None` (null) for the root.
 pub fn layer_entry_super(
     name: &str,
     guid_note: &str,
+    guid_uuid: &str,
     blend_id: usize,
     layered_image_id: usize,
+    group: Option<usize>,
 ) -> XmlElement {
     let mut entry = XmlElement::new("ACLayerEntry").attr("xs.n", "super");
     entry.push(string_leaf("name", name));
@@ -697,10 +700,13 @@ pub fn layer_entry_super(
     entry.push(
         XmlElement::new("CLayerGuid")
             .attr("xs.n", "guid")
-            .attr("uuid", format!("layer-{guid_note}"))
+            .attr("uuid", guid_uuid)
             .attr("note", guid_note),
     );
-    entry.push(null_leaf("group"));
+    match group {
+        Some(group) => entry.push(reference("CLayerGroup", "group", group)),
+        None => entry.push(null_leaf("group")),
+    }
     entry.push(int_leaf("opacity255", 255));
     entry.push(empty_hash_map("_optionOfIOption"));
     entry.push(reference(

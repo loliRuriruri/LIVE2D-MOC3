@@ -75,6 +75,27 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
             format!("{mesh_count} mesh(es) require one layer each, found {layer_count}"),
         ));
     }
+    let textured_meshes = project
+        .meshes
+        .iter()
+        .filter(|mesh| mesh.model_image.is_some())
+        .count();
+    if model_image_count != textured_meshes {
+        findings.push(Finding::fatal(
+            "model_image_count_mismatch",
+            format!(
+                "{textured_meshes} textured mesh(es) require one model image each, found {model_image_count}"
+            ),
+        ));
+    }
+    for (index, mesh) in project.meshes.iter().enumerate() {
+        if mesh.model_image.is_some() && mesh.texture.is_none() {
+            findings.push(Finding::fatal(
+                "model_image_without_texture",
+                format!("mesh {index} has a model image but no texture resource"),
+            ));
+        }
+    }
 
     for (index, part) in project.parts.iter().enumerate() {
         match &part.parent {
@@ -222,14 +243,21 @@ pub struct XmlScan {
     pub dangling: Vec<(String, usize)>,
     /// References from GUID-typed elements to non-GUID targets.
     pub guid_type_mismatches: Vec<(String, usize, String)>,
+    /// `xs.id`/`xs.ref` values that are not `#<number>` (tag, raw value).
+    pub malformed_refs: Vec<(String, String)>,
+    /// Number of `<?xml ...?>` declarations found.
+    pub xml_decl_count: usize,
 }
 
 impl XmlScan {
-    /// True when the document is internally consistent.
+    /// True when the document is internally consistent and well formed enough
+    /// for our own checks (single declaration, no malformed refs).
     pub fn is_valid(&self) -> bool {
         self.duplicate_ids.is_empty()
             && self.dangling.is_empty()
             && self.guid_type_mismatches.is_empty()
+            && self.malformed_refs.is_empty()
+            && self.xml_decl_count == 1
     }
 }
 
@@ -248,7 +276,13 @@ pub fn scan_xml(xml: &str) -> XmlScan {
         cursor = start + 1;
         // Skip declarations, processing instructions, comments and closers.
         match bytes.get(cursor) {
-            Some(b'?') | Some(b'!') | Some(b'/') => continue,
+            Some(b'?') => {
+                if xml[start..].starts_with("<?xml ") {
+                    scan.xml_decl_count += 1;
+                }
+                continue;
+            }
+            Some(b'!') | Some(b'/') => continue,
             None => break,
             _ => {}
         }
@@ -285,9 +319,17 @@ pub fn scan_xml(xml: &str) -> XmlScan {
             };
             let value = &after[1..1 + close_rel];
             if name == "xs.id" {
-                id = value.strip_prefix('#').and_then(|raw| raw.parse().ok());
+                match value.strip_prefix('#').map(str::parse::<usize>) {
+                    Some(Ok(parsed)) => id = Some(parsed),
+                    Some(Err(_)) => scan.malformed_refs.push((tag.clone(), value.to_string())),
+                    None => scan.malformed_refs.push((tag.clone(), value.to_string())),
+                }
             } else if name == "xs.ref" {
-                ref_target = value.strip_prefix('#').and_then(|raw| raw.parse().ok());
+                match value.strip_prefix('#').map(str::parse::<usize>) {
+                    Some(Ok(parsed)) => ref_target = Some(parsed),
+                    Some(Err(_)) => scan.malformed_refs.push((tag.clone(), value.to_string())),
+                    None => scan.malformed_refs.push((tag.clone(), value.to_string())),
+                }
             }
             rest = &after[1 + close_rel + 1..];
         }
@@ -420,10 +462,14 @@ mod tests {
 
     use super::*;
 
+    const DECL: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+
     #[test]
     fn scanner_detects_dangling_and_duplicate_ids() {
-        let xml = "<root><a xs.id=\"#0\" xs.n=\"x\"/><b xs.id=\"#0\"/><c xs.ref=\"#9\"/><DGuid xs.ref=\"#7\"/><DGuid xs.id=\"#7\" xs.n=\"g\"/></root>";
-        let scan = scan_xml(xml);
+        let xml = format!(
+            "{DECL}<root><a xs.id=\"#0\" xs.n=\"x\"/><b xs.id=\"#0\"/><c xs.ref=\"#9\"/><DGuid xs.ref=\"#7\"/><DGuid xs.id=\"#7\" xs.n=\"g\"/></root>"
+        );
+        let scan = scan_xml(&xml);
         assert_eq!(scan.duplicate_ids, vec![0]);
         assert_eq!(scan.dangling, vec![("c".to_string(), 9)]);
         assert!(!scan.is_valid());
@@ -431,15 +477,30 @@ mod tests {
 
     #[test]
     fn scanner_accepts_balanced_references() {
-        let xml = "<root><CLayerGuid xs.id=\"#1\" uuid=\"u\"/><CLayer xs.ref=\"#1\"/></root>";
-        let scan = scan_xml(xml);
+        let xml = format!(
+            "{DECL}<root><CLayerGuid xs.id=\"#1\" uuid=\"u\"/><CLayer xs.ref=\"#1\"/></root>"
+        );
+        let scan = scan_xml(&xml);
         assert!(scan.is_valid(), "{scan:?}");
     }
 
     #[test]
     fn scanner_flags_guid_type_mismatch() {
-        let xml = "<root><CLayerGuid xs.id=\"#1\" uuid=\"u\"/><CLayerGuid xs.ref=\"#1\"/><CLayer xs.id=\"#2\"/><CLayerGuid xs.ref=\"#2\"/></root>";
-        let scan = scan_xml(xml);
+        let xml = format!(
+            "{DECL}<root><CLayerGuid xs.id=\"#1\" uuid=\"u\"/><CLayerGuid xs.ref=\"#1\"/><CLayer xs.id=\"#2\"/><CLayerGuid xs.ref=\"#2\"/></root>"
+        );
+        let scan = scan_xml(&xml);
         assert_eq!(scan.guid_type_mismatches.len(), 1);
+    }
+
+    #[test]
+    fn scanner_flags_malformed_refs_and_duplicate_declarations() {
+        let xml = format!(
+            "{DECL}{DECL}<root><a xs.ref=\"#abc\"/><b xs.id=\"#99999999999999999999\"/></root>"
+        );
+        let scan = scan_xml(&xml);
+        assert_eq!(scan.malformed_refs.len(), 2);
+        assert_eq!(scan.xml_decl_count, 2);
+        assert!(!scan.is_valid());
     }
 }

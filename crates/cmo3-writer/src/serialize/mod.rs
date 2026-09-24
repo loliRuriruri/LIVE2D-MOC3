@@ -77,6 +77,21 @@ pub const FILTER_VALUE_NAMES: [&str; 9] = [
     "LayerToCanvas transform",
 ];
 
+/// `FilterValue` -> shared `FilterValueId` index (`None` = inline id).
+/// Pinned pairing: value 7 uses `mi_output_transform`; values 6 and 8 carry
+/// the inline `ilf_outputImageRes`/`ilf_outputTransform` ids.
+const FILTER_VALUE_ID_INDEX: [Option<usize>; 9] = [
+    Some(0), // ilf_outputLayerData
+    Some(1), // mi_input_layerInputData
+    Some(2), // ilf_inputLayerData
+    Some(3), // mi_currentImageGuid
+    Some(4), // ilf_currentImageGuid
+    Some(5), // mi_output_image
+    None,    // ilf_outputImageRes (inline)
+    Some(6), // mi_output_transform
+    None,    // ilf_outputTransform (inline)
+];
+
 /// Serialize the project into `main.xml`.
 pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> SerializedCmo3 {
     let mode = if options.deterministic_guids {
@@ -181,24 +196,24 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             .attr("xs.id", format!("#{id}"))
             .attr("xs.idx", id.to_string());
         element.push(string_leaf("name", name));
-        if index == 6 {
-            element.push(
-                XmlElement::new("FilterValueId")
-                    .attr("xs.n", "id")
-                    .attr("idstr", INLINE_OUTPUT_IMAGE_RES),
-            );
-        } else if index == 8 {
-            element.push(
-                XmlElement::new("FilterValueId")
-                    .attr("xs.n", "id")
-                    .attr("idstr", INLINE_OUTPUT_TRANSFORM),
-            );
-        } else {
-            element.push(reference(
+        match FILTER_VALUE_ID_INDEX[index] {
+            Some(id_index) => element.push(reference(
                 "FilterValueId",
                 "id",
-                id_of(FILTER_VALUE_ID_NAMES[index]),
-            ));
+                id_of(FILTER_VALUE_ID_NAMES[id_index]),
+            )),
+            None => {
+                let inline = if index == 6 {
+                    INLINE_OUTPUT_IMAGE_RES
+                } else {
+                    INLINE_OUTPUT_TRANSFORM
+                };
+                element.push(
+                    XmlElement::new("FilterValueId")
+                        .attr("xs.n", "id")
+                        .attr("idstr", inline),
+                );
+            }
         }
         element.push(null_leaf("defaultValueInitializer"));
         filter_values.push(id);
@@ -621,14 +636,22 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         root_group_id,
         project.layered_images.first(),
     ) {
+        let root_layer_uuid = guids.allocate("CLayerGuid", "layer-group-root");
+        let layer_uuids: Vec<String> = (0..layered.layers.len())
+            .map(|index| guids.allocate("CLayerGuid", &format!("layer-{index}")))
+            .collect();
+
         let mut root_group = XmlElement::new("CLayerGroup")
             .attr("xs.id", format!("#{root_group_id}"))
             .attr("xs.idx", root_group_id.to_string());
-        root_group.push(layer_entry_super(
+        let mut root_super = XmlElement::new("ACLayerGroup").attr("xs.n", "super");
+        root_super.push(layer_entry_super(
             "root",
             "root",
+            &root_layer_uuid,
             blend_id,
             layered_image_id,
+            None,
         ));
         let mut children = XmlElement::new("carray_list")
             .attr("xs.n", "_children")
@@ -636,8 +659,9 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         for layer_id in &layer_pool_ids {
             children.push(reference_anon("CLayer", *layer_id));
         }
-        root_group.push(children);
-        root_group.push(null_leaf("layerIdentifier"));
+        root_super.push(children);
+        root_super.push(null_leaf("layerIdentifier"));
+        root_group.push(root_super);
         shared.push(root_group);
 
         for (index, layer) in layered.layers.iter().enumerate() {
@@ -649,8 +673,10 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             super_layer.push(layer_entry_super(
                 &layer.name,
                 &format!("layer-{index}"),
+                &layer_uuids[index],
                 blend_id,
                 layered_image_id,
+                Some(root_group_id),
             ));
             element.push(super_layer);
             element.push(reference(
@@ -761,10 +787,18 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
                 id_of("mi_currentImageGuid"),
                 id_of("mi_input_layerInputData"),
             );
+            // `validate_typed` guarantees one model image per textured mesh,
+            // so the lookups below always resolve.
+            let Some(model_image_guid) = model_image_guids.get(model_index).copied() else {
+                continue;
+            };
+            let Some(filter_set_id) = filter_set_ids.get(model_index).copied() else {
+                continue;
+            };
             images.push(model_image(
-                model_image_guids[model_index],
+                model_image_guid,
                 &model_image_out.name,
-                filter_set_ids[model_index],
+                filter_set_id,
                 env,
                 resource_id,
                 group_id,
@@ -1028,7 +1062,7 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
     );
     root.push(shared);
     root.push(main);
-    out.push_str(&root.render());
+    out.push_str(&root.render_body());
     let pool_trace = pool
         .trace()
         .iter()
@@ -1093,5 +1127,16 @@ mod tests {
     fn filter_atom_lists_are_consistent() {
         assert_eq!(FILTER_VALUE_ID_NAMES.len(), 8);
         assert_eq!(FILTER_VALUE_NAMES.len(), 9);
+    }
+
+    #[test]
+    fn filter_value_id_pairing_matches_pinned_sources() {
+        assert_eq!(FILTER_VALUE_ID_INDEX[0], Some(0));
+        assert_eq!(FILTER_VALUE_ID_INDEX[5], Some(5));
+        assert_eq!(FILTER_VALUE_ID_INDEX[6], None); // inline ilf_outputImageRes
+        assert_eq!(FILTER_VALUE_ID_INDEX[7], Some(6)); // mi_output_transform
+        assert_eq!(FILTER_VALUE_ID_INDEX[8], None); // inline ilf_outputTransform
+        assert_eq!(FILTER_VALUE_ID_NAMES[6], "mi_output_transform");
+        assert_eq!(FILTER_VALUE_ID_NAMES[7], "ilf_inputLayer");
     }
 }

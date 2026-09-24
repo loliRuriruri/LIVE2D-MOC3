@@ -168,7 +168,7 @@ so nothing is silently dropped.
   document (`write_minimal_cmo3`). Deformers, AGENT.4 keyform grids,
   draw-order groups, masks beyond the first GUID and all sample/editor
   metadata are explicitly out of scope; the CLI is not implemented.
-- The layered image is synthetic (one canvas-sized layer per visible mesh),
+- The layered image is synthetic (one canvas-sized layer per textured mesh),
   never a recovered PSD; layer/group names are recovered mesh names or
   placeholders (`docs/CMO3_WRITER_DEFAULTS.md`).
 - Cubism Editor open remains NOT_TESTED; structural validation is never
