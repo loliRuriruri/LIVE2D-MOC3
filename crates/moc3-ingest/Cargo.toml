@@ -1,0 +1,17 @@
+[package]
+name = "moc3-ingest"
+description = "Read-only Live2D Cubism .moc3 parser producing a raw model description"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+fixture-gen.workspace = true
+
+[lints]
+workspace = true

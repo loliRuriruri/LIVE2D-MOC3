@@ -1,0 +1,18 @@
+[package]
+name = "workspace-smoke"
+description = "Workspace-level integration smoke tests over checked-in fixtures"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+moc3-ingest.workspace = true
+recovery-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+fixture-gen.workspace = true
+
+[lints]
+workspace = true

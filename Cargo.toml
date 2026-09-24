@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+  "apps/recovery-cli",
+  "crates/moc3-ingest",
+  "crates/live2d-ir",
+  "crates/hierarchy-recovery",
+  "crates/cmo3-writer",
+  "crates/project-validator",
+  "crates/texture-tools",
+  "crates/recovery-core",
+  "tools/fixture-gen",
+  "tests/workspace-smoke",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+publish = false
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+log = "0.4"
+env_logger = "0.11"
+moc3-ingest = { path = "crates/moc3-ingest" }
+recovery-core = { path = "crates/recovery-core" }
+fixture-gen = { path = "tools/fixture-gen" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"

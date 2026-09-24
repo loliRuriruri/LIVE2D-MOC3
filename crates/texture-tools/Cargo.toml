@@ -1,0 +1,10 @@
+[package]
+name = "texture-tools"
+description = "Texture atlas tooling (reserved for AGENT.8)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
