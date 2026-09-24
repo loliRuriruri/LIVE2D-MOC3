@@ -73,8 +73,10 @@ pub fn explain(project: &RecoveredProject, query: &str) -> Option<String> {
 
 /// Run the candidate stage on an existing graph (advanced/testing API).
 ///
-/// Rebuilds the candidate sets and appends guard diagnostics; use this to
-/// test structural filters against hand-built graphs.
+/// Replaces the candidate sets and appends guard diagnostics; intended to be
+/// called once per graph (calling it repeatedly on the same graph would
+/// duplicate diagnostics). Use this to test structural filters against
+/// hand-built graphs.
 pub fn analyze_graph(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
     candidates::build_candidates(graph, policy);
 }

@@ -136,9 +136,12 @@ output.
 
 Diagnostics are capped per code (256) with one summary entry per truncated
 code, in every stage that can scale with input: guard collection, candidate
-filters, resolution and hierarchy validation. Structured error output in the
-CLI (for example fatal `HierarchyValidationFailed`) lists at most 50 fatal
-findings plus the total count. Candidate/resolution hot paths use ordered
+filters, resolution and hierarchy validation. Because stages are capped
+independently, one code can legitimately appear up to 256 times per stage
+(for example `dangling_candidate` from the guard stage and again from the
+candidate stage). Structured error output in the CLI (for example fatal
+`HierarchyValidationFailed`) lists at most 50 fatal findings plus the total
+count. Candidate/resolution hot paths use ordered
 maps and index-aligned arrays; the effective-part walk is memoized, so a
 20k-deep chain resolves in well under a second instead of O(n * depth).
 
