@@ -54,6 +54,14 @@ pub fn to_json_str(
             message: "document has fatal diagnostics and must not be exported".to_string(),
         });
     }
+    if let Some(field) = first_non_finite(document) {
+        return Err(KeyformExportError {
+            code: "NonFiniteValue",
+            message: format!(
+                "{field} is not finite; canonical JSON cannot represent NaN/Inf (reported positionally in diagnostics)"
+            ),
+        });
+    }
     let result = if pretty {
         serde_json::to_string_pretty(document)
     } else {
@@ -63,6 +71,50 @@ pub fn to_json_str(
         code: "SerializationFailed",
         message: error.to_string(),
     })
+}
+
+/// First non-finite payload float in the document, if any.
+fn first_non_finite(document: &RecoveredKeyformModel) -> Option<String> {
+    use crate::model::TargetKeyforms;
+    for band in &document.binding_bands {
+        for axis in &band.axes {
+            if axis.keys.iter().any(|key| !key.is_finite()) {
+                return Some(format!("axis '{}' key value", axis.parameter.as_str()));
+            }
+        }
+    }
+    for entry in &document.target_keyforms {
+        let check = |field: &str, index: usize, value: f32| {
+            (!value.is_finite()).then(|| format!("{field}[{index}]"))
+        };
+        let found = match entry {
+            TargetKeyforms::Part(part) => part
+                .keyforms
+                .iter()
+                .find_map(|form| check("draw_order", form.index, form.draw_order)),
+            TargetKeyforms::WarpDeformer(warp) => warp
+                .keyforms
+                .iter()
+                .find_map(|form| check("opacity", form.index, form.opacity)),
+            TargetKeyforms::RotationDeformer(rotation) => {
+                rotation.keyforms.iter().find_map(|form| {
+                    check("opacity", form.index, form.opacity)
+                        .or_else(|| check("angle", form.index, form.angle))
+                        .or_else(|| check("origin_x", form.index, form.origin[0]))
+                        .or_else(|| check("origin_y", form.index, form.origin[1]))
+                        .or_else(|| check("scale", form.index, form.scale))
+                })
+            }
+            TargetKeyforms::ArtMesh(mesh) => mesh.keyforms.iter().find_map(|form| {
+                check("opacity", form.index, form.opacity)
+                    .or_else(|| check("draw_order", form.index, form.draw_order))
+            }),
+        };
+        if let Some(field) = found {
+            return Some(format!("target '{}' {field}", entry.target().id_text()));
+        }
+    }
+    None
 }
 
 /// Parse a recovered keyform document from canonical JSON.

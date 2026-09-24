@@ -141,6 +141,90 @@ pub fn map_forms(
     }
 }
 
+/// Scan mapped forms for non-finite payload floats.
+///
+/// Canonical JSON cannot carry NaN/Inf; the values are preserved in the
+/// library model but reported positionally and refused at export time.
+pub fn scan_payload_finiteness(
+    entry: &TargetKeyforms,
+) -> (
+    Vec<live2d_ir::Diagnostic>,
+    Vec<crate::model::UnresolvedEntry>,
+) {
+    use live2d_ir::{Diagnostic, Severity};
+
+    let mut fields: Vec<String> = Vec::new();
+    let target = entry.target();
+    match entry {
+        TargetKeyforms::Part(part) => {
+            for form in &part.keyforms {
+                if !form.draw_order.is_finite() {
+                    fields.push(format!("draw_order[{}]", form.index));
+                }
+            }
+        }
+        TargetKeyforms::WarpDeformer(warp) => {
+            for form in &warp.keyforms {
+                if !form.opacity.is_finite() {
+                    fields.push(format!("opacity[{}]", form.index));
+                }
+            }
+        }
+        TargetKeyforms::RotationDeformer(rotation) => {
+            for form in &rotation.keyforms {
+                if !form.opacity.is_finite() {
+                    fields.push(format!("opacity[{}]", form.index));
+                }
+                if !form.angle.is_finite() {
+                    fields.push(format!("angle[{}]", form.index));
+                }
+                if !form.origin[0].is_finite() || !form.origin[1].is_finite() {
+                    fields.push(format!("origin[{}]", form.index));
+                }
+                if !form.scale.is_finite() {
+                    fields.push(format!("scale[{}]", form.index));
+                }
+            }
+        }
+        TargetKeyforms::ArtMesh(mesh) => {
+            for form in &mesh.keyforms {
+                if !form.opacity.is_finite() {
+                    fields.push(format!("opacity[{}]", form.index));
+                }
+                if !form.draw_order.is_finite() {
+                    fields.push(format!("draw_order[{}]", form.index));
+                }
+            }
+        }
+    }
+    if fields.is_empty() {
+        return (Vec::new(), Vec::new());
+    }
+    const MAX_REPORTED: usize = 16;
+    let mut rendered: Vec<String> = fields.iter().take(MAX_REPORTED).cloned().collect();
+    if fields.len() > MAX_REPORTED {
+        rendered.push(format!("... ({} more)", fields.len() - MAX_REPORTED));
+    }
+    let detail = rendered.join(", ");
+    (
+        vec![Diagnostic::new(
+            Severity::Warning,
+            crate::codes::NON_FINITE_PAYLOAD_VALUE,
+            format!(
+                "target '{}' stores non-finite payload value(s): {detail}",
+                target.id_text()
+            ),
+        )],
+        vec![crate::model::UnresolvedEntry {
+            code: crate::codes::NON_FINITE_PAYLOAD_VALUE.to_string(),
+            target: Some(target),
+            band: None,
+            grid: None,
+            detail,
+        }],
+    )
+}
+
 /// True when the target exists in the model with the recorded kind.
 pub fn target_exists(model: &Live2DModel, target: &KeyformTarget) -> bool {
     match target {

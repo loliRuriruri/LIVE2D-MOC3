@@ -4,7 +4,7 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**228 tests, all passing** (44 synthetic fixtures).
+**234 tests, all passing** (44 synthetic fixtures).
 
 AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
 placement tolerance) and `tools/reference-harness` (dev-only differential
@@ -58,7 +58,7 @@ cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc
 | Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary checks for `live2d-ir` and `hierarchy-recovery`** (`cargo metadata` graph) |
 | Layout interop | `crates/moc3-ingest/tests/layout_interop.rs` | relocated-body (py-moc3 offset convention) files parse to byte-identical inspection semantics (offsets/name/size excluded) |
 | Differential harness | `tools/reference-harness/tests/harness.rs` (offline) | snapshot determinism, mock consensus/dispute/order-only tolerance, float policy, unsupported/missing classification, ours-unsupported handling, subprocess timeout/output caps, report determinism and wording, keyform evidence summary and comparison |
-| Keyform unit + IR-level negatives | `crates/keyform-recovery/tests/keyform_recovery.rs` | 1D/2D/3D grids, 0D static bands, duplicate/unsorted/out-of-range/non-finite keys, dangling parameter/binding/target (IR-level negative fixtures), cardinality limit/overflow, axis/limit caps, typed target payloads, blend-shape experimental, glue deferral, determinism, byte-identical JSON round-trip, duplicate-grid fatal validation, geometry non-amplification, large dataset, project cross-check, explain |
+| Keyform unit + IR-level negatives | `crates/keyform-recovery/tests/keyform_recovery.rs` | 1D/2D/3D grids, 0D static bands, duplicate/unsorted/out-of-range/non-finite keys, dangling parameter/binding/target (IR-level negative fixtures), cardinality limit/overflow, axis/limit caps, sparse partial grid (fewer forms than the bound product, no padding), form-span gaps and out-of-bounds indices (validator Fatal), non-finite payload refusal, tampered-explain hardening, typed target payloads, blend-shape experimental, glue deferral, determinism, byte-identical JSON round-trip, duplicate-grid fatal validation, geometry non-amplification, large dataset, project cross-check, explain |
 | Keyform pipeline + goldens | `crates/recovery-core/tests/keyform_recovery.rs` | per-fixture expectations for all 17 keyform fixtures, 17 golden `recovered-keyforms/1` documents (import + re-validate), determinism/round-trip over every fixture, body-placement A/B equality, strict violations, archived AGENT.3.5 evidence retention, large dense dataset |
 | Keyform CLI | `apps/recovery-cli/tests/cli_keyforms.rs` | human report counts, deterministic JSON, `--output` equality, IR JSON input parity, `--strict` exit codes, non-finite CLI refusal, `--explain` trace, input immutability |
 | Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |

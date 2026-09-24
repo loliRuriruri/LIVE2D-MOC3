@@ -57,10 +57,29 @@ pub fn validate_recovered_keyforms(
                     ),
                 ));
             }
+            for position in &axis.non_finite_key_indices {
+                if *position >= axis.stored_key_count {
+                    diagnostics.push(Diagnostic::new(
+                        Severity::Fatal,
+                        codes::FORM_INDEX_OUT_OF_BOUNDS,
+                        format!(
+                            "axis '{}' of band '{}' records non-finite key position {position} outside 0..{}",
+                            axis.parameter.as_str(),
+                            band.id,
+                            axis.stored_key_count
+                        ),
+                    ));
+                }
+            }
             let usable_claim = axis.usable;
+            let duplicates = axis
+                .keys
+                .windows(2)
+                .any(|pair| matches!(pair, [a, b] if a == b));
             let usable_fact = axis.resolved
                 && axis.non_finite_key_indices.is_empty()
-                && axis.keys.len() == axis.stored_key_count;
+                && axis.keys.len() == axis.stored_key_count
+                && !duplicates;
             if usable_claim != usable_fact {
                 diagnostics.push(Diagnostic::new(
                     Severity::Warning,
@@ -185,6 +204,86 @@ pub fn validate_recovered_keyforms(
                 ),
             ));
         }
+        if entry.band_id() != grid.band {
+            diagnostics.push(Diagnostic::new(
+                Severity::Fatal,
+                codes::UNRESOLVED_ACCOUNTING_MISMATCH,
+                format!(
+                    "target '{}' references band '{}' but its grid references '{}'",
+                    target.id_text(),
+                    entry.band_id(),
+                    grid.band
+                ),
+            ));
+        }
+        if let Some(binding) = entry.binding() {
+            if let Some(band) = document.band(&grid.band) {
+                if &band.binding != binding {
+                    diagnostics.push(Diagnostic::new(
+                        Severity::Warning,
+                        codes::CONFIDENCE_PROVENANCE_INCONSISTENT,
+                        format!(
+                            "target '{}' references binding '{}' but its band references '{}'",
+                            target.id_text(),
+                            binding.as_str(),
+                            band.binding.as_str()
+                        ),
+                    ));
+                }
+            }
+        }
+        if let Some(band) = document.band(&grid.band) {
+            if band.axes.len() != grid.axes.len()
+                || band
+                    .axes
+                    .iter()
+                    .zip(grid.axes.iter())
+                    .any(|(axis, summary)| {
+                        axis.parameter != summary.parameter
+                            || axis.stored_key_count != summary.key_count
+                            || axis.resolved != summary.resolved
+                    })
+            {
+                diagnostics.push(Diagnostic::new(
+                    Severity::Warning,
+                    codes::LAYOUT_INCONSISTENT,
+                    format!(
+                        "grid '{}' axis summaries disagree with its band '{}'",
+                        grid.id, grid.band
+                    ),
+                ));
+            }
+        }
+
+        // Form index integrity (contiguity, uniqueness, bounds).
+        let indices = entry.form_indices();
+        for index in &indices {
+            if *index as u64 >= grid.stored_form_count {
+                diagnostics.push(Diagnostic::new(
+                    Severity::Fatal,
+                    codes::FORM_INDEX_OUT_OF_BOUNDS,
+                    format!(
+                        "target '{}' stores form index {index} outside 0..{}",
+                        target.id_text(),
+                        grid.stored_form_count
+                    ),
+                ));
+            }
+        }
+        let contiguous = indices
+            .iter()
+            .enumerate()
+            .all(|(expected, actual)| expected == *actual);
+        if !contiguous && !indices.is_empty() {
+            diagnostics.push(Diagnostic::new(
+                Severity::Warning,
+                codes::KEYFORM_FORM_SPAN_MISMATCH,
+                format!(
+                    "target '{}' form indices are not contiguous from zero",
+                    target.id_text()
+                ),
+            ));
+        }
     }
 
     // Statistics must match a fresh recomputation.
@@ -237,6 +336,42 @@ pub fn validate_recovered_keyforms(
                 format!(
                     "grid '{}' is Sparse but its cardinality is unresolved",
                     grid.id
+                ),
+            ));
+        }
+
+        // Layout must agree with its own counts (KF-003/KF-004).
+        let expected_layout = match grid.expected_cardinality {
+            Cardinality::Exact { value } if grid.stored_form_count == value => GridLayout::Dense,
+            Cardinality::Exact { value } if grid.stored_form_count < value => GridLayout::Sparse,
+            _ => GridLayout::UnknownLayout,
+        };
+        if grid.layout != expected_layout {
+            diagnostics.push(Diagnostic::new(
+                Severity::Warning,
+                codes::LAYOUT_INCONSISTENT,
+                format!(
+                    "grid '{}' claims {:?} but its counts imply {:?}",
+                    grid.id, grid.layout, expected_layout
+                ),
+            ));
+        }
+        let band_exact = document
+            .band(&grid.band)
+            .map(|band| band.provenance.confidence == Confidence::Exact)
+            .unwrap_or(false);
+        let expected_confidence = if grid.layout == GridLayout::UnknownLayout || !band_exact {
+            Confidence::Unknown
+        } else {
+            Confidence::Derived
+        };
+        if grid.confidence != expected_confidence {
+            diagnostics.push(Diagnostic::new(
+                Severity::Warning,
+                codes::CONFIDENCE_PROVENANCE_INCONSISTENT,
+                format!(
+                    "grid '{}' confidence {:?} disagrees with its layout/band state",
+                    grid.id, grid.confidence
                 ),
             ));
         }

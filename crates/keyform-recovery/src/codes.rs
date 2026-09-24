@@ -56,5 +56,13 @@ pub const UNRESOLVED_ACCOUNTING_MISMATCH: &str = "unresolved_accounting_mismatch
 pub const SCHEMA_MISMATCH: &str = "schema_mismatch";
 /// A confidence/provenance combination is internally inconsistent.
 pub const CONFIDENCE_PROVENANCE_INCONSISTENT: &str = "confidence_provenance_inconsistent";
+/// A stored form payload contains a non-finite float (reported; export refuses).
+pub const NON_FINITE_PAYLOAD_VALUE: &str = "non_finite_payload_value";
+/// A grid layout disagrees with its own stored/expected counts.
+pub const LAYOUT_INCONSISTENT: &str = "layout_inconsistent";
+/// Per-code diagnostic cap suppressed further findings of the same code.
+pub const DIAGNOSTIC_CAP_REACHED: &str = "diagnostic_cap_reached";
+/// The unresolved list was capped to keep hostile inputs bounded.
+pub const UNRESOLVED_CAP_REACHED: &str = "unresolved_cap_reached";
 /// A target does not exist in the recovered project (cross-layer check).
 pub const TARGET_NOT_IN_PROJECT: &str = "target_not_in_project";

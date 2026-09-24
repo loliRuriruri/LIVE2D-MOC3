@@ -51,6 +51,12 @@ pub fn build_binding_bands(
             for rule in &axis.rules {
                 rules.push(rule.clone());
             }
+            // The band confidence contract is defined in terms of the axis's
+            // own usability (resolution + finite + duplicates); never
+            // re-derive it from a subset of those conditions.
+            if !axis.usable {
+                usable = false;
+            }
             if !axis.resolved {
                 usable = false;
                 unresolved.push(crate::model::UnresolvedEntry {

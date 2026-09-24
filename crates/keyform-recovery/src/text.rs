@@ -99,7 +99,14 @@ pub fn render_explain(document: &RecoveredKeyformModel, query: &str) -> Option<S
 fn render_keys(keys: &[f32], non_finite: &[usize]) -> String {
     let mut parts: Vec<String> = keys.iter().map(|key| format!("{key}")).collect();
     for position in non_finite {
-        parts.insert(*position, "<non-finite>".to_string());
+        if *position <= parts.len() {
+            parts.insert(*position, "<non-finite>".to_string());
+        } else {
+            // Defence in depth: a tampered document can record an
+            // out-of-bounds position (the validator rejects it as Fatal);
+            // never panic while rendering.
+            parts.push(format!("<non-finite@{position}>"));
+        }
     }
     parts.join(", ")
 }

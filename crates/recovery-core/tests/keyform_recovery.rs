@@ -112,6 +112,22 @@ fn per_fixture_keyform_expectations() {
                     .iter()
                     .any(|diagnostic| diagnostic.code == codes::DUPLICATE_PARAMETER_KEY));
                 assert_eq!(document.statistics.stored_keyforms, 4);
+                // Confidence contract: a duplicate-key axis is unusable, so
+                // the band/grid must not claim exactness and the validator
+                // must not emit false inconsistency findings.
+                assert_eq!(
+                    document.binding_bands[0].provenance.confidence,
+                    live2d_ir::Confidence::Unknown
+                );
+                assert_eq!(
+                    document.keyform_grids[0].confidence,
+                    live2d_ir::Confidence::Unknown
+                );
+                assert_eq!(document.statistics.unknown_bindings, 1);
+                assert_eq!(document.statistics.unresolved_grids, 1);
+                assert!(!document.diagnostics.iter().any(|diagnostic| {
+                    diagnostic.code == codes::CONFIDENCE_PROVENANCE_INCONSISTENT
+                }));
             }
             "keyform-013-unsorted-keys.moc3" => {
                 assert!(document

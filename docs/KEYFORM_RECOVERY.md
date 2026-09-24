@@ -138,6 +138,9 @@ Each target kind has its own payload; there is no generic untyped blob:
 
 - geometry is never copied (KF-009): a 300-form x 32-vertex mesh yields a
   keyform document far smaller than the IR (tested);
+- non-finite axis keys and payload floats are reported positionally; export
+  refuses documents that still contain a non-finite payload
+  (`NonFiniteValue`), so canonical JSON never silently carries `null`;
 - no combinatorial materialization (KF-010): only axis summaries and a
   cardinality are stored;
 - hard limits: `MAX_GRID_CARDINALITY = 1_000_000`,
@@ -185,13 +188,27 @@ Keyform/grid rules (`KF-`):
 
 ## 10. Validation
 
-`validate_recovered_keyforms(document, ir, project?)` checks duplicate band
-and grid ids, dangling references, wrong target types, duplicate axes,
-form-index bounds, statistics accounting, confidence/provenance contracts
-and (when a project is given) that every target exists in the recovered
-project. Structural corruption is Fatal and blocks export; expected
-unresolved states (dangling parameters, cardinality mismatches,
-experimental blend shapes) stay non-fatal.
+`validate_recovered_keyforms(document, ir, project?)` checks:
+
+- duplicate band/grid ids, dangling references, duplicate targets/axes,
+- wrong target types, form-index **bounds and contiguity** (out-of-bounds
+  indices are Fatal `form_index_out_of_bounds`; gaps are re-reported as
+  `keyform_form_span_mismatch`),
+- non-finite axis positions beyond the stored key count (Fatal),
+- statistics accounting and confidence/provenance contracts, including the
+  "exact band => fully usable axes + exact cardinality" rule,
+- grid layout/confidence re-derivation from counts (`layout_inconsistent`),
+- band/grid/target identity cross-checks (band id, binding id, axis
+  summaries),
+- cross-layer: every target exists in the recovered project (when given).
+
+Structural corruption is Fatal and blocks export; expected unresolved
+states (dangling parameters, cardinality mismatches, experimental blend
+shapes, non-finite values that are reported positionally) stay non-fatal.
+
+Amplification guards: diagnostics are capped per code
+(`MAX_DIAGNOSTICS_PER_CODE = 256`, with an info summary when suppressed) and
+the unresolved list is capped at `MAX_UNRESOLVED_ENTRIES = 4096`.
 
 ## 11. CLI
 

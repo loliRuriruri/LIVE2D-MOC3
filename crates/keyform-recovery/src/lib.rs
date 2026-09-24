@@ -178,6 +178,10 @@ pub fn recover(model: &Live2DModel, project: Option<&RecoveredProject>) -> Recov
             continue;
         };
 
+        let (payload_diagnostics, payload_unresolved) = targets::scan_payload_finiteness(&forms);
+        diagnostics.extend(payload_diagnostics);
+        unresolved.extend(payload_unresolved);
+
         traces.push(grids::build_trace(band, &derivation.grid, notes));
         keyform_grids.push(derivation.grid);
         target_keyforms.push(forms);
@@ -206,8 +210,57 @@ pub fn recover(model: &Live2DModel, project: Option<&RecoveredProject>) -> Recov
     document.statistics = compute_statistics(&document);
     let validation = validate_recovered_keyforms(&document, model, project);
     document.diagnostics.extend(validation);
+    document.diagnostics = cap_diagnostics(document.diagnostics);
+    document.unresolved = cap_unresolved(document.unresolved);
     document.statistics = compute_statistics(&document);
     document
+}
+
+/// Per-code diagnostic cap (work order section 59: diagnostic amplification).
+const MAX_DIAGNOSTICS_PER_CODE: usize = 256;
+
+/// Hard cap for unresolved entries.
+const MAX_UNRESOLVED_ENTRIES: usize = 4_096;
+
+fn cap_diagnostics(diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
+    let mut counts: BTreeMap<String, (usize, usize)> = BTreeMap::new();
+    let mut kept: Vec<Diagnostic> = Vec::with_capacity(diagnostics.len());
+    for diagnostic in diagnostics {
+        let entry = counts.entry(diagnostic.code.clone()).or_insert((0, 0));
+        entry.1 += 1;
+        if entry.0 < MAX_DIAGNOSTICS_PER_CODE {
+            entry.0 += 1;
+            kept.push(diagnostic);
+        }
+    }
+    let mut summaries: Vec<Diagnostic> = Vec::new();
+    for (code, (kept_count, total)) in &counts {
+        if kept_count < total {
+            summaries.push(Diagnostic::new(
+                Severity::Info,
+                codes::DIAGNOSTIC_CAP_REACHED,
+                format!("diagnostic cap: kept {kept_count} of {total} '{code}' finding(s)"),
+            ));
+        }
+    }
+    kept.extend(summaries);
+    kept
+}
+
+fn cap_unresolved(mut unresolved: Vec<UnresolvedEntry>) -> Vec<UnresolvedEntry> {
+    if unresolved.len() <= MAX_UNRESOLVED_ENTRIES {
+        return unresolved;
+    }
+    let suppressed = unresolved.len() - MAX_UNRESOLVED_ENTRIES;
+    unresolved.truncate(MAX_UNRESOLVED_ENTRIES);
+    unresolved.push(UnresolvedEntry {
+        code: codes::UNRESOLVED_CAP_REACHED.to_string(),
+        target: None,
+        band: None,
+        grid: None,
+        detail: format!("{suppressed} additional unresolved entr(ies) suppressed by the cap"),
+    });
+    unresolved
 }
 
 /// Recompute statistics from the document body (also used by the validator).

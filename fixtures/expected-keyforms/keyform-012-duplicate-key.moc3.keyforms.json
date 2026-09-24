@@ -47,8 +47,9 @@
       ],
       "experimental": false,
       "provenance": {
-        "confidence": "exact",
-        "source": "moc3:binding"
+        "confidence": "unknown",
+        "source": "moc3:binding",
+        "note": "band axes are unresolved or experimental; no complete binding semantics are claimed"
       },
       "rules": [
         "KB-001",
@@ -79,7 +80,7 @@
       "stored_form_count": 4,
       "layout": "dense",
       "ordering": "derived",
-      "confidence": "derived",
+      "confidence": "unknown",
       "rules": [
         "KF-001",
         "KF-003",
@@ -140,16 +141,6 @@
         "kind": "parameter",
         "id": "Param_Dup"
       }
-    },
-    {
-      "severity": "warning",
-      "code": "confidence_provenance_inconsistent",
-      "message": "axis 'Param_Dup' of band 'band:binding:000000' claims usable=false but stored facts disagree"
-    },
-    {
-      "severity": "warning",
-      "code": "confidence_provenance_inconsistent",
-      "message": "band 'band:binding:000000' confidence Exact disagrees with its axis/cardinality state"
     }
   ],
   "traces": [
@@ -180,7 +171,7 @@
       "stored_form_count": 4,
       "layout": "dense",
       "ordering": "derived",
-      "confidence": "derived",
+      "confidence": "unknown",
       "rules": [
         "KB-001",
         "KB-002",
@@ -199,15 +190,15 @@
     "bindings": 1,
     "parameter_axes": 1,
     "stored_keyforms": 4,
-    "exact_bindings": 1,
+    "exact_bindings": 0,
     "derived_bindings": 0,
     "heuristic_bindings": 0,
-    "unknown_bindings": 0,
+    "unknown_bindings": 1,
     "dense_grids": 1,
     "sparse_grids": 0,
     "unknown_layout_grids": 0,
-    "unresolved_grids": 0,
+    "unresolved_grids": 1,
     "unresolved_entries": 0,
-    "diagnostics": 3
+    "diagnostics": 1
   }
 }

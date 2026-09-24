@@ -368,6 +368,52 @@ impl TargetKeyforms {
             TargetKeyforms::ArtMesh(entry) => entry.keyforms.len(),
         }
     }
+
+    /// Referenced band id.
+    pub fn band_id(&self) -> &str {
+        match self {
+            TargetKeyforms::Part(entry) => &entry.band,
+            TargetKeyforms::WarpDeformer(entry) => &entry.band,
+            TargetKeyforms::RotationDeformer(entry) => &entry.band,
+            TargetKeyforms::ArtMesh(entry) => &entry.band,
+        }
+    }
+
+    /// Referenced grid id.
+    pub fn grid_id(&self) -> &str {
+        match self {
+            TargetKeyforms::Part(entry) => &entry.grid,
+            TargetKeyforms::WarpDeformer(entry) => &entry.grid,
+            TargetKeyforms::RotationDeformer(entry) => &entry.grid,
+            TargetKeyforms::ArtMesh(entry) => &entry.grid,
+        }
+    }
+
+    /// Source binding when present.
+    pub fn binding(&self) -> Option<&BindingId> {
+        match self {
+            TargetKeyforms::Part(entry) => entry.binding.as_ref(),
+            TargetKeyforms::WarpDeformer(entry) => entry.binding.as_ref(),
+            TargetKeyforms::RotationDeformer(entry) => entry.binding.as_ref(),
+            TargetKeyforms::ArtMesh(entry) => entry.binding.as_ref(),
+        }
+    }
+
+    /// Stored form indices in stored order.
+    pub fn form_indices(&self) -> Vec<usize> {
+        match self {
+            TargetKeyforms::Part(entry) => entry.keyforms.iter().map(|form| form.index).collect(),
+            TargetKeyforms::WarpDeformer(entry) => {
+                entry.keyforms.iter().map(|form| form.index).collect()
+            }
+            TargetKeyforms::RotationDeformer(entry) => {
+                entry.keyforms.iter().map(|form| form.index).collect()
+            }
+            TargetKeyforms::ArtMesh(entry) => {
+                entry.keyforms.iter().map(|form| form.index).collect()
+            }
+        }
+    }
 }
 
 /// One unresolved condition (never a repaired value).

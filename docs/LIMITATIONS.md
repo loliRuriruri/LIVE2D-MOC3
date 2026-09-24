@@ -153,7 +153,13 @@ so nothing is silently dropped.
 - Interpolation/evaluation (parameter vector -> final vertices) is out of
   scope; see `docs/RUNTIME_ORACLE_PLAN.md` for the planned oracle.
 - Cardinality is capped (`MAX_GRID_CARDINALITY = 1_000_000`); larger grids
-  stay unresolved rather than expanded.
+  stay unresolved rather than expanded. Diagnostics are capped per code
+  (`MAX_DIAGNOSTICS_PER_CODE = 256`) and unresolved entries at
+  `MAX_UNRESOLVED_ENTRIES = 4096`, with explicit summary entries when the
+  caps fire.
+- Non-finite payload floats (opacity/draw order/angle/origin/scale) are
+  reported positionally; canonical export refuses documents that contain
+  them (`NonFiniteValue`), because JSON cannot represent NaN/Inf.
 
 ## Tooling
 

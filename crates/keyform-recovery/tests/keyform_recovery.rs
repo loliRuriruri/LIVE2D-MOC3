@@ -612,3 +612,191 @@ fn explain_renders_target_trace() {
     assert!(text.contains("Stored Forms:"));
     assert!(text.contains("derived from the single stored sequence"));
 }
+
+#[test]
+fn sparse_grid_is_partial_and_never_padded() {
+    // IR-level negative: 2x2 expected (4) but only 2 forms stored.
+    let mut model = base();
+    support::add_parameter(&mut model, "X", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_parameter(&mut model, "Y", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_binding(
+        &mut model,
+        "binding:000000",
+        &[("X", &[0.0, 1.0]), ("Y", &[0.0, 1.0])],
+    );
+    support::add_mesh(
+        &mut model,
+        "Partial",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Partial")),
+    );
+
+    let document = recover(&model, None);
+    let grid = &document.keyform_grids[0];
+    assert_eq!(grid.expected_cardinality, Cardinality::Exact { value: 4 });
+    assert_eq!(grid.stored_form_count, 2);
+    assert_eq!(grid.layout, GridLayout::Sparse);
+    assert_eq!(grid.confidence, Confidence::Derived);
+    assert_eq!(document.target_keyforms[0].form_count(), 2, "no padding");
+    assert!(has_code(
+        &document,
+        codes::KEYFORM_GRID_CARDINALITY_MISMATCH
+    ));
+    assert!(keyform_recovery::strict_violations(&document)
+        .contains(&codes::KEYFORM_GRID_CARDINALITY_MISMATCH));
+}
+
+#[test]
+fn form_span_gap_is_preserved_and_validated() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 0.5, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 0.5, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "Gap",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Gap")),
+    );
+    // Tamper with the stored order: indices [0, 2, 2].
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        if let Some(form) = mesh.keyforms.get_mut(1) {
+            form.index = 2;
+        }
+        if let Some(form) = mesh.keyforms.get_mut(2) {
+            form.index = 2;
+        }
+    }
+
+    let document = recover(&model, None);
+    assert!(has_code(&document, codes::KEYFORM_FORM_SPAN_MISMATCH));
+    assert_eq!(document.keyform_grids[0].layout, GridLayout::UnknownLayout);
+    let indices = document.target_keyforms[0].form_indices();
+    assert_eq!(
+        indices,
+        vec![0, 2, 2],
+        "indices are preserved, not reindexed"
+    );
+
+    let validation = keyform_recovery::validate_recovered_keyforms(&document, &model, None);
+    assert!(validation
+        .iter()
+        .any(|diagnostic| diagnostic.code == codes::KEYFORM_FORM_SPAN_MISMATCH));
+    assert!(!validation
+        .iter()
+        .any(|diagnostic| diagnostic.severity == Severity::Fatal));
+}
+
+#[test]
+fn validator_rejects_out_of_bounds_form_index() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "Mesh",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Mesh")),
+    );
+    let mut document = recover(&model, None);
+    if let Some(keyform_recovery::TargetKeyforms::ArtMesh(entry)) =
+        document.target_keyforms.first_mut()
+    {
+        if let Some(form) = entry.keyforms.get_mut(1) {
+            form.index = 99;
+        }
+    }
+    let validation = keyform_recovery::validate_recovered_keyforms(&document, &model, None);
+    assert!(validation.iter().any(|diagnostic| {
+        diagnostic.code == codes::FORM_INDEX_OUT_OF_BOUNDS && diagnostic.severity == Severity::Fatal
+    }));
+    document.diagnostics.extend(validation);
+    assert!(to_json_str(&document, true).is_err());
+}
+
+#[test]
+fn non_finite_payload_is_reported_and_refused_at_export() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "NaN",
+        Some("binding:000000"),
+        &[(f32::NAN, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("NaN")),
+    );
+    let document = recover(&model, None);
+    assert!(has_code(&document, codes::NON_FINITE_PAYLOAD_VALUE));
+    assert!(document
+        .unresolved
+        .iter()
+        .any(|entry| entry.code == codes::NON_FINITE_PAYLOAD_VALUE));
+    let export = to_json_str(&document, true);
+    assert!(export.is_err(), "canonical JSON must refuse NaN payloads");
+    assert_eq!(export.err().map(|error| error.code), Some("NonFiniteValue"));
+    // Explain must not panic even with non-finite payloads.
+    assert!(keyform_recovery::explain(&document, "NaN").is_some());
+}
+
+#[test]
+fn explain_survives_tampered_non_finite_positions() {
+    let mut model = base();
+    support::add_parameter(
+        &mut model,
+        "P",
+        &[0.0, f32::NAN, 1.0],
+        ParameterKind::Normal,
+    );
+    support::add_binding(
+        &mut model,
+        "binding:000000",
+        &[("P", &[0.0, f32::NAN, 1.0])],
+    );
+    support::add_mesh(
+        &mut model,
+        "Mesh",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Mesh")),
+    );
+    let mut document = recover(&model, None);
+    if let Some(axis) = document
+        .binding_bands
+        .get_mut(0)
+        .and_then(|band| band.axes.first_mut())
+    {
+        axis.non_finite_key_indices = vec![99];
+    }
+    // The validator flags the tampered position as Fatal...
+    let validation = keyform_recovery::validate_recovered_keyforms(&document, &model, None);
+    assert!(validation.iter().any(|diagnostic| {
+        diagnostic.code == codes::FORM_INDEX_OUT_OF_BOUNDS && diagnostic.severity == Severity::Fatal
+    }));
+    // ...and rendering never panics.
+    let text = keyform_recovery::explain(&document, "Mesh");
+    assert!(text.is_some());
+    assert!(text.unwrap_or_default().contains("non-finite"));
+}

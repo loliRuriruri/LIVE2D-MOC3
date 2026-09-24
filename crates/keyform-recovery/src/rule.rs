@@ -59,7 +59,7 @@ pub const RULES: &[RuleInfo] = &[
         evidence: "moc3 object.binding_index (IR Part.binding / DeformerCommon.binding / ArtMesh.binding)",
         confidence: Confidence::Exact,
         failure_mode: "None known; the reference is stored. Targets without a binding are treated as static (KB-007).",
-        fixture: "keyform-001-static-single",
+        fixture: "keyform-001-zero-dimensional",
     },
     RuleInfo {
         id: "KB-002",
@@ -91,7 +91,7 @@ pub const RULES: &[RuleInfo] = &[
         evidence: "IR Parameter.kind == blend_shape / extension_key_values",
         confidence: Confidence::Unknown,
         failure_mode: "Blend-shape semantics are documented as insufficiently validated (AGENT.3.5 audit).",
-        fixture: "keyform-019-blend-shape-axis",
+        fixture: "ir-negative-blend-shape-axis",
     },
     RuleInfo {
         id: "KB-006",
@@ -99,7 +99,7 @@ pub const RULES: &[RuleInfo] = &[
         evidence: "IR Binding.used_by glue entries / Glue.binding",
         confidence: Confidence::Unknown,
         failure_mode: "Glue intensity semantics stay unmapped until they are independently validated.",
-        fixture: "keyform-020-glue-deferred",
+        fixture: "ir-negative-glue-deferred",
     },
     RuleInfo {
         id: "KB-007",
@@ -107,7 +107,7 @@ pub const RULES: &[RuleInfo] = &[
         evidence: "absence of a binding reference plus stored keyform count of the target",
         confidence: Confidence::Derived,
         failure_mode: "A target with several stored forms but no binding is suspicious; it stays Unknown layout.",
-        fixture: "keyform-001-static-single",
+        fixture: "keyform-001-zero-dimensional",
     },
     RuleInfo {
         id: "KF-001",
@@ -217,6 +217,43 @@ mod tests {
                 docs.contains(info.id),
                 "docs/KEYFORM_RECOVERY.md is missing rule {}",
                 info.id
+            );
+        }
+    }
+
+    /// Fixture stems shipped by `fixture-gen` (kept in sync manually; the
+    /// rule table must reference real artifacts).
+    const KEYFORM_STEMS: &[&str] = &[
+        "keyform-001-zero-dimensional",
+        "keyform-002-1d-three-keys",
+        "keyform-003-2d-3x3",
+        "keyform-004-2d-2x3",
+        "keyform-005-3d-small-grid",
+        "keyform-006-part-draw-order",
+        "keyform-007-warp-forms",
+        "keyform-008-rotation-forms",
+        "keyform-009-artmesh-forms",
+        "keyform-010-multiple-bindings",
+        "keyform-011-multiple-targets",
+        "keyform-012-duplicate-key",
+        "keyform-013-unsorted-keys",
+        "keyform-014-cardinality-mismatch",
+        "keyform-016-non-finite-key",
+        "keyform-019-deep-nested-targets",
+        "keyform-020-large-dataset",
+    ];
+
+    #[test]
+    fn fixture_references_are_resolvable() {
+        for info in RULES {
+            if info.fixture.starts_with("ir-negative-") {
+                continue;
+            }
+            assert!(
+                KEYFORM_STEMS.contains(&info.fixture),
+                "rule {} references unknown fixture {}",
+                info.id,
+                info.fixture
             );
         }
     }
