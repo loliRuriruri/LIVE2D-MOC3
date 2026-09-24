@@ -1,0 +1,243 @@
+{
+  "schema": "live2d-recovery/recovered-keyforms/1",
+  "schema_status": "experimental",
+  "source_model": {
+    "ir_schema": "live2d-ir/1",
+    "project_schema": "live2d-recovery/recovered-project/1",
+    "source_version_label": "2 (3.3.00-3.3.03)",
+    "source_version_byte": 2,
+    "source_byte_order": "little"
+  },
+  "binding_bands": [
+    {
+      "id": "band:binding:000000",
+      "binding": "binding:000000",
+      "axes": [
+        {
+          "parameter": "Param_A",
+          "resolved": true,
+          "stored_key_count": 2,
+          "keys": [
+            0.0,
+            1.0
+          ],
+          "usable": true,
+          "provenance": {
+            "confidence": "exact",
+            "source": "moc3:binding.parameter.key_values"
+          },
+          "source_binding": "binding:000000",
+          "rules": [
+            "KB-002"
+          ]
+        },
+        {
+          "parameter": "Param_B",
+          "resolved": true,
+          "stored_key_count": 2,
+          "keys": [
+            0.0,
+            1.0
+          ],
+          "usable": true,
+          "provenance": {
+            "confidence": "exact",
+            "source": "moc3:binding.parameter.key_values"
+          },
+          "source_binding": "binding:000000",
+          "rules": [
+            "KB-002"
+          ]
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "targets": [
+        {
+          "kind": "art_mesh",
+          "id": "ArtMesh_Keyform_00"
+        }
+      ],
+      "experimental": false,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:binding"
+      },
+      "rules": [
+        "KB-001",
+        "KB-002"
+      ]
+    }
+  ],
+  "keyform_grids": [
+    {
+      "id": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "axes": [
+        {
+          "parameter": "Param_A",
+          "key_count": 2,
+          "resolved": true
+        },
+        {
+          "parameter": "Param_B",
+          "key_count": 2,
+          "resolved": true
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "stored_form_count": 5,
+      "layout": "unknown_layout",
+      "ordering": "unknown",
+      "confidence": "unknown",
+      "rules": [
+        "KF-001",
+        "KF-004",
+        "KF-005"
+      ]
+    }
+  ],
+  "target_keyforms": [
+    {
+      "target_type": "art_mesh",
+      "target": "ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "binding": "binding:000000",
+      "keyforms": [
+        {
+          "index": 0,
+          "opacity": 1.0,
+          "draw_order": 0.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 1,
+          "opacity": 1.0,
+          "draw_order": 1.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 2,
+          "opacity": 1.0,
+          "draw_order": 2.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 3,
+          "opacity": 1.0,
+          "draw_order": 3.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 4,
+          "opacity": 1.0,
+          "draw_order": 4.0,
+          "geometry": {
+            "position_count": 4
+          }
+        }
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "code": "keyform_grid_cardinality_mismatch",
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "detail": "stored 5 forms, 4 expected"
+    }
+  ],
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "keyform_grid_cardinality_mismatch",
+      "message": "target 'ArtMesh_Keyform_00' stores 5 form(s) but the band expects 4; the layout is not classified"
+    }
+  ],
+  "traces": [
+    {
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "axes": [
+        {
+          "parameter": "Param_A",
+          "key_count": 2,
+          "keys": [
+            0.0,
+            1.0
+          ],
+          "status": "resolved"
+        },
+        {
+          "parameter": "Param_B",
+          "key_count": 2,
+          "keys": [
+            0.0,
+            1.0
+          ],
+          "status": "resolved"
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "stored_form_count": 5,
+      "layout": "unknown_layout",
+      "ordering": "unknown",
+      "confidence": "unknown",
+      "rules": [
+        "KB-001",
+        "KB-002",
+        "KF-001",
+        "KF-004",
+        "KF-005"
+      ],
+      "notes": [
+        "art mesh keyed geometry (4 vertices per form) stays in the Live2D IR; static uvs/indices remain in the IR too (KF-009)"
+      ]
+    }
+  ],
+  "statistics": {
+    "targets": 1,
+    "bindings": 1,
+    "parameter_axes": 2,
+    "stored_keyforms": 5,
+    "exact_bindings": 1,
+    "derived_bindings": 0,
+    "heuristic_bindings": 0,
+    "unknown_bindings": 0,
+    "dense_grids": 0,
+    "sparse_grids": 0,
+    "unknown_layout_grids": 1,
+    "unresolved_grids": 1,
+    "unresolved_entries": 1,
+    "diagnostics": 1
+  }
+}

@@ -1,0 +1,499 @@
+{
+  "schema": "live2d-recovery/inspect-report/1",
+  "source": {
+    "file_name": "keyform-019-deep-nested-targets.moc3",
+    "file_size": 2204
+  },
+  "summary": {
+    "moc3_version_byte": 2,
+    "moc3_version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little-endian",
+    "canvas": {
+      "pixels_per_unit": 1000.0,
+      "origin_x": 400.0,
+      "origin_y": 300.0,
+      "width": 800.0,
+      "height": 600.0,
+      "flags_raw": 0,
+      "flag_y_reversed": false
+    },
+    "counts": {
+      "parts": 3,
+      "deformers": 2,
+      "warp_deformers": 1,
+      "rotation_deformers": 1,
+      "art_meshes": 1,
+      "parameters": 1,
+      "part_keyforms": 6,
+      "warp_deformer_keyforms": 2,
+      "rotation_deformer_keyforms": 2,
+      "art_mesh_keyforms": 2,
+      "keyform_positions": 32,
+      "parameter_binding_indices": 1,
+      "keyform_bindings": 1,
+      "parameter_bindings": 1,
+      "keys": 2,
+      "uvs": 8,
+      "position_indices": 6,
+      "drawable_masks": 0,
+      "draw_order_groups": 1,
+      "draw_order_group_objects": 1,
+      "glue": 0,
+      "glue_info": 0,
+      "glue_keyforms": 0,
+      "keyform_multiply_colors": 6,
+      "keyform_screen_colors": 6,
+      "blend_shape_parameter_bindings": 0,
+      "blend_shape_keyform_bindings": 0,
+      "blend_shapes_warp_deformers": 0,
+      "blend_shapes_art_meshes": 0,
+      "blend_shape_constraint_indices": 0,
+      "blend_shape_constraints": 0,
+      "blend_shape_constraint_values": 0,
+      "blend_shapes_parts": 0,
+      "blend_shapes_rotation_deformers": 0,
+      "blend_shapes_glue": 0,
+      "offscreens": 0,
+      "offscreen_keyforms": 0,
+      "blend_shapes_offscreens": 0,
+      "unknown_nonzero": [],
+      "raw_int_count": 32
+    },
+    "texture_reference_count": 1,
+    "total_keyforms": 12,
+    "hierarchy_edge_count": 5,
+    "anomaly_count": 0
+  },
+  "hierarchy": {
+    "edges": [
+      {
+        "parent": {
+          "kind": "part",
+          "index": 0,
+          "name": "Part_Keyform_00"
+        },
+        "child": {
+          "kind": "part",
+          "index": 1,
+          "name": "Part_Keyform_01"
+        },
+        "relation": "parent_part",
+        "source_field": "part.parent_part",
+        "confidence": "exact"
+      },
+      {
+        "parent": {
+          "kind": "part",
+          "index": 1,
+          "name": "Part_Keyform_01"
+        },
+        "child": {
+          "kind": "part",
+          "index": 2,
+          "name": "Part_Keyform_02"
+        },
+        "relation": "parent_part",
+        "source_field": "part.parent_part",
+        "confidence": "exact"
+      },
+      {
+        "parent": {
+          "kind": "part",
+          "index": 2,
+          "name": "Part_Keyform_02"
+        },
+        "child": {
+          "kind": "deformer",
+          "index": 0,
+          "name": "WarpDeformer_Keyform_00"
+        },
+        "relation": "parent_part",
+        "source_field": "deformer.parent_part",
+        "confidence": "exact"
+      },
+      {
+        "parent": {
+          "kind": "deformer",
+          "index": 0,
+          "name": "WarpDeformer_Keyform_00"
+        },
+        "child": {
+          "kind": "deformer",
+          "index": 1,
+          "name": "RotationDeformer_Keyform_00"
+        },
+        "relation": "parent_deformer",
+        "source_field": "deformer.parent_deformer",
+        "confidence": "exact"
+      },
+      {
+        "parent": {
+          "kind": "deformer",
+          "index": 1,
+          "name": "RotationDeformer_Keyform_00"
+        },
+        "child": {
+          "kind": "art_mesh",
+          "index": 0,
+          "name": "ArtMesh_Keyform_00"
+        },
+        "relation": "parent_deformer",
+        "source_field": "art_mesh.parent_deformer",
+        "confidence": "exact"
+      }
+    ],
+    "roots": [
+      {
+        "kind": "part",
+        "index": 0,
+        "name": "Part_Keyform_00"
+      }
+    ],
+    "anomalies": []
+  },
+  "textures": [
+    {
+      "texture_number": 0,
+      "art_mesh_indices": [
+        0
+      ]
+    }
+  ],
+  "model": {
+    "header": {
+      "version_byte": 2,
+      "version_label": "2 (3.3.00-3.3.03)",
+      "byte_order": "little",
+      "header_padding_nonzero": []
+    },
+    "canvas": {
+      "pixels_per_unit": 1000.0,
+      "origin_x": 400.0,
+      "origin_y": 300.0,
+      "width": 800.0,
+      "height": 600.0,
+      "flags_raw": 0,
+      "flag_y_reversed": false
+    },
+    "counts": {
+      "parts": 3,
+      "deformers": 2,
+      "warp_deformers": 1,
+      "rotation_deformers": 1,
+      "art_meshes": 1,
+      "parameters": 1,
+      "part_keyforms": 6,
+      "warp_deformer_keyforms": 2,
+      "rotation_deformer_keyforms": 2,
+      "art_mesh_keyforms": 2,
+      "keyform_positions": 32,
+      "parameter_binding_indices": 1,
+      "keyform_bindings": 1,
+      "parameter_bindings": 1,
+      "keys": 2,
+      "uvs": 8,
+      "position_indices": 6,
+      "drawable_masks": 0,
+      "draw_order_groups": 1,
+      "draw_order_group_objects": 1,
+      "glue": 0,
+      "glue_info": 0,
+      "glue_keyforms": 0,
+      "keyform_multiply_colors": 6,
+      "keyform_screen_colors": 6,
+      "blend_shape_parameter_bindings": 0,
+      "blend_shape_keyform_bindings": 0,
+      "blend_shapes_warp_deformers": 0,
+      "blend_shapes_art_meshes": 0,
+      "blend_shape_constraint_indices": 0,
+      "blend_shape_constraints": 0,
+      "blend_shape_constraint_values": 0,
+      "blend_shapes_parts": 0,
+      "blend_shapes_rotation_deformers": 0,
+      "blend_shapes_glue": 0,
+      "offscreens": 0,
+      "offscreen_keyforms": 0,
+      "blend_shapes_offscreens": 0,
+      "unknown_nonzero": [],
+      "raw_int_count": 32
+    },
+    "parameters": [
+      {
+        "index": 0,
+        "id": {
+          "text": "Param_Nested",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.0,
+        "repeat": false,
+        "decimal_places": 2,
+        "key_table_begin": 0,
+        "key_table_count": 1
+      }
+    ],
+    "parts": [
+      {
+        "index": 0,
+        "id": {
+          "text": "Part_Keyform_00",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 0,
+        "keyform_count": 2,
+        "visible": true,
+        "enabled": true
+      },
+      {
+        "index": 1,
+        "id": {
+          "text": "Part_Keyform_01",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 2,
+        "keyform_count": 2,
+        "visible": true,
+        "enabled": true,
+        "parent_part": 0
+      },
+      {
+        "index": 2,
+        "id": {
+          "text": "Part_Keyform_02",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 4,
+        "keyform_count": 2,
+        "visible": true,
+        "enabled": true,
+        "parent_part": 1
+      }
+    ],
+    "deformers": [
+      {
+        "index": 0,
+        "id": {
+          "text": "WarpDeformer_Keyform_00",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "specific": {
+          "kind": "warp",
+          "vertex_count": 4,
+          "rows": 1,
+          "columns": 1,
+          "quad_transform": 0
+        },
+        "local_index": 0,
+        "binding_index": 0,
+        "visible": true,
+        "enabled": true,
+        "parent_part": 2
+      },
+      {
+        "index": 1,
+        "id": {
+          "text": "RotationDeformer_Keyform_00",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "specific": {
+          "kind": "rotation",
+          "base_angle": 0.0
+        },
+        "local_index": 0,
+        "binding_index": 0,
+        "visible": true,
+        "enabled": true,
+        "parent_deformer": 0
+      }
+    ],
+    "art_meshes": [
+      {
+        "index": 0,
+        "id": {
+          "text": "ArtMesh_Keyform_00",
+          "valid_utf8": true,
+          "terminated": true,
+          "trailing_bytes_after_terminator": false
+        },
+        "binding_index": 0,
+        "keyform_begin": 0,
+        "keyform_count": 2,
+        "visible": true,
+        "enabled": true,
+        "parent_deformer": 1,
+        "texture_number": 0,
+        "drawable_flags_raw": 0,
+        "blend_mode_bits": 0,
+        "double_sided": false,
+        "inverted_mask": false,
+        "vertex_count": 4,
+        "uv_begin": 0,
+        "index_begin": 0,
+        "index_count": 6,
+        "mask_begin": 0,
+        "mask_count": 0,
+        "mask_drawables": []
+      }
+    ],
+    "masks": [],
+    "draw_order_groups": [
+      {
+        "index": 0,
+        "object_begin": 0,
+        "object_count": 1,
+        "object_total_count": 1,
+        "max_order": 0,
+        "min_order": 0
+      }
+    ],
+    "draw_order_items": [
+      {
+        "index": 0,
+        "object_type": 0,
+        "object_index": 0,
+        "self_group": -1
+      }
+    ],
+    "glues": [],
+    "bindings": [
+      {
+        "index": 0,
+        "key_tables": [
+          0
+        ]
+      }
+    ],
+    "key_tables": [
+      {
+        "index": 0,
+        "key_begin": 0,
+        "key_count": 2
+      }
+    ],
+    "runtime_sections": [
+      {
+        "name": "part.id_runtime",
+        "offset": 856,
+        "elements": 3,
+        "byte_size": 24
+      },
+      {
+        "name": "deformer.id_runtime",
+        "offset": 1168,
+        "elements": 2,
+        "byte_size": 16
+      },
+      {
+        "name": "art_mesh.id_runtime",
+        "offset": 1448,
+        "elements": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.uv_runtime",
+        "offset": 1456,
+        "elements": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.position_index_runtime",
+        "offset": 1464,
+        "elements": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.drawable_mask_runtime",
+        "offset": 1472,
+        "elements": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "parameter.id_runtime",
+        "offset": 1664,
+        "elements": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "glue.id_runtime",
+        "offset": 2200,
+        "elements": 0,
+        "byte_size": 0
+      }
+    ],
+    "unknown_slots": [],
+    "anomalies": [],
+    "not_extracted": [
+      {
+        "field": "keyform_position.xy",
+        "count": 32,
+        "reason": "vertex position values are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "uv.xy",
+        "count": 8,
+        "reason": "UV values are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "position_indices",
+        "count": 6,
+        "reason": "triangle indices are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "key.values",
+        "count": 2,
+        "reason": "key values are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "part_keyform.draw_order",
+        "count": 6,
+        "reason": "keyform values are read in AGENT.2/AGENT.4"
+      },
+      {
+        "field": "warp_keyform.values",
+        "count": 2,
+        "reason": "keyform values are read in AGENT.2/AGENT.4"
+      },
+      {
+        "field": "rotation_keyform.values",
+        "count": 2,
+        "reason": "keyform values are read in AGENT.2/AGENT.4"
+      },
+      {
+        "field": "art_mesh_keyform.values",
+        "count": 2,
+        "reason": "keyform values are read in AGENT.2/AGENT.4"
+      },
+      {
+        "field": "glue_info.weight",
+        "count": 0,
+        "reason": "glue weights are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "keyform_color.*",
+        "count": 12,
+        "reason": "keyform colors are read in AGENT.2 (Live2D IR)"
+      },
+      {
+        "field": "blend_shape.*",
+        "count": 0,
+        "reason": "blend shapes are read in AGENT.2/AGENT.6"
+      }
+    ]
+  }
+}

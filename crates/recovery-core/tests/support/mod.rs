@@ -73,3 +73,36 @@ pub fn lcg_bytes(len: usize, seed: u64) -> Vec<u8> {
     }
     out
 }
+
+/// Directory containing the golden keyform documents (AGENT.4).
+pub fn expected_keyforms_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/expected-keyforms")
+}
+
+/// Relocate the body of a v1-5 `.moc3` by `shift` bytes (the py-moc3
+/// convention places the body at 1984; the native layout is 0x2C0 read from
+/// the offset table). Used by the body-placement regression tests.
+pub fn relocate_body(bytes: &[u8], shift: u32) -> Vec<u8> {
+    let version = MocVersion::from_byte(*bytes.get(4).unwrap()).unwrap();
+    let slots = version.offset_slots();
+    let table_end = 0x40 + slots * 4;
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len() + shift as usize);
+    out.extend_from_slice(bytes.get(..table_end).unwrap());
+    out.resize(out.len() + shift as usize, 0);
+    out.extend_from_slice(bytes.get(table_end..).unwrap());
+    for slot in 0..slots {
+        let at = 0x40 + slot * 4;
+        let value = read_u32(bytes, at as u64);
+        if value > 0 && u64::from(value) <= bytes.len() as u64 {
+            write_u32(&mut out, at as u64, value + shift);
+        }
+    }
+    out
+}
+
+/// Read a little-endian `u32` at `offset`.
+pub fn read_u32(bytes: &[u8], offset: u64) -> u32 {
+    let at = usize::try_from(offset).unwrap();
+    let raw = bytes.get(at..at + 4).unwrap();
+    u32::from_le_bytes([raw[0], raw[1], raw[2], raw[3]])
+}

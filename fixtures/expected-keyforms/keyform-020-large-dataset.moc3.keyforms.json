@@ -1,0 +1,790 @@
+{
+  "schema": "live2d-recovery/recovered-keyforms/1",
+  "schema_status": "experimental",
+  "source_model": {
+    "ir_schema": "live2d-ir/1",
+    "project_schema": "live2d-recovery/recovered-project/1",
+    "source_version_label": "2 (3.3.00-3.3.03)",
+    "source_version_byte": 2,
+    "source_byte_order": "little"
+  },
+  "binding_bands": [
+    {
+      "id": "band:binding:000000",
+      "binding": "binding:000000",
+      "axes": [
+        {
+          "parameter": "Param_Dense",
+          "resolved": true,
+          "stored_key_count": 64,
+          "keys": [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0,
+            18.0,
+            19.0,
+            20.0,
+            21.0,
+            22.0,
+            23.0,
+            24.0,
+            25.0,
+            26.0,
+            27.0,
+            28.0,
+            29.0,
+            30.0,
+            31.0,
+            32.0,
+            33.0,
+            34.0,
+            35.0,
+            36.0,
+            37.0,
+            38.0,
+            39.0,
+            40.0,
+            41.0,
+            42.0,
+            43.0,
+            44.0,
+            45.0,
+            46.0,
+            47.0,
+            48.0,
+            49.0,
+            50.0,
+            51.0,
+            52.0,
+            53.0,
+            54.0,
+            55.0,
+            56.0,
+            57.0,
+            58.0,
+            59.0,
+            60.0,
+            61.0,
+            62.0,
+            63.0
+          ],
+          "usable": true,
+          "provenance": {
+            "confidence": "exact",
+            "source": "moc3:binding.parameter.key_values"
+          },
+          "source_binding": "binding:000000",
+          "rules": [
+            "KB-002"
+          ]
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 64
+      },
+      "targets": [
+        {
+          "kind": "art_mesh",
+          "id": "ArtMesh_Keyform_00"
+        }
+      ],
+      "experimental": false,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:binding"
+      },
+      "rules": [
+        "KB-001",
+        "KB-002"
+      ]
+    }
+  ],
+  "keyform_grids": [
+    {
+      "id": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "axes": [
+        {
+          "parameter": "Param_Dense",
+          "key_count": 64,
+          "resolved": true
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 64
+      },
+      "stored_form_count": 64,
+      "layout": "dense",
+      "ordering": "derived",
+      "confidence": "derived",
+      "rules": [
+        "KF-001",
+        "KF-003",
+        "KF-006"
+      ]
+    }
+  ],
+  "target_keyforms": [
+    {
+      "target_type": "art_mesh",
+      "target": "ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "binding": "binding:000000",
+      "keyforms": [
+        {
+          "index": 0,
+          "opacity": 1.0,
+          "draw_order": 0.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 1,
+          "opacity": 1.0,
+          "draw_order": 1.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 2,
+          "opacity": 1.0,
+          "draw_order": 2.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 3,
+          "opacity": 1.0,
+          "draw_order": 3.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 4,
+          "opacity": 1.0,
+          "draw_order": 4.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 5,
+          "opacity": 1.0,
+          "draw_order": 5.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 6,
+          "opacity": 1.0,
+          "draw_order": 6.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 7,
+          "opacity": 1.0,
+          "draw_order": 7.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 8,
+          "opacity": 1.0,
+          "draw_order": 8.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 9,
+          "opacity": 1.0,
+          "draw_order": 9.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 10,
+          "opacity": 1.0,
+          "draw_order": 10.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 11,
+          "opacity": 1.0,
+          "draw_order": 11.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 12,
+          "opacity": 1.0,
+          "draw_order": 12.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 13,
+          "opacity": 1.0,
+          "draw_order": 13.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 14,
+          "opacity": 1.0,
+          "draw_order": 14.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 15,
+          "opacity": 1.0,
+          "draw_order": 15.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 16,
+          "opacity": 1.0,
+          "draw_order": 16.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 17,
+          "opacity": 1.0,
+          "draw_order": 17.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 18,
+          "opacity": 1.0,
+          "draw_order": 18.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 19,
+          "opacity": 1.0,
+          "draw_order": 19.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 20,
+          "opacity": 1.0,
+          "draw_order": 20.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 21,
+          "opacity": 1.0,
+          "draw_order": 21.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 22,
+          "opacity": 1.0,
+          "draw_order": 22.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 23,
+          "opacity": 1.0,
+          "draw_order": 23.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 24,
+          "opacity": 1.0,
+          "draw_order": 24.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 25,
+          "opacity": 1.0,
+          "draw_order": 25.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 26,
+          "opacity": 1.0,
+          "draw_order": 26.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 27,
+          "opacity": 1.0,
+          "draw_order": 27.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 28,
+          "opacity": 1.0,
+          "draw_order": 28.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 29,
+          "opacity": 1.0,
+          "draw_order": 29.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 30,
+          "opacity": 1.0,
+          "draw_order": 30.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 31,
+          "opacity": 1.0,
+          "draw_order": 31.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 32,
+          "opacity": 1.0,
+          "draw_order": 32.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 33,
+          "opacity": 1.0,
+          "draw_order": 33.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 34,
+          "opacity": 1.0,
+          "draw_order": 34.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 35,
+          "opacity": 1.0,
+          "draw_order": 35.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 36,
+          "opacity": 1.0,
+          "draw_order": 36.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 37,
+          "opacity": 1.0,
+          "draw_order": 37.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 38,
+          "opacity": 1.0,
+          "draw_order": 38.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 39,
+          "opacity": 1.0,
+          "draw_order": 39.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 40,
+          "opacity": 1.0,
+          "draw_order": 40.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 41,
+          "opacity": 1.0,
+          "draw_order": 41.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 42,
+          "opacity": 1.0,
+          "draw_order": 42.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 43,
+          "opacity": 1.0,
+          "draw_order": 43.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 44,
+          "opacity": 1.0,
+          "draw_order": 44.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 45,
+          "opacity": 1.0,
+          "draw_order": 45.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 46,
+          "opacity": 1.0,
+          "draw_order": 46.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 47,
+          "opacity": 1.0,
+          "draw_order": 47.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 48,
+          "opacity": 1.0,
+          "draw_order": 48.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 49,
+          "opacity": 1.0,
+          "draw_order": 49.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 50,
+          "opacity": 1.0,
+          "draw_order": 50.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 51,
+          "opacity": 1.0,
+          "draw_order": 51.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 52,
+          "opacity": 1.0,
+          "draw_order": 52.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 53,
+          "opacity": 1.0,
+          "draw_order": 53.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 54,
+          "opacity": 1.0,
+          "draw_order": 54.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 55,
+          "opacity": 1.0,
+          "draw_order": 55.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 56,
+          "opacity": 1.0,
+          "draw_order": 56.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 57,
+          "opacity": 1.0,
+          "draw_order": 57.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 58,
+          "opacity": 1.0,
+          "draw_order": 58.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 59,
+          "opacity": 1.0,
+          "draw_order": 59.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 60,
+          "opacity": 1.0,
+          "draw_order": 60.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 61,
+          "opacity": 1.0,
+          "draw_order": 61.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 62,
+          "opacity": 1.0,
+          "draw_order": 62.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 63,
+          "opacity": 1.0,
+          "draw_order": 63.0,
+          "geometry": {
+            "position_count": 4
+          }
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "diagnostics": [],
+  "traces": [
+    {
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "axes": [
+        {
+          "parameter": "Param_Dense",
+          "key_count": 64,
+          "keys": [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0,
+            18.0,
+            19.0,
+            20.0,
+            21.0,
+            22.0,
+            23.0,
+            24.0,
+            25.0,
+            26.0,
+            27.0,
+            28.0,
+            29.0,
+            30.0,
+            31.0,
+            32.0,
+            33.0,
+            34.0,
+            35.0,
+            36.0,
+            37.0,
+            38.0,
+            39.0,
+            40.0,
+            41.0,
+            42.0,
+            43.0,
+            44.0,
+            45.0,
+            46.0,
+            47.0,
+            48.0,
+            49.0,
+            50.0,
+            51.0,
+            52.0,
+            53.0,
+            54.0,
+            55.0,
+            56.0,
+            57.0,
+            58.0,
+            59.0,
+            60.0,
+            61.0,
+            62.0,
+            63.0
+          ],
+          "status": "resolved"
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 64
+      },
+      "stored_form_count": 64,
+      "layout": "dense",
+      "ordering": "derived",
+      "confidence": "derived",
+      "rules": [
+        "KB-001",
+        "KB-002",
+        "KF-001",
+        "KF-003",
+        "KF-006"
+      ],
+      "notes": [
+        "art mesh keyed geometry (4 vertices per form) stays in the Live2D IR; static uvs/indices remain in the IR too (KF-009)"
+      ]
+    }
+  ],
+  "statistics": {
+    "targets": 1,
+    "bindings": 1,
+    "parameter_axes": 1,
+    "stored_keyforms": 64,
+    "exact_bindings": 1,
+    "derived_bindings": 0,
+    "heuristic_bindings": 0,
+    "unknown_bindings": 0,
+    "dense_grids": 1,
+    "sparse_grids": 0,
+    "unknown_layout_grids": 0,
+    "unresolved_grids": 0,
+    "unresolved_entries": 0,
+    "diagnostics": 0
+  }
+}

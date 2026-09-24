@@ -232,6 +232,13 @@ pub struct SyntheticModel {
     pub glues: Vec<GlueSpec>,
     /// Draw order groups.
     pub draw_groups: Vec<DrawGroupSpec>,
+    /// Per-target form-count overrides `(object name, stored form count)`.
+    ///
+    /// The writer normally derives the stored form count from the bound key
+    /// table product; an override must never be smaller than that product
+    /// (the parser rejects partial grids), so overrides only exercise the
+    /// "more stored forms than expected" mismatch path.
+    pub keyform_overrides: Vec<(String, usize)>,
 }
 
 fn align8(value: usize) -> usize {
@@ -646,10 +653,18 @@ fn populate(model: &SyntheticModel, version: MocVersion) -> Arrays {
         product.max(1)
     };
 
+    let override_for = |name: &str| -> Option<i64> {
+        model
+            .keyform_overrides
+            .iter()
+            .find(|(target, _)| target == name)
+            .map(|(_, count)| *count as i64)
+    };
+
     // ---- parts -----------------------------------------------------------
     let mut part_kf_cursor = 0i32;
     for part in &model.parts {
-        let keyforms = kf_product(part.binding);
+        let keyforms = override_for(&part.name).unwrap_or_else(|| kf_product(part.binding));
         arrays.part_ids.extend_from_slice(&id_bytes(&part.name));
         arrays
             .part_binding
@@ -681,7 +696,7 @@ fn populate(model: &SyntheticModel, version: MocVersion) -> Arrays {
     let mut local_warp: usize = 0;
     let mut local_rotation: usize = 0;
     for deformer in &model.deformers {
-        let keyforms = kf_product(deformer.binding);
+        let keyforms = override_for(&deformer.name).unwrap_or_else(|| kf_product(deformer.binding));
         arrays
             .deformer_ids
             .extend_from_slice(&id_bytes(&deformer.name));
@@ -803,7 +818,7 @@ fn populate(model: &SyntheticModel, version: MocVersion) -> Arrays {
     // ---- art meshes ------------------------------------------------------
     let mut art_kf_cursor = 0i32;
     for mesh in &model.art_meshes {
-        let keyforms = kf_product(mesh.binding);
+        let keyforms = override_for(&mesh.name).unwrap_or_else(|| kf_product(mesh.binding));
         arrays.art_mesh_ids.extend_from_slice(&id_bytes(&mesh.name));
         arrays
             .art_mesh_binding
@@ -1465,6 +1480,27 @@ fn count_info_bytes(counts: &CountInfo, version: MocVersion) -> Vec<u8> {
 // ---------------------------------------------------------------------------
 
 /// Names of all valid synthetic fixtures, in deterministic order.
+/// Fixtures used by the AGENT.4 keyform golden and regression tests.
+pub const KEYFORM_FIXTURE_NAMES: &[&str] = &[
+    "keyform-001-zero-dimensional.moc3",
+    "keyform-002-1d-three-keys.moc3",
+    "keyform-003-2d-3x3.moc3",
+    "keyform-004-2d-2x3.moc3",
+    "keyform-005-3d-small-grid.moc3",
+    "keyform-006-part-draw-order.moc3",
+    "keyform-007-warp-forms.moc3",
+    "keyform-008-rotation-forms.moc3",
+    "keyform-009-artmesh-forms.moc3",
+    "keyform-010-multiple-bindings.moc3",
+    "keyform-011-multiple-targets.moc3",
+    "keyform-012-duplicate-key.moc3",
+    "keyform-013-unsorted-keys.moc3",
+    "keyform-014-cardinality-mismatch.moc3",
+    "keyform-016-non-finite-key.moc3",
+    "keyform-019-deep-nested-targets.moc3",
+    "keyform-020-large-dataset.moc3",
+];
+
 pub const FIXTURE_NAMES: &[&str] = &[
     "fixture-001-single-artmesh.moc3",
     "fixture-002-artmesh-param.moc3",
@@ -1493,10 +1529,34 @@ pub const FIXTURE_NAMES: &[&str] = &[
     "hierarchy-012-large-flat.moc3",
     "hierarchy-013-scale.moc3",
     "hierarchy-014-self-parent.moc3",
+    "keyform-001-zero-dimensional.moc3",
+    "keyform-002-1d-three-keys.moc3",
+    "keyform-003-2d-3x3.moc3",
+    "keyform-004-2d-2x3.moc3",
+    "keyform-005-3d-small-grid.moc3",
+    "keyform-006-part-draw-order.moc3",
+    "keyform-007-warp-forms.moc3",
+    "keyform-008-rotation-forms.moc3",
+    "keyform-009-artmesh-forms.moc3",
+    "keyform-010-multiple-bindings.moc3",
+    "keyform-011-multiple-targets.moc3",
+    "keyform-012-duplicate-key.moc3",
+    "keyform-013-unsorted-keys.moc3",
+    "keyform-014-cardinality-mismatch.moc3",
+    "keyform-016-non-finite-key.moc3",
+    "keyform-019-deep-nested-targets.moc3",
+    "keyform-020-large-dataset.moc3",
 ];
 
 /// Fixtures excluded from golden snapshot tests (multi-megabyte documents).
-pub const GOLDEN_SKIP: &[&str] = &["hierarchy-011-deep.moc3", "hierarchy-013-scale.moc3"];
+pub const GOLDEN_SKIP: &[&str] = &[
+    "hierarchy-011-deep.moc3",
+    "hierarchy-013-scale.moc3",
+    // Non-finite key values are a Fatal IR diagnostic (IR invariant), so no
+    // canonical IR golden exists; the keyform golden still exists because the
+    // keyform layer reports them positionally.
+    "keyform-016-non-finite-key.moc3",
+];
 
 type Builder = (&'static str, fn() -> SyntheticModel);
 
@@ -1529,6 +1589,23 @@ fn builders() -> Vec<Builder> {
         ("hierarchy-012-large-flat.moc3", hierarchy_012),
         ("hierarchy-013-scale.moc3", hierarchy_013),
         ("hierarchy-014-self-parent.moc3", hierarchy_014),
+        ("keyform-001-zero-dimensional.moc3", keyform_001),
+        ("keyform-002-1d-three-keys.moc3", keyform_002),
+        ("keyform-003-2d-3x3.moc3", keyform_003),
+        ("keyform-004-2d-2x3.moc3", keyform_004),
+        ("keyform-005-3d-small-grid.moc3", keyform_005),
+        ("keyform-006-part-draw-order.moc3", keyform_006),
+        ("keyform-007-warp-forms.moc3", keyform_007),
+        ("keyform-008-rotation-forms.moc3", keyform_008),
+        ("keyform-009-artmesh-forms.moc3", keyform_009),
+        ("keyform-010-multiple-bindings.moc3", keyform_010),
+        ("keyform-011-multiple-targets.moc3", keyform_011),
+        ("keyform-012-duplicate-key.moc3", keyform_012),
+        ("keyform-013-unsorted-keys.moc3", keyform_013),
+        ("keyform-014-cardinality-mismatch.moc3", keyform_014),
+        ("keyform-016-non-finite-key.moc3", keyform_016),
+        ("keyform-019-deep-nested-targets.moc3", keyform_019),
+        ("keyform-020-large-dataset.moc3", keyform_020),
     ]
 }
 
@@ -1589,6 +1666,7 @@ fn fixture_001() -> SyntheticModel {
         }],
         glues: Vec::new(),
         draw_groups: simple_group(1),
+        keyform_overrides: Vec::new(),
     }
 }
 
@@ -1842,6 +1920,361 @@ fn fixture_013() -> SyntheticModel {
             info: vec![(0.5, 0), (0.5, 0), (1.0, 1), (1.0, 1)],
         }],
         draw_groups: simple_group(2),
+        ..SyntheticModel::default()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Keyform fixtures (AGENT.4)
+// ---------------------------------------------------------------------------
+
+/// Parameter whose declared range covers its (finite) key values.
+fn keyform_param(name: &str, keys: &[f32]) -> ParamSpec {
+    let mut minimum = f32::INFINITY;
+    let mut maximum = f32::NEG_INFINITY;
+    for value in keys.iter().filter(|value| value.is_finite()) {
+        minimum = minimum.min(*value);
+        maximum = maximum.max(*value);
+    }
+    if !minimum.is_finite() {
+        minimum = 0.0;
+    }
+    if !maximum.is_finite() {
+        maximum = 0.0;
+    }
+    ParamSpec {
+        name: name.to_string(),
+        min: minimum.min(0.0),
+        max: maximum.max(0.0),
+        default: 0.0,
+        repeat: false,
+        decimals: 2,
+        keys: keys.to_vec(),
+    }
+}
+
+fn keyform_part(name: &str, binding: usize) -> PartSpec {
+    PartSpec {
+        name: name.to_string(),
+        parent: None,
+        binding,
+        visible: true,
+        enabled: true,
+    }
+}
+
+fn keyform_mesh(name: &str, binding: usize, parent_part: Option<usize>) -> ArtMeshSpec {
+    ArtMeshSpec {
+        parent_part,
+        ..ArtMeshSpec::quad(name, binding)
+    }
+}
+
+fn keyform_001() -> SyntheticModel {
+    // Zero-dimensional: empty key table, one static form per target.
+    SyntheticModel {
+        version: 2,
+        bindings: empty_binding(),
+        parts: vec![keyform_part("Part_Keyform_00", 0)],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, Some(0))],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_002() -> SyntheticModel {
+    // 1D, three keys.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_AngleX", &[-30.0, 0.0, 30.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        parts: vec![keyform_part("Part_Keyform_00", 0)],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, Some(0))],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_003() -> SyntheticModel {
+    // 2D, 3x3.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_AngleX", &[-30.0, 0.0, 30.0]),
+            keyform_param("Param_AngleY", &[-30.0, 0.0, 30.0]),
+        ],
+        bindings: vec![BindingSpec { tables: vec![0, 1] }],
+        deformers: vec![warp_deformer("WarpDeformer_Keyform_00", None, 1, 1, false)],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(0),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_004() -> SyntheticModel {
+    // 2D, 2x3.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_EyeL", &[0.0, 1.0]),
+            keyform_param("Param_EyeR", &[0.0, 0.5, 1.0]),
+        ],
+        bindings: vec![BindingSpec { tables: vec![0, 1] }],
+        deformers: vec![DeformerSpec {
+            name: "RotationDeformer_Keyform_00".to_string(),
+            kind: DeformerKind::Rotation { base_angle: 10.0 },
+            parent_part: None,
+            parent_deformer: None,
+            binding: 0,
+        }],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(0),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_005() -> SyntheticModel {
+    // 3D, 2x2x2.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_A", &[0.0, 1.0]),
+            keyform_param("Param_B", &[0.0, 1.0]),
+            keyform_param("Param_C", &[0.0, 1.0]),
+        ],
+        bindings: vec![BindingSpec {
+            tables: vec![0, 1, 2],
+        }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_006() -> SyntheticModel {
+    // Part-only forms (draw order per form).
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Switch", &[0.0, 1.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        parts: vec![keyform_part("Part_Keyform_00", 0)],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, Some(0))],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_007() -> SyntheticModel {
+    // Warp deformer forms (opacity + control points).
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_WarpX", &[-1.0, 1.0]),
+            keyform_param("Param_WarpY", &[-1.0, 1.0]),
+        ],
+        bindings: vec![BindingSpec { tables: vec![0, 1] }],
+        deformers: vec![warp_deformer("WarpDeformer_Keyform_00", None, 2, 2, false)],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(0),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_008() -> SyntheticModel {
+    // Rotation forms (opacity/angle/origin/scale/reflect).
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Rotate", &[-90.0, -45.0, 45.0, 90.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        deformers: vec![DeformerSpec {
+            name: "RotationDeformer_Keyform_00".to_string(),
+            kind: DeformerKind::Rotation { base_angle: 0.0 },
+            parent_part: None,
+            parent_deformer: None,
+            binding: 0,
+        }],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(0),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_009() -> SyntheticModel {
+    // Art mesh forms (opacity/draw order/vertex geometry).
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Mouth", &[-1.0, 0.0, 1.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        parts: vec![keyform_part("Part_Keyform_00", 0)],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, Some(0))],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_010() -> SyntheticModel {
+    // Multiple bindings referencing different parameters.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_A", &[0.0, 1.0]),
+            keyform_param("Param_B", &[0.0, 1.0]),
+        ],
+        bindings: vec![
+            BindingSpec { tables: vec![0] },
+            BindingSpec { tables: vec![1] },
+        ],
+        parts: vec![keyform_part("Part_Keyform_00", 0)],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 1, Some(0))],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_011() -> SyntheticModel {
+    // Multiple parameters on one binding, two targets.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_A", &[0.0, 1.0]),
+            keyform_param("Param_B", &[0.0, 1.0]),
+        ],
+        bindings: vec![BindingSpec { tables: vec![0, 1] }],
+        deformers: vec![warp_deformer("WarpDeformer_Keyform_00", None, 1, 1, false)],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(0),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_012() -> SyntheticModel {
+    // Duplicate stored keys: preserved, never deduplicated.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Dup", &[-30.0, 0.0, 0.0, 30.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_013() -> SyntheticModel {
+    // Unsorted stored keys: preserved in stored order.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Unsorted", &[0.0, -30.0, 30.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_014() -> SyntheticModel {
+    // Stored forms exceed the expected cardinality (4 expected, 5 stored).
+    SyntheticModel {
+        version: 2,
+        parameters: vec![
+            keyform_param("Param_A", &[0.0, 1.0]),
+            keyform_param("Param_B", &[0.0, 1.0]),
+        ],
+        bindings: vec![BindingSpec { tables: vec![0, 1] }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
+        keyform_overrides: vec![("ArtMesh_Keyform_00".to_string(), 5)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_016() -> SyntheticModel {
+    // Non-finite stored key: reported positionally, never embedded.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_NonFinite", &[0.0, f32::NAN, 1.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_019() -> SyntheticModel {
+    // Deep nested hierarchy targets sharing one binding.
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Nested", &[0.0, 1.0])],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        parts: vec![
+            keyform_part("Part_Keyform_00", 0),
+            PartSpec {
+                name: "Part_Keyform_01".to_string(),
+                parent: Some(0),
+                binding: 0,
+                visible: true,
+                enabled: true,
+            },
+            PartSpec {
+                name: "Part_Keyform_02".to_string(),
+                parent: Some(1),
+                binding: 0,
+                visible: true,
+                enabled: true,
+            },
+        ],
+        deformers: vec![
+            DeformerSpec {
+                name: "WarpDeformer_Keyform_00".to_string(),
+                kind: DeformerKind::Warp {
+                    rows: 1,
+                    cols: 1,
+                    quad: false,
+                },
+                parent_part: Some(2),
+                parent_deformer: None,
+                binding: 0,
+            },
+            DeformerSpec {
+                name: "RotationDeformer_Keyform_00".to_string(),
+                kind: DeformerKind::Rotation { base_angle: 0.0 },
+                parent_part: None,
+                parent_deformer: Some(0),
+                binding: 0,
+            },
+        ],
+        art_meshes: vec![ArtMeshSpec {
+            parent_deformer: Some(1),
+            ..quad_mesh("ArtMesh_Keyform_00", 0)
+        }],
+        draw_groups: simple_group(1),
+        ..SyntheticModel::default()
+    }
+}
+
+fn keyform_020() -> SyntheticModel {
+    // Larger stored form count (64 static forms on one axis).
+    let keys: Vec<f32> = (0..64).map(|index| index as f32).collect();
+    SyntheticModel {
+        version: 2,
+        parameters: vec![keyform_param("Param_Dense", &keys)],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        art_meshes: vec![keyform_mesh("ArtMesh_Keyform_00", 0, None)],
+        draw_groups: simple_group(1),
         ..SyntheticModel::default()
     }
 }

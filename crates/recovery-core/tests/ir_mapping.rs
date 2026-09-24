@@ -1,4 +1,4 @@
-//! MOC3 -> IR mapping tests over the synthetic fixtures.
+﻿//! MOC3 -> IR mapping tests over the synthetic fixtures.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 mod support;
@@ -24,6 +24,11 @@ fn has_code(model: &Live2DModel, code: &str) -> bool {
 #[test]
 fn every_fixture_maps_without_fatal_diagnostics() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if *name == "keyform-016-non-finite-key.moc3" {
+            // Non-finite keys are intentionally a Fatal IR diagnostic; the
+            // keyform layer still reports them positionally (AGENT.4).
+            continue;
+        }
         let model = build(name);
         assert!(
             !live2d_ir::has_fatal(&model.diagnostics),
@@ -361,6 +366,11 @@ fn invalid_parameter_ranges_fail_validation() {
 #[test]
 fn ir_round_trip_is_semantic_and_byte_stable() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if *name == "keyform-016-non-finite-key.moc3" {
+            // Canonical IR cannot carry NaN (Fatal diagnostic), so there is
+            // no round-trip contract for this fixture at the IR layer.
+            continue;
+        }
         let path = support::fixtures_dir().join(name);
         let model = build_ir_from_file(&path, &InspectOptions::default()).unwrap();
         let json = export_ir_json(&model, true).unwrap();

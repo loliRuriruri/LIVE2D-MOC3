@@ -1,0 +1,213 @@
+{
+  "schema": "live2d-recovery/recovered-keyforms/1",
+  "schema_status": "experimental",
+  "source_model": {
+    "ir_schema": "live2d-ir/1",
+    "project_schema": "live2d-recovery/recovered-project/1",
+    "source_version_label": "2 (3.3.00-3.3.03)",
+    "source_version_byte": 2,
+    "source_byte_order": "little"
+  },
+  "binding_bands": [
+    {
+      "id": "band:binding:000000",
+      "binding": "binding:000000",
+      "axes": [
+        {
+          "parameter": "Param_Dup",
+          "resolved": true,
+          "stored_key_count": 4,
+          "keys": [
+            -30.0,
+            0.0,
+            0.0,
+            30.0
+          ],
+          "usable": false,
+          "provenance": {
+            "confidence": "exact",
+            "source": "moc3:binding.parameter.key_values"
+          },
+          "source_binding": "binding:000000",
+          "rules": [
+            "KB-002",
+            "KB-004"
+          ]
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "targets": [
+        {
+          "kind": "art_mesh",
+          "id": "ArtMesh_Keyform_00"
+        }
+      ],
+      "experimental": false,
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:binding"
+      },
+      "rules": [
+        "KB-001",
+        "KB-002",
+        "KB-004"
+      ]
+    }
+  ],
+  "keyform_grids": [
+    {
+      "id": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "axes": [
+        {
+          "parameter": "Param_Dup",
+          "key_count": 4,
+          "resolved": true
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "stored_form_count": 4,
+      "layout": "dense",
+      "ordering": "derived",
+      "confidence": "derived",
+      "rules": [
+        "KF-001",
+        "KF-003",
+        "KF-006"
+      ]
+    }
+  ],
+  "target_keyforms": [
+    {
+      "target_type": "art_mesh",
+      "target": "ArtMesh_Keyform_00",
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "binding": "binding:000000",
+      "keyforms": [
+        {
+          "index": 0,
+          "opacity": 1.0,
+          "draw_order": 0.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 1,
+          "opacity": 1.0,
+          "draw_order": 1.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 2,
+          "opacity": 1.0,
+          "draw_order": 2.0,
+          "geometry": {
+            "position_count": 4
+          }
+        },
+        {
+          "index": 3,
+          "opacity": 1.0,
+          "draw_order": 3.0,
+          "geometry": {
+            "position_count": 4
+          }
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "duplicate_parameter_key",
+      "message": "binding 'binding:000000' parameter 'Param_Dup' stores duplicate consecutive key value(s) at position(s) 2; keys are preserved as stored",
+      "entity": {
+        "kind": "parameter",
+        "id": "Param_Dup"
+      }
+    },
+    {
+      "severity": "warning",
+      "code": "confidence_provenance_inconsistent",
+      "message": "axis 'Param_Dup' of band 'band:binding:000000' claims usable=false but stored facts disagree"
+    },
+    {
+      "severity": "warning",
+      "code": "confidence_provenance_inconsistent",
+      "message": "band 'band:binding:000000' confidence Exact disagrees with its axis/cardinality state"
+    }
+  ],
+  "traces": [
+    {
+      "target": {
+        "kind": "art_mesh",
+        "id": "ArtMesh_Keyform_00"
+      },
+      "band": "band:binding:000000",
+      "grid": "grid:binding:000000:art_mesh:ArtMesh_Keyform_00",
+      "axes": [
+        {
+          "parameter": "Param_Dup",
+          "key_count": 4,
+          "keys": [
+            -30.0,
+            0.0,
+            0.0,
+            30.0
+          ],
+          "status": "resolved"
+        }
+      ],
+      "expected_cardinality": {
+        "state": "exact",
+        "value": 4
+      },
+      "stored_form_count": 4,
+      "layout": "dense",
+      "ordering": "derived",
+      "confidence": "derived",
+      "rules": [
+        "KB-001",
+        "KB-002",
+        "KB-004",
+        "KF-001",
+        "KF-003",
+        "KF-006"
+      ],
+      "notes": [
+        "art mesh keyed geometry (4 vertices per form) stays in the Live2D IR; static uvs/indices remain in the IR too (KF-009)"
+      ]
+    }
+  ],
+  "statistics": {
+    "targets": 1,
+    "bindings": 1,
+    "parameter_axes": 1,
+    "stored_keyforms": 4,
+    "exact_bindings": 1,
+    "derived_bindings": 0,
+    "heuristic_bindings": 0,
+    "unknown_bindings": 0,
+    "dense_grids": 1,
+    "sparse_grids": 0,
+    "unknown_layout_grids": 0,
+    "unresolved_grids": 0,
+    "unresolved_entries": 0,
+    "diagnostics": 3
+  }
+}

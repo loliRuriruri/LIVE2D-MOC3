@@ -1,0 +1,92 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "$unresolved"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "ArtMesh_Keyform_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Keyform_00",
+      "synthetic": false,
+      "status": "unresolved",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Keyform_00",
+        "kind": "art_mesh",
+        "state": "unresolved",
+        "rejected": []
+      }
+    }
+  ],
+  "containers": [
+    {
+      "id": "$unresolved",
+      "kind": "unresolved",
+      "synthetic": true,
+      "members": [
+        "ArtMesh_Keyform_00"
+      ]
+    }
+  ],
+  "cycles": [],
+  "statistics": {
+    "nodes": 1,
+    "resolved": 0,
+    "top_level": 0,
+    "unresolved": 1,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 0,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 1,
+    "diagnostics": 1
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "ArtMesh_Keyform_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Keyform_00",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [],
+    "candidates": [
+      {
+        "child": "ArtMesh_Keyform_00",
+        "candidates": [],
+        "rejected": []
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "orphan_node",
+      "message": "node 'ArtMesh_Keyform_00' (ArtMesh) was left unresolved (0 rejected candidate(s))"
+    }
+  ]
+}

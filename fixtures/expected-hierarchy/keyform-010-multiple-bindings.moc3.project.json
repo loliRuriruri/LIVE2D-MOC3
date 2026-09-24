@@ -1,0 +1,134 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "Part_Keyform_00"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "Part_Keyform_00",
+      "kind": "part",
+      "source_index": 0,
+      "source_name": "Part_Keyform_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [
+        "ArtMesh_Keyform_00"
+      ],
+      "trace": {
+        "child": "Part_Keyform_00",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Keyform_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Keyform_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Keyform_00",
+      "confidence": "exact",
+      "rule": "HR-004",
+      "part_association": "Part_Keyform_00",
+      "binding": "binding:000001",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Keyform_00",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Keyform_00",
+          "confidence": "exact",
+          "rule": "HR-004",
+          "evidence_index": 0
+        },
+        "rejected": []
+      }
+    }
+  ],
+  "containers": [],
+  "cycles": [],
+  "statistics": {
+    "nodes": 2,
+    "resolved": 1,
+    "top_level": 1,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 1,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 0,
+    "diagnostics": 0
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "Part_Keyform_00",
+        "kind": "part",
+        "source_index": 0,
+        "source_name": "Part_Keyform_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Keyform_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Keyform_00",
+        "part_association": "Part_Keyform_00",
+        "binding": "binding:000001"
+      }
+    ],
+    "edges": [
+      {
+        "child": "ArtMesh_Keyform_00",
+        "parent": "Part_Keyform_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "Part_Keyform_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Keyform_00",
+        "candidates": [
+          {
+            "parent": "Part_Keyform_00",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "evidence_index": 0
+          }
+        ],
+        "rejected": []
+      }
+    ]
+  },
+  "diagnostics": []
+}
