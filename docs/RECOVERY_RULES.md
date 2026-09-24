@@ -52,3 +52,14 @@ system; the `inspect` report remains unchanged for its phase.
   use "Structural Recovery Report" wording and the exact derived confidence
   ratio, as defined by AGENT.7.
 - "Reconstructed PSD" is the only acceptable name for AGENT.8 output.
+- Cross-implementation numbers are "Cross-Implementation Agreement", never
+  accuracy (`docs/DIFFERENTIAL_FINDINGS.md`).
+
+## AGENT.3.5 note (no rule changes)
+
+The external reference audit changed **no** rule, confidence level or naming
+policy. It added interop evidence (DF-001..DF-004) and one regression test
+for body-placement tolerance. All differential disagreements are resolved
+against the multi-source layout (PurismCore + `mocari` + `moc2cmo`) and are
+recorded in `docs/DIFFERENTIAL_FINDINGS.md`; none of them justify relaxing a
+rule or promoting a heuristic.

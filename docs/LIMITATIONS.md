@@ -5,9 +5,10 @@
 - **No real Cubism export has been parsed yet.** All checked-in fixtures are
   synthetic files produced by `tools/fixture-gen` from the documented layout.
   The layout itself is cross-checked between independent public references
-  (see `FORMAT_NOTES.md`), but real-file validation is still pending. Do not
-  claim production readiness before an owned `.moc3` passes inspection and
-  the results are compared against an independent loader.
+  (see `FORMAT_NOTES.md`) and, since AGENT.3.5, against a real external reader
+  (`py-moc3`) on layout-conforming inputs. Real-file validation is still
+  pending. Do not claim production readiness before an owned `.moc3` passes
+  inspection and the results are compared against an independent loader.
 - Big-endian files are implemented in the reader but never observed.
 
 ## What the inspector does not extract (yet)
@@ -111,6 +112,25 @@ so nothing is silently dropped.
   additionally bounded by parser limits; IR JSON inputs are bounded only by
   the file-size cap, so treat arbitrary hand-made IR documents as untrusted
   input.
+
+## AGENT.3.5 (external reference audit) limitations
+
+- **Cross-implementation agreement is not accuracy.** All differential
+  numbers are per-field agreement with an external tool
+  (`docs/DIFFERENTIAL_FINDINGS.md`); none of them validate the recovered
+  hierarchy against author intent.
+- **Only one external reader was executable here** (`py-moc3`, MIT). Its
+  layout deviations (DF-001, DF-002, DF-004) mean it cannot be used as an
+  oracle for version-6 canvas, part/art-mesh ID arrays or per-mesh counts.
+  Other references were source-audited only; executing them needs build or
+  runtime provisioning.
+- Real-world compatibility stays **UNVALIDATED**; owned files and a runtime
+  oracle are planned in `docs/GROUND_TRUTH_BENCHMARK.md` and
+  `docs/RUNTIME_ORACLE_PLAN.md`. No accuracy claim of any kind is permitted
+  until both exist.
+- `docs/AGENT4_REFERENCE_INPUT.md` / `AGENT5_REFERENCE_INPUT.md` record the
+  open spec decisions this audit surfaced (oracle provisioning, owned files,
+  writer questions).
 
 ## Tooling
 

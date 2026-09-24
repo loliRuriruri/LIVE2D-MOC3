@@ -1,0 +1,58 @@
+﻿=== DIFFERENTIAL REPORT ===
+
+Input:      fixture-002-artmesh-param.moc3
+Size:       1576 bytes
+Fingerprint: fnv1a64:eb5929dc573ac280
+Our commit: 159da8f
+
+Providers:
+  ours | in_process 0.1.0 | commit worktree | license UNLICENSED (project decision pending) | ok
+  py-moc3 | subprocess 0.2.x (pip `py-moc3`) | commit 2fb112e11a | license MIT | REFERENCE_ERROR
+    reference error: py-moc3 exited with exit code: 1: Traceback (most recent call last):
+  File "D:\test\liver2d\tools\reference-harness\scripts/py_moc3_snapshot.py", line 251, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "D:\test\liver2d\tools\reference-harness\scripts/py_moc3_snapshot.py", line 81, in main
+    moc = Moc3.from_file(path)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "D:\test\liver2d\target\reference\py-moc3\src\moc3\_core.py", line 584, in from_file
+    return cls.from_bytes(data)
+           ^^^^^^^^^^^^^^^^^^^^
+ ...
+
+Field groups:
+  art_meshes: NOT_COMPARABLE 0/8
+  canvas: NOT_COMPARABLE 0/5
+  counts: NOT_COMPARABLE 0/14
+  deformers: NOT_COMPARABLE 0/1
+  endian: NOT_COMPARABLE 0/1
+  hierarchy_edges: NOT_COMPARABLE 0/1
+  moc3_version: NOT_COMPARABLE 0/1
+  parameters: NOT_COMPARABLE 0/4
+  parts: NOT_COMPARABLE 0/2
+
+Cross-Implementation Agreement
+------------------------------
+Comparable fields  0
+Agreement          0
+Disagreement       0
+Order-only         0
+Missing (ours)     0
+Missing (reference)0
+Unsupported        0
+Not comparable     37
+Unresolved         37
+
+note: py-moc3: REFERENCE_ERROR: reference error: py-moc3 exited with exit code: 1: Traceback (most recent call last):
+  File "D:\test\liver2d\tools\reference-harness\scripts/py_moc3_snapshot.py", line 251, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "D:\test\liver2d\tools\reference-harness\scripts/py_moc3_snapshot.py", line 81, in main
+    moc = Moc3.from_file(path)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "D:\test\liver2d\target\reference\py-moc3\src\moc3\_core.py", line 584, in from_file
+    return cls.from_bytes(data)
+           ^^^^^^^^^^^^^^^^^^^^
+ ...
+
+These numbers are a cross-implementation comparison, not a recovery accuracy measurement.

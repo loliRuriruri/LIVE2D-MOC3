@@ -290,3 +290,27 @@ identifiers.
 - offscreen rendering semantics for 5.3 (AGENT.6),
 - keyform interpolation and parameter binding runtime rules (AGENT.4),
 - hierarchy implications of draw order groups and mask stacks (AGENT.3).
+
+## 13. AGENT.3.5 differential notes (body placement, py-moc3)
+
+- **Body offset conventions.** The offset table ends at `0x2C0 = 704`.
+  Community readers and our fixtures place the body (count info onward) at
+  704 for versions 1-5 and at 1984 for version 6. `py-moc3` (pinned
+  `2fb112e11a`) instead hardcodes the body at 1984 with
+  `COUNT_INFO_SIZE = 128`, `COUNT_INFO_MAX = 23` for every version. Our parser
+  follows the offset-table pointers, so it accepts both placements; this is
+  locked by `crates/moc3-ingest/tests/layout_interop.rs` (relocate body by
+  +1280, assert identical inspection semantics).
+- **py-moc3 on version-6 input:** it parses but reports canvas `0/0/0/0/0` and
+  art-mesh counts permuted (see DF-002 in `docs/DIFFERENTIAL_FINDINGS.md`).
+  Not usable as a v6 canvas oracle.
+- **Section-order disagreement:** on a body-relocated v3.3 file, `py-moc3`
+  reads part IDs as empty and art-mesh IDs as a byte-shifted tail of the real
+  ID (DF-004). Our slot order (four runtime-space slots before `ids` in each
+  block) remains corroborated by PurismCore + `mocari` + `moc2cmo`.
+- **Count units:** on-disk UV count is a float count (2 per UV pair); the
+  harness snapshot was corrected accordingly. `keyform_positions` is the sum
+  of position floats across art-mesh and warp keyforms; `keys` is the sum of
+  parameter key values (including extension keys).
+- **No semantic change:** none of these notes changed parser, IR or hierarchy
+  behavior; they add interop evidence and guard tests.

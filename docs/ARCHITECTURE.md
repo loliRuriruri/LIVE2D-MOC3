@@ -1,9 +1,13 @@
 # Architecture
 
 Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0
-through AGENT.3 complete** (research/bootstrap, read-only MOC3 inspector,
-normalized Live2D IR, hierarchy reconstruction). Later phases exist only as
-reserved, empty crates.
+through AGENT.3.5 complete** (research/bootstrap, read-only MOC3 inspector,
+normalized Live2D IR, hierarchy reconstruction, external reference audit).
+Later phases exist only as reserved, empty crates.
+
+The AGENT.3.5 audit is documentation + dev tooling only: the production
+pipeline is unchanged. Its harness (`tools/reference-harness`) is never a
+dependency of any production crate and is excluded from the shipped tool.
 
 ## Pipeline
 
@@ -81,6 +85,7 @@ Hard rules carried over from the master spec:
 | `crates/project-validator` | structural comparison (reserved: AGENT.7) | - |
 | `crates/texture-tools` | texture/PSD tooling (reserved: AGENT.8) | - |
 | `tools/fixture-gen` | synthetic MOC3 fixture writer (tests only) | `moc3-ingest` |
+| `tools/reference-harness` | dev-only differential validation vs external references (AGENT.3.5); binary `recovery-reference`; never shipped | `recovery-core`, `hierarchy-recovery`, `live2d-ir`, `serde` |
 | `tests/workspace-smoke` | cross-crate integration tests | `recovery-core`, `fixture-gen` |
 
 `moc3-ingest` is deliberately dependency-light (only `serde`): parsing must
@@ -154,3 +159,10 @@ ambiguity, orphan, cycle, deep and scale tests; CLI end-to-end tests
 (determinism, exit codes, input immutability); workspace smoke tests including
 the parser-independence boundary checks. All checked-in fixture data is
 synthetic (see `fixtures/README.md`).
+
+AGENT.3.5 adds two offline test surfaces: a layout-interop regression test
+(`crates/moc3-ingest/tests/layout_interop.rs`, both body placements parse
+identically) and the dev-only differential harness tests
+(`tools/reference-harness/tests/harness.rs`, mock providers only). Real
+external comparisons are manual and env-gated
+(`docs/DIFFERENTIAL_FINDINGS.md`); they are never part of `cargo test`.

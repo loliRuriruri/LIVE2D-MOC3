@@ -1,0 +1,424 @@
+{
+  "input": {
+    "file_name": "fixture-002-artmesh-param.moc3",
+    "size": 1576,
+    "fnv1a64": "eb5929dc573ac280"
+  },
+  "our_commit": "159da8f",
+  "providers": [
+    {
+      "name": "ours",
+      "metadata": {
+        "name": "ours",
+        "kind": "in_process",
+        "version": "0.1.0",
+        "commit": "worktree",
+        "license": "UNLICENSED (project decision pending)",
+        "repository": "local",
+        "production_dependency": false
+      },
+      "outcome": "ok",
+      "error": null
+    },
+    {
+      "name": "py-moc3",
+      "metadata": {
+        "name": "py-moc3",
+        "kind": "subprocess",
+        "version": "0.2.x (pip `py-moc3`)",
+        "commit": "2fb112e11a",
+        "license": "MIT",
+        "repository": "https://github.com/Ludentes/py-moc3",
+        "production_dependency": false
+      },
+      "outcome": "REFERENCE_ERROR",
+      "error": "reference error: py-moc3 exited with exit code: 1: Traceback (most recent call last):\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 251, in <module>\r\n    sys.exit(main())\r\n             ^^^^^^\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 81, in main\r\n    moc = Moc3.from_file(path)\r\n          ^^^^^^^^^^^^^^^^^^^^\r\n  File \"D:\\test\\liver2d\\target\\reference\\py-moc3\\src\\moc3\\_core.py\", line 584, in from_file\r\n    return cls.from_bytes(data)\r\n           ^^^^^^^^^^^^^^^^^^^^\r\n ..."
+    }
+  ],
+  "fields": [
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.index_count",
+      "status": "NOT_COMPARABLE",
+      "ours": "6",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.mask_refs",
+      "status": "NOT_COMPARABLE",
+      "ours": "[]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.parent_deformer",
+      "status": "NOT_COMPARABLE",
+      "ours": "-",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.parent_part",
+      "status": "NOT_COMPARABLE",
+      "ours": "Part_Synthetic_00",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.texture",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.uv_count",
+      "status": "NOT_COMPARABLE",
+      "ours": "4",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ArtMesh_Synthetic_00.vertex_count",
+      "status": "NOT_COMPARABLE",
+      "ours": "4",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "art_meshes.ids",
+      "status": "NOT_COMPARABLE",
+      "ours": "[ArtMesh_Synthetic_00]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "canvas.height",
+      "status": "NOT_COMPARABLE",
+      "ours": "600",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "canvas.origin_x",
+      "status": "NOT_COMPARABLE",
+      "ours": "400",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "canvas.origin_y",
+      "status": "NOT_COMPARABLE",
+      "ours": "300",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "canvas.pixels_per_unit",
+      "status": "NOT_COMPARABLE",
+      "ours": "1000",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "canvas.width",
+      "status": "NOT_COMPARABLE",
+      "ours": "800",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.art_meshes",
+      "status": "NOT_COMPARABLE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.deformers",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.drawable_masks",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.glue",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.keyform_bindings",
+      "status": "NOT_COMPARABLE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.keyform_positions",
+      "status": "NOT_COMPARABLE",
+      "ours": "16",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.keys",
+      "status": "NOT_COMPARABLE",
+      "ours": "2",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.parameters",
+      "status": "NOT_COMPARABLE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.parts",
+      "status": "NOT_COMPARABLE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.position_indices",
+      "status": "NOT_COMPARABLE",
+      "ours": "6",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.rotation_deformers",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.textures",
+      "status": "NOT_COMPARABLE",
+      "ours": "1",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.uvs",
+      "status": "NOT_COMPARABLE",
+      "ours": "8",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "counts.warp_deformers",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "deformers.ids",
+      "status": "NOT_COMPARABLE",
+      "ours": "[]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "endian",
+      "status": "NOT_COMPARABLE",
+      "ours": "little",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "hierarchy_edges",
+      "status": "NOT_COMPARABLE",
+      "ours": "[ArtMesh_Synthetic_00->Part_Synthetic_00(part)]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "moc3_version",
+      "status": "NOT_COMPARABLE",
+      "ours": "2",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.default",
+      "status": "NOT_COMPARABLE",
+      "ours": "0",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.maximum",
+      "status": "NOT_COMPARABLE",
+      "ours": "30",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parameters.ParamSynthetic_AngleX.minimum",
+      "status": "NOT_COMPARABLE",
+      "ours": "-30",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parameters.ids",
+      "status": "NOT_COMPARABLE",
+      "ours": "[ParamSynthetic_AngleX]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parts.Part_Synthetic_00.parent",
+      "status": "NOT_COMPARABLE",
+      "ours": "-",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    },
+    {
+      "field": "parts.ids",
+      "status": "NOT_COMPARABLE",
+      "ours": "[Part_Synthetic_00]",
+      "reference": {
+        "py-moc3": null
+      },
+      "consensus": "INSUFFICIENT",
+      "details": []
+    }
+  ],
+  "statistics": {
+    "comparable_fields": 0,
+    "agreement": 0,
+    "disagreement": 0,
+    "order_only": 0,
+    "missing_ours": 0,
+    "missing_reference": 0,
+    "unsupported": 0,
+    "not_comparable": 37
+  },
+  "disputed": [],
+  "notes": [
+    "py-moc3: REFERENCE_ERROR: reference error: py-moc3 exited with exit code: 1: Traceback (most recent call last):\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 251, in <module>\r\n    sys.exit(main())\r\n             ^^^^^^\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 81, in main\r\n    moc = Moc3.from_file(path)\r\n          ^^^^^^^^^^^^^^^^^^^^\r\n  File \"D:\\test\\liver2d\\target\\reference\\py-moc3\\src\\moc3\\_core.py\", line 584, in from_file\r\n    return cls.from_bytes(data)\r\n           ^^^^^^^^^^^^^^^^^^^^\r\n ..."
+  ]
+}

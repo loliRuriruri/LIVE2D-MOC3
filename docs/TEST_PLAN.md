@@ -1,9 +1,15 @@
 # Test Plan
 
-Scope: AGENT.0-AGENT.3 (bootstrap, read-only inspector, normalized IR,
-hierarchy reconstruction). Test types follow master spec section 14: unit,
-integration, snapshot/golden, corruption, fuzz (smoke), regression. Current
-total: **161 tests, all passing** (27 synthetic fixtures).
+Scope: AGENT.0-AGENT.3.5 (bootstrap, read-only inspector, normalized IR,
+hierarchy reconstruction, external reference audit). Test types follow master
+spec section 14: unit, integration, snapshot/golden, corruption, fuzz
+(smoke), regression. Current total: **179 tests, all passing** (27 synthetic
+fixtures).
+
+AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
+placement tolerance) and `tools/reference-harness` (dev-only differential
+harness, 15 offline tests). External requirements are never part of the
+default run:
 
 ## How to run
 
@@ -15,6 +21,15 @@ cargo run -p fixture-gen -- fixtures/synthetic     # regenerate fixtures
 $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
 $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_ir_documents_match
 $env:UPDATE_GOLDEN_HIERARCHY="1"; cargo test -p recovery-core --test hierarchy_recovery golden_recovered_projects_match
+```
+
+External differential runs (never required for development; env-gated):
+
+```text
+powershell tools/reference-harness/scripts/fetch_py_moc3.ps1   # clone pin 2fb112e11a
+$env:PY_MOC3_DIR = "target/reference/py-moc3"
+cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc3 `
+    --provider ours --provider py-moc3 --json --output report.json
 ```
 
 ## Matrix
@@ -37,6 +52,8 @@ $env:UPDATE_GOLDEN_HIERARCHY="1"; cargo test -p recovery-core --test hierarchy_r
 | Hierarchy golden | same file, `fixtures/expected-hierarchy/` | 25 canonical recovered-project snapshots (large/deep fixtures excluded and covered by determinism runs) |
 | Hierarchy CLI | `apps/recovery-cli/tests/cli_hierarchy.rs` | tree markers, JSON determinism, `--output` equality, `--strict` exit codes, `--allow-heuristic`, `--explain`, IR JSON input equivalence, corrupt input handling |
 | Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary checks for `live2d-ir` and `hierarchy-recovery`** (`cargo metadata` graph) |
+| Layout interop | `crates/moc3-ingest/tests/layout_interop.rs` | relocated-body (py-moc3 offset convention) files parse to byte-identical inspection semantics (offsets/name/size excluded) |
+| Differential harness | `tools/reference-harness/tests/harness.rs` (offline) | snapshot determinism, mock consensus/dispute/order-only tolerance, float policy, unsupported/missing classification, ours-unsupported handling, subprocess timeout/output caps, report determinism and wording |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
 

@@ -153,3 +153,32 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
 - **Boundary enforcement repeated:** `hierarchy-recovery` depends only on
   `live2d-ir`; the workspace smoke test checks the manifest and the
   `cargo metadata` graph.
+
+## 9. AGENT.3.5 research (external reference audit)
+
+- **Reference sweep.** Eight projects were re-audited and pinned (license,
+  version, commit, mode, production-dependency policy) in
+  `docs/EXTERNAL_REFERENCE_MATRIX.md`; metadata lives in
+  `tools/reference-harness/src/providers.rs::pinned_references()` so every
+  differential report is self-describing. `py-moc3` (MIT, `2fb112e11a`) was
+  the only reference executed in this environment (pure Python); the others
+  were source-audited only, and LGPL-3.0 `Quadrism` stays behavioral-only.
+- **Real differential runs.** A new dev-only harness crate
+  (`tools/reference-harness`, binary `recovery-reference`) produced three real
+  runs against py-moc3; findings DF-001..DF-004 and artifacts are in
+  `docs/DIFFERENTIAL_FINDINGS.md` and
+  `docs/reports/agent-3.5/differential/`.
+- **Body-placement interop.** py-moc3's fixed body offset (1984) versus the
+  offset-table-driven placement (704 for v1-5) explained its abort on our
+  fixtures; relocating the body by +1280 made py-moc3 parse and let us
+  compare semantics for the first time. The relocation transformation is now
+  a regression test (`layout_interop.rs`), not just an experiment.
+- **Discovered harness normalization bugs** (all fixed, harness tests cover
+  them): comparisons included "ours" as its own reference when a provider
+  failed (self-agreement bug); UV counts were pairs while the format counts
+  floats; `keys`/`keyform_positions` were not derived although the IR holds
+  the data; an unsupported field on our side was reported as "missing ours".
+- **No production impact.** Parser/IR/hierarchy semantics are unchanged; the
+  audit adds guard tests, evidence artifacts and planning documents
+  (`CMO3_MAPPING_PLAN.md`, `RUNTIME_ORACLE_PLAN.md`,
+  `GROUND_TRUTH_BENCHMARK.md`, `AGENT4/5_REFERENCE_INPUT.md`).
