@@ -11,5 +11,8 @@ hierarchy-recovery.workspace = true
 keyform-recovery.workspace = true
 live2d-ir.workspace = true
 
+[dev-dependencies]
+serde_json.workspace = true
+
 [lints]
 workspace = true

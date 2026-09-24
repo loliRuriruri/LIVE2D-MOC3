@@ -1,0 +1,53 @@
+{
+  "artmesh_to_modelimage": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "filter_sets": 3,
+  "image_resources": 3,
+  "layer_selector_relations": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "layered_images": 1,
+  "layers": 3,
+  "layers_detail": [
+    {
+      "layer_id": "00-00-00-01",
+      "name": "Mesh_00",
+      "resource": 0
+    },
+    {
+      "layer_id": "00-00-01-01",
+      "name": "Mesh_01",
+      "resource": 1
+    },
+    {
+      "layer_id": "00-00-02-01",
+      "name": "Mesh_02",
+      "resource": 2
+    }
+  ],
+  "model_images": 3,
+  "texture_inputs": 3
+}

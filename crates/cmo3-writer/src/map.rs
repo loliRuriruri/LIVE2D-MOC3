@@ -1,4 +1,4 @@
-﻿//! Semantic -> writer-model mapping (serialization only, no inference).
+//! Semantic -> writer-model mapping (serialization only, no inference).
 //!
 //! Every required semantic that is unresolved fails in strict mode (default)
 //! and is reported as unsupported in best-effort mode (work order sections
@@ -1064,4 +1064,3 @@ fn texture_page_of(model: &Live2DModel, texture_id: &str) -> Option<u32> {
         .find(|texture| texture.id.as_str() == texture_id)
         .map(|texture| texture.page_index)
 }
-
