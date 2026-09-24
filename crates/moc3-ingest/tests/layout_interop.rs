@@ -10,6 +10,7 @@
 
 mod support;
 
+use moc3_ingest::version::MocVersion;
 use moc3_ingest::{build_inspection_report, parse, Limits, SourceInfo};
 
 /// Serialize the inspection report with layout-dependent keys removed, so two
@@ -51,12 +52,15 @@ fn strip_layout_keys(value: &mut serde_json::Value) {
 /// Shift the body by inserting `shift` zero bytes at the end of the offset
 /// table and patching every non-zero offset (the py-moc3 convention).
 fn relocate_body(bytes: &[u8], shift: u64) -> Vec<u8> {
-    const TABLE_END: usize = 0x2C0;
+    let version_byte = *bytes.get(4).unwrap();
+    let version = MocVersion::from_byte(version_byte).expect("fixture version byte is valid");
+    let slots = version.offset_slots();
+    let table_end = 0x40 + slots * 4;
     let mut out: Vec<u8> = Vec::with_capacity(bytes.len() + shift as usize);
-    out.extend_from_slice(bytes.get(..TABLE_END).unwrap());
+    out.extend_from_slice(bytes.get(..table_end).unwrap());
     out.resize(out.len() + shift as usize, 0);
-    out.extend_from_slice(bytes.get(TABLE_END..).unwrap());
-    for slot in 0..160usize {
+    out.extend_from_slice(bytes.get(table_end..).unwrap());
+    for slot in 0..slots {
         let at = 0x40 + slot * 4;
         let value = support::read_u32(bytes, at as u64);
         if value > 0 && u64::from(value) <= bytes.len() as u64 {

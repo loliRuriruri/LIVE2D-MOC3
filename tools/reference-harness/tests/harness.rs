@@ -45,6 +45,9 @@ fn adapter_parses_our_fixture() {
     );
     assert_eq!(snapshot.counts.get("parts"), Some(&1));
     assert_eq!(snapshot.hierarchy_edges.len(), 1);
+    // UV counts are float counts (2 per UV pair) for the format-level fields.
+    assert_eq!(snapshot.art_meshes[0].uv_count, 8);
+    assert_eq!(snapshot.counts.get("uvs"), Some(&8));
 }
 
 #[test]
@@ -341,6 +344,7 @@ fn ours_unsupported_field_is_not_reported_as_missing_ours() {
     );
     let entry = field(&report, "counts.parameter_bindings");
     assert_eq!(entry.status, FieldStatus::UnsupportedReference);
+    assert_eq!(entry.consensus, ConsensusVerdict::Unsupported);
 }
 
 #[test]

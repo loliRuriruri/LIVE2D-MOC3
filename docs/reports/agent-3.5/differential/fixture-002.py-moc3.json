@@ -4,7 +4,7 @@
     "size": 1576,
     "fnv1a64": "eb5929dc573ac280"
   },
-  "our_commit": "159da8f",
+  "our_commit": "fcd5967",
   "providers": [
     {
       "name": "ours",
@@ -89,7 +89,7 @@
     {
       "field": "art_meshes.ArtMesh_Synthetic_00.uv_count",
       "status": "NOT_COMPARABLE",
-      "ours": "4",
+      "ours": "8",
       "reference": {
         "py-moc3": null
       },
@@ -420,5 +420,7 @@
   "disputed": [],
   "notes": [
     "py-moc3: REFERENCE_ERROR: reference error: py-moc3 exited with exit code: 1: Traceback (most recent call last):\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 251, in <module>\r\n    sys.exit(main())\r\n             ^^^^^^\r\n  File \"D:\\test\\liver2d\\tools\\reference-harness\\scripts/py_moc3_snapshot.py\", line 81, in main\r\n    moc = Moc3.from_file(path)\r\n          ^^^^^^^^^^^^^^^^^^^^\r\n  File \"D:\\test\\liver2d\\target\\reference\\py-moc3\\src\\moc3\\_core.py\", line 584, in from_file\r\n    return cls.from_bytes(data)\r\n           ^^^^^^^^^^^^^^^^^^^^\r\n ..."
-  ]
+  ],
+  "validation_status": "UNVALIDATED (no owned real .moc3; cross-implementation comparison only)",
+  "disclaimer": "These numbers are a cross-implementation comparison, not a recovery accuracy measurement."
 }

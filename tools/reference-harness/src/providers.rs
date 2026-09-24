@@ -499,7 +499,7 @@ pub fn snapshot_from_model(
                     .unwrap_or(-1)
             }),
             vertex_count: mesh.vertex_count as i64,
-            uv_count: mesh.uvs.len() as i64,
+            uv_count: mesh.uvs.len() as i64 * 2,
             index_count: mesh.indices.len() as i64,
             mask_refs,
         });
@@ -672,8 +672,11 @@ pub fn run_command_capped(
                 if Instant::now() >= deadline {
                     let _ = child.kill();
                     let _ = child.wait();
-                    let _ = stdout_reader.join();
-                    let _ = stderr_reader.join();
+                    // Reader threads are intentionally detached: on Windows a
+                    // grandchild can inherit the pipe handles and keep a join
+                    // blocked, which would defeat the timeout bound.
+                    drop(stdout_reader);
+                    drop(stderr_reader);
                     return Err(ProviderError::ReferenceTimeout {
                         seconds: config.timeout.as_secs(),
                     });
@@ -681,9 +684,11 @@ pub fn run_command_capped(
                 std::thread::sleep(Duration::from_millis(10));
             }
             Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
                 return Err(ProviderError::ReferenceError {
                     reason: format!("{label}: wait failed: {error}"),
-                })
+                });
             }
         }
     };
@@ -734,14 +739,12 @@ fn read_capped(mut reader: impl Read, limit: usize) -> std::io::Result<ReadResul
         if read == 0 {
             break;
         }
-        if kept.len() < limit {
-            let room = limit - kept.len();
-            let take = room.min(read);
-            if let Some(chunk) = buffer.get(..take) {
-                kept.extend_from_slice(chunk);
-            }
+        let room = limit.saturating_sub(kept.len());
+        let take = room.min(read);
+        if let Some(chunk) = buffer.get(..take) {
+            kept.extend_from_slice(chunk);
         }
-        if kept.len() >= limit && read > 0 {
+        if read > take {
             exceeded = true;
         }
     }

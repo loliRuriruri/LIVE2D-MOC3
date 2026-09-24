@@ -5,7 +5,7 @@ Status: planning document produced by AGENT.3.5. **No writer exists yet**;
 facts that AGENT.5 must consume and the questions it must resolve before the
 first byte is written.
 
-Sources: source audit of `moc2cmo` 1.1.18 (`2527e24e91`) - MIT - plus the
+Sources: source audit of `moc2cmo` 1.1.18 (`2527e24e93`) - MIT - plus the
 same CMO3-adjacent material used in AGENT.0. Facts below are observations at
 `E2`/`E3` as marked; everything else is an open question.
 

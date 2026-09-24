@@ -115,6 +115,10 @@ pub struct ComparisonReport {
     pub disputed: Vec<String>,
     /// Notes about caps or provider issues.
     pub notes: Vec<String>,
+    /// Real-world validation status marker (never an accuracy claim).
+    pub validation_status: String,
+    /// Fixed non-accuracy disclaimer.
+    pub disclaimer: String,
 }
 
 /// Hard cap on compared fields (keeps hostile inputs from exploding output).
@@ -122,6 +126,14 @@ pub const MAX_COMPARED_FIELDS: usize = 20_000;
 
 /// Maximum detail lines per comparison.
 const MAX_DETAILS: usize = 8;
+
+/// Real-world validation status carried by every report.
+pub const VALIDATION_STATUS: &str =
+    "UNVALIDATED (no owned real .moc3; cross-implementation comparison only)";
+
+/// Fixed disclaimer; agreement is never an accuracy measurement.
+pub const NON_ACCURACY_DISCLAIMER: &str =
+    "These numbers are a cross-implementation comparison, not a recovery accuracy measurement.";
 
 #[derive(Debug, Clone, PartialEq)]
 enum Value {
@@ -306,7 +318,7 @@ fn is_unsupported(provider: &DifferentialSnapshot, field: &str) -> bool {
     provider
         .unsupported
         .keys()
-        .any(|key| key == group || field.starts_with(key.as_str()))
+        .any(|key| key == group || field == key || field.starts_with(&format!("{key}.")))
 }
 
 /// Compare ours against reference providers.
@@ -415,7 +427,9 @@ pub fn compare(
             }
         };
 
-        let consensus = if ours_value.is_none() {
+        let consensus = if ours_unsupported && ours_value.is_none() {
+            ConsensusVerdict::Unsupported
+        } else if ours_value.is_none() {
             ConsensusVerdict::MissingOurs
         } else if supported_values.is_empty() {
             if unsupported_count > 0 && failed_count == 0 {
@@ -488,6 +502,8 @@ pub fn compare(
         statistics,
         disputed,
         notes,
+        validation_status: VALIDATION_STATUS.to_string(),
+        disclaimer: NON_ACCURACY_DISCLAIMER.to_string(),
     }
 }
 

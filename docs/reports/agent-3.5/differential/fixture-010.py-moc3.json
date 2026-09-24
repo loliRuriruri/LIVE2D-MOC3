@@ -4,7 +4,7 @@
     "size": 3128,
     "fnv1a64": "7b7b48e0b2b16ea4"
   },
-  "our_commit": "159da8f",
+  "our_commit": "fcd5967",
   "providers": [
     {
       "name": "ours",
@@ -91,7 +91,7 @@
     {
       "field": "art_meshes.ArtMesh_Synthetic_00.uv_count",
       "status": "MISMATCH",
-      "ours": "4",
+      "ours": "8",
       "reference": {
         "py-moc3": "12"
       },
@@ -259,7 +259,7 @@
       "reference": {
         "py-moc3": "1"
       },
-      "consensus": "MISSING_OURS",
+      "consensus": "UNSUPPORTED",
       "details": []
     },
     {
@@ -453,5 +453,7 @@
     "canvas.pixels_per_unit",
     "canvas.width"
   ],
-  "notes": []
+  "notes": [],
+  "validation_status": "UNVALIDATED (no owned real .moc3; cross-implementation comparison only)",
+  "disclaimer": "These numbers are a cross-implementation comparison, not a recovery accuracy measurement."
 }

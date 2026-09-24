@@ -4,7 +4,7 @@
     "size": 2856,
     "fnv1a64": "d8696430c2b674f4"
   },
-  "our_commit": "159da8f",
+  "our_commit": "fcd5967",
   "providers": [
     {
       "name": "ours",
@@ -89,7 +89,7 @@
     {
       "field": "art_meshes.ArtMesh_Synthetic_00.uv_count",
       "status": "MISSING_REFERENCE",
-      "ours": "4",
+      "ours": "8",
       "reference": {
         "py-moc3": null
       },
@@ -315,7 +315,7 @@
       "reference": {
         "py-moc3": "1"
       },
-      "consensus": "MISSING_OURS",
+      "consensus": "UNSUPPORTED",
       "details": []
     },
     {
@@ -518,5 +518,7 @@
     "hierarchy_edges",
     "parts.ids"
   ],
-  "notes": []
+  "notes": [],
+  "validation_status": "UNVALIDATED (no owned real .moc3; cross-implementation comparison only)",
+  "disclaimer": "These numbers are a cross-implementation comparison, not a recovery accuracy measurement."
 }

@@ -61,8 +61,9 @@ test in `crates/moc3-ingest/tests/layout_interop.rs`.
 
 - **Observation (R3):** py-moc3 parses `fixture-010-v53.moc3` (version byte 6)
   but reports canvas `0/0/0/0/0` (all five fields) and swaps art-mesh counts:
-  `vertex_count` 6 vs our 4, `uv_count` 12 vs our 4, `index_count` 4 vs our 6.
-  Parts, parameters, hierarchy edges and the version byte agree.
+  `vertex_count` 6 vs our 4, `uv_count` 12 vs our 8 (both float counts, see
+  DF-003), `index_count` 4 vs our 6. Parts, parameters, hierarchy edges and
+  the version byte agree.
 - **Interpretation:** the swapped counts are consistent with py-moc3 applying
   its own art-mesh section order (see DF-004) while the canvas zeros are
   consistent with its fixed body offset (DF-001) not matching the v6 layout.
@@ -78,12 +79,20 @@ test in `crates/moc3-ingest/tests/layout_interop.rs`.
 ## DF-003 - count units and coverage
 
 - **Observation (R2):** after normalizing units, count fields agree
-  (13/15 `MATCH`), including `uvs` = number of floats (8 for 4 UVs; our
-  snapshot originally reported 4 pairs, fixed in the harness), `keys`,
-  `keyform_positions`, `position_indices`, `keyform_bindings`.
+  (13/15 `MATCH`), including `uvs` = number of floats (8 for 4 UVs),
+  `keys`, `keyform_positions`, `position_indices`, `keyform_bindings`. The
+  per-mesh `uv_count` and the group `counts.uvs` were both corrected in the
+  harness to float counts (they previously reported UV pairs).
+- **Naming deviation (py-moc3):** py-moc3's own `CountIdx` names slot 12
+  `KEYFORM_BINDING_BANDS` and slot 13 `KEYFORM_BINDINGS` and has no
+  "parameter bindings" entry. The comparison uses index alignment with our
+  parser's count table (which is validated independently), so the values
+  compare validly; the label `counts.parameter_bindings` is ours, not
+  py-moc3's, and this deviation is recorded here like DF-004 rather than
+  treated as agreement on naming.
 - **Remaining gaps:**
-  - `counts.parameter_bindings`: py-moc3 exposes it; our IR merges key-table
-    identity into parameter key values by design, so the harness now reports
+  - `counts.parameter_bindings`: our IR merges key-table identity into
+    parameter key values by design, so the harness reports
     `UNSUPPORTED_REFERENCE` for our side instead of a missing value.
   - `counts.textures`: our snapshot exposes it; py-moc3 does not model
     textures at all, so it is `MISSING_REFERENCE` (expected).
