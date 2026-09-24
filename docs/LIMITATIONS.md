@@ -163,11 +163,16 @@ so nothing is silently dropped.
 
 ## AGENT.5 (CMO3 writer) limitations
 
-- **The writer is PARTIAL.** CAFF (Gate 5A) passes; `main.xml` serialization
-  (Gate 5B) is in progress under AGENT.5.1: the image/filter/layer chain is
-  now fully evidenced (`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`) and modelled,
-  but the XML emission/validation is not finished. No `.cmo3` is produced
-  yet.
+- **The writer is minimal only.** CAFF (Gate 5A) and the structural
+  `main.xml`/`.cmo3` gate (Gate 5B) pass for the minimal MODEL_IMAGE-mode
+  document (`write_minimal_cmo3`). Deformers, AGENT.4 keyform grids,
+  draw-order groups, masks beyond the first GUID and all sample/editor
+  metadata are explicitly out of scope; the CLI is not implemented.
+- The layered image is synthetic (one canvas-sized layer per visible mesh),
+  never a recovered PSD; layer/group names are recovered mesh names or
+  placeholders (`docs/CMO3_WRITER_DEFAULTS.md`).
+- Cubism Editor open remains NOT_TESTED; structural validation is never
+  reported as editor compatibility.
 - Cubism Editor open is `NOT_TESTED`; structural success is never called
   editor compatibility.
 - CAFF writing supports RAW entries only; ZIP modes 33/37 are recognised

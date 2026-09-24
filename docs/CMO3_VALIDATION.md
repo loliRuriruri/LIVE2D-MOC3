@@ -7,33 +7,27 @@ adding more fidelity.
 | Gate | Meaning | Status | Evidence |
 |---|---|---|---|
 | 5A | CAFF archive structure valid | **PASS** | encoder + test decoder + validator; 15 CAFF tests (round-trip default/zero/negative keys, guard, corruption, unsafe/duplicate paths, caps, varints incl. negative-key multi-byte, encoder rejection of compressed modes, decoder recognition without guessing). Independently re-parsed and fuzzed (160k hostile inputs, zero panics) during review. |
-| 5B | minimal `main.xml` structurally valid | **IN PROGRESS (AGENT.5.1)** | image-pipeline field-level evidence resolved (`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`); typed image-pipeline model landed; serializer emission and validators in progress |
+| 5B | minimal `main.xml` structurally valid | **PASS (AGENT.5.1)** | typed project validator, XML scanner (unique ids, no dangling refs, GUID-type checks), minimal MODEL_IMAGE serializer, goldens `fixtures/expected-cmo3/5B-001..002.main.xml`; single-mesh and multi-mesh (1 document / N layers) gates tested |
+| 5B.1 | typed project model valid | **PASS** | `validate_typed` + negatives (missing model image, dangling resource, layer count, duplicate `layerId`, geometry) |
+| 5B.2 | main.xml well formed, no dangling/duplicate refs | **PASS** | `scan_xml` over generated documents (also golden-tested) |
+| 5B.3 | main.xml + synthetic PNG -> CAFF -> `.cmo3` | **PASS** | `write_minimal_cmo3` packages via the Gate 5A encoder and re-decodes the archive before returning bytes |
 | 5C | minimal CMO3 opens in Cubism Editor | **NOT TESTED** | no Cubism Editor environment; never claimed |
-| 5D | Parts / ArtMeshes serialized | NOT REACHED | blocked by 5B |
-| 5E | Deformers serialized | NOT REACHED | blocked by 5B |
-| 5F | Bindings / keyform grids serialized | NOT REACHED | blocked by 5B |
-| 5G | Textures / masks / draw state serialized | NOT REACHED | blocked by 5B |
-| 5H | Differential + structural validation | NOT REACHED | blocked by 5B |
+| 5D | Parts / ArtMeshes serialized | PARTIAL | root/real parts with child GUID lists, one quad per mesh, static forms; AGENT.4 keyform grids deferred |
+| 5E | Deformers serialized | DEFERRED | explicitly out of AGENT.5.1 scope (typed parents exist; emission deferred) |
+| 5F | Full bindings / keyform grids serialized | DEFERRED | only the single synthetic static binding per mesh is emitted |
+| 5G | Textures / masks / draw state serialized | PARTIAL | MODEL_IMAGE pipeline, one layer per mesh, texture inputs; masks limited to the first mask GUID; draw-order groups deferred |
+| 5H | Differential + structural validation | PARTIAL | structural validation PASS; normalized image-pipeline snapshot implemented; reference generator not executable (`REFERENCE_UNSUPPORTED`) |
 
-## Active stop condition (work order section 94)
+## Stop condition status
 
-**"main.xml mandatory object set unresolved"** applies to a subset of the
-required chain: the ModelImage filter graph, layered-image chain and
-texture-input extensions are mandatory in both pinned minimal generators
-but their field-level contents are not resolvable from the pinned sources
-(the sources document the object set, not the exact values). Writing those
-objects from guesswork would fabricate editor metadata and would violate
-the no-fake-recovery rule, so the serializer is deliberately not shipped in
-a dangling-reference state.
-
-Resolution requires one of:
-
-1. an owned `.cmo3` reference file (preferred; `docs/GROUND_TRUTH_BENCHMARK.md`),
-2. a deeper pinned-source extraction for the filter/layer graph with the
-   same evidence discipline (facts only, recorded in
-   `docs/CMO3_MINIMAL_REQUIREMENTS.md`).
-
-`Ready for AGENT.6: NO` until gate 5B is reached.
+The AGENT.5 stop condition **"main.xml mandatory object set unresolved"** is
+**CLEARED** for the minimal MODEL_IMAGE-mode document: the filter graph,
+layered-image chain and texture-input linkage were resolved to field level
+in `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md` (two independent MIT sources) and
+are emitted with validated references. Remaining known gaps are declared
+scope (AGENT.4 keyform grids, deformers, draw-order groups) rather than
+evidence gaps. Gate 5C remains NOT_TESTED until a Cubism Editor environment
+exists.
 
 ## Validators specified (for the serializer completion)
 

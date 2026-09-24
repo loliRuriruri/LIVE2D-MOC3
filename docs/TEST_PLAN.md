@@ -4,7 +4,9 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**268 tests, all passing** (44 synthetic fixtures). AGENT.5 is PARTIAL: only
+**276 tests, all passing** (44 synthetic fixtures + generated CMO3
+documents). AGENT.5.1 gates 5B.1-5B.3 pass for the minimal MODEL_IMAGE
+document (`docs/CMO3_VALIDATION.md`); Cubism open NOT_TESTED. AGENT.5 is PARTIAL: only
 the CAFF/identity/XML/profile/mapping layers exist (see
 `docs/CMO3_VALIDATION.md`).
 
@@ -66,6 +68,8 @@ cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc
 | CMO3 CAFF (AGENT.5) | `crates/cmo3-writer` unit tests | round-trip with default/zero/negative keys, guard bytes, truncation/bad magic, corrupted payload visibility, out-of-range offsets, unsafe/duplicate paths, entry caps, varint lengths, compressed-mode recognition (no guessing) |
 | CMO3 identity/XML/profile | `crates/cmo3-writer` unit tests | pool allocation determinism, UUID shape/variant/determinism, escaping of all five XML entities, canonical float formatting, profile values match both pinned sources, unique import list |
 | CMO3 mapping | `crates/cmo3-writer/tests/mapping.rs` | strict `MissingTextureAsset` failure, strict success with assets, writer-default trace separation, archive entry naming safety, determinism |
+| CMO3 XML/validators | `crates/cmo3-writer/src/validate.rs` tests | XML scanner: duplicate `xs.id`, dangling `xs.ref`, GUID-type mismatch, balanced references |
+| CMO3 gates 5B.1-5B.3 | `crates/cmo3-writer/tests/minimal_cmo3.rs` | single-mesh and multi-mesh (1 layered image / N layers, distinct layer selection) gates, byte determinism, CAFF integration (decode + validate + payload equality), typed/XML negatives without output, golden `main.xml` and normalized pipeline snapshots (`fixtures/expected-cmo3/`) |
 | Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery and cmo3-writer must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)

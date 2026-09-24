@@ -1,11 +1,14 @@
 # CMO3 Writer (AGENT.5)
 
-Status: **PARTIAL, IN PROGRESS under AGENT.5.1** (Gate 5A PASS; Gate 5B
-not reached yet). The image-pipeline evidence blocker is resolved
-(`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`) and the typed image-pipeline model
-plus writer-defaults policy (`docs/CMO3_WRITER_DEFAULTS.md`, including the
-LINEAR decision) have landed; the XML emission and validators are the
-remaining AGENT.5.1 work. See `docs/CMO3_VALIDATION.md`.
+Status: **AGENT.5.1 complete for the minimal MODEL_IMAGE document** (Gate 5A
+PASS; Gate 5B PASS structurally; Cubism open NOT_TESTED). The writer now
+produces a `.cmo3` containing `main.xml`, one synthetic layered image with
+one layer per visible mesh, per-mesh ModelImage filter graphs, texture
+inputs, MODEL_IMAGE-mode texture manager, root/real parts and one static
+quad per mesh. Evidence: `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`; defaults
+and LINEAR policy: `docs/CMO3_WRITER_DEFAULTS.md`; gate ledger:
+`docs/CMO3_VALIDATION.md`. Full AGENT.5 fidelity (deformers, AGENT.4
+keyform grids, draw-order groups, CLI) is explicitly NOT resumed.
 
 ## Scope
 
