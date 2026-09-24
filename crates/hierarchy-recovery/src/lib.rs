@@ -70,3 +70,11 @@ pub fn reconstruct(model: &Live2DModel, policy: &RecoveryPolicy) -> RecoveredPro
 pub fn explain(project: &RecoveredProject, query: &str) -> Option<String> {
     text::render_explain(project, query)
 }
+
+/// Run the candidate stage on an existing graph (advanced/testing API).
+///
+/// Rebuilds the candidate sets and appends guard diagnostics; use this to
+/// test structural filters against hand-built graphs.
+pub fn analyze_graph(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
+    candidates::build_candidates(graph, policy);
+}

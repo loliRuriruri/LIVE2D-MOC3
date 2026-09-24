@@ -30,9 +30,12 @@ use crate::policy::RecoveryPolicy;
 pub const DIAGNOSTIC_CAP_PER_CODE: usize = 256;
 
 /// Small helper that caps how many diagnostics of one code are emitted.
+///
+/// Codes are keyed by value (not by a fixed bucket) so every code gets its
+/// own summary line and no code is mislabeled.
 pub(crate) struct DiagnosticBudget {
-    counts: BTreeMap<&'static str, usize>,
-    truncated: BTreeMap<&'static str, usize>,
+    counts: BTreeMap<String, usize>,
+    truncated: BTreeMap<String, usize>,
 }
 
 impl DiagnosticBudget {
@@ -44,12 +47,11 @@ impl DiagnosticBudget {
     }
 
     pub(crate) fn push(&mut self, out: &mut Vec<Diagnostic>, diagnostic: Diagnostic) {
-        let code = stable_code(&diagnostic.code);
-        let count = self.counts.entry(code).or_insert(0);
+        let count = self.counts.entry(diagnostic.code.clone()).or_insert(0);
         if *count < DIAGNOSTIC_CAP_PER_CODE {
             out.push(diagnostic);
         } else {
-            *self.truncated.entry(code).or_insert(0) += 1;
+            *self.truncated.entry(diagnostic.code.clone()).or_insert(0) += 1;
         }
         *count += 1;
     }
@@ -62,19 +64,6 @@ impl DiagnosticBudget {
                 format!("{count} additional '{code}' diagnostic(s) were suppressed by the cap"),
             ));
         }
-    }
-}
-
-fn stable_code(code: &str) -> &'static str {
-    match code {
-        "dangling_candidate" => "dangling_candidate",
-        "illegal_relation" => "illegal_relation",
-        "wrong_type_relation" => "wrong_type_relation",
-        "duplicate_relation" => "duplicate_relation",
-        "ambiguous_parent" => "ambiguous_parent",
-        "hierarchy_cycle" => "hierarchy_cycle",
-        "orphan_node" => "orphan_node",
-        _ => "other",
     }
 }
 

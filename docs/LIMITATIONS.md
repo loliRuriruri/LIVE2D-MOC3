@@ -106,6 +106,11 @@ so nothing is silently dropped.
   and validates structure only.
 - Offscreen surfaces (5.3) are not hierarchy nodes; part references to them
   are reported via IR-level `unmapped_reference` diagnostics.
+- Performance: resolution is near-linear (memoized ancestor walks,
+  index-aligned candidates, per-code diagnostic caps). The `.moc3` path is
+  additionally bounded by parser limits; IR JSON inputs are bounded only by
+  the file-size cap, so treat arbitrary hand-made IR documents as untrusted
+  input.
 
 ## Tooling
 

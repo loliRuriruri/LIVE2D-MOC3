@@ -61,6 +61,19 @@ pub fn validate_hierarchy(project: &RecoveredProject) -> Vec<Diagnostic> {
 
     // --- per-node consistency ----------------------------------------------
     let mut child_listers: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    let children_sets: BTreeMap<&str, BTreeSet<&str>> = project
+        .nodes
+        .iter()
+        .map(|node| {
+            (
+                node.id.as_str(),
+                node.children
+                    .iter()
+                    .map(|child| child.as_str())
+                    .collect::<BTreeSet<&str>>(),
+            )
+        })
+        .collect();
     for node in &project.nodes {
         match node.status {
             ResolutionState::Resolved | ResolutionState::CycleDetected => {
@@ -109,11 +122,11 @@ pub fn validate_hierarchy(project: &RecoveredProject) -> Vec<Diagnostic> {
                             ),
                         ));
                     }
-                    if !parent_node
-                        .children
-                        .iter()
-                        .any(|child| child.as_str() == node.id.as_str())
-                    {
+                    let listed = children_sets
+                        .get(parent.as_str())
+                        .map(|children| children.contains(node.id.as_str()))
+                        .unwrap_or(false);
+                    if !listed {
                         out.push(fatal(
                             "parent_child_mismatch",
                             format!(
@@ -373,9 +386,36 @@ pub fn validate_hierarchy(project: &RecoveredProject) -> Vec<Diagnostic> {
         ));
     }
 
-    out
+    cap_diagnostics(out)
 }
 
 fn fatal(code: &'static str, message: String) -> Diagnostic {
     Diagnostic::new(Severity::Fatal, code, message)
+}
+
+/// Bound the number of returned findings per code (same policy as the
+/// resolution stages); a crafted project cannot amplify validator output
+/// beyond ~256 per code plus one summary entry each.
+fn cap_diagnostics(diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
+    const CAP: usize = 256;
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut truncated: BTreeMap<String, usize> = BTreeMap::new();
+    let mut out: Vec<Diagnostic> = Vec::with_capacity(diagnostics.len().min(CAP));
+    for diagnostic in diagnostics {
+        let count = counts.entry(diagnostic.code.clone()).or_insert(0);
+        if *count < CAP {
+            out.push(diagnostic);
+        } else {
+            *truncated.entry(diagnostic.code.clone()).or_insert(0) += 1;
+        }
+        *count += 1;
+    }
+    for (code, count) in truncated {
+        out.push(Diagnostic::new(
+            Severity::Info,
+            "diagnostics_truncated",
+            format!("{count} additional '{code}' diagnostic(s) were suppressed by the cap"),
+        ));
+    }
+    out
 }

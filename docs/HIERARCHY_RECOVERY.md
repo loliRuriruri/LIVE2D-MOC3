@@ -130,9 +130,21 @@ are called **Hierarchy Resolution Statistics** - never accuracy or
 
 Identical IR input yields byte-identical project JSON: nodes are ordered
 (parts, deformers, art meshes; source order), candidates are sorted by
-confidence then parent id, traces follow node order, diagnostics are appended
-in fixed stage order and capped per code (256) with a summary entry. No hash
-maps or randomness participate in output.
+confidence then parent id, traces follow node order, and diagnostics are
+appended in fixed stage order. No hash maps or randomness participate in
+output.
+
+Diagnostics are capped per code (256) with one summary entry per truncated
+code, in every stage that can scale with input: guard collection, candidate
+filters, resolution and hierarchy validation. Structured error output in the
+CLI (for example fatal `HierarchyValidationFailed`) lists at most 50 fatal
+findings plus the total count. Candidate/resolution hot paths use ordered
+maps and index-aligned arrays; the effective-part walk is memoized, so a
+20k-deep chain resolves in well under a second instead of O(n * depth).
+
+Fatal hierarchy findings always block output: `reconstruct-hierarchy` exits 1
+with a structured error and writes nothing when the project fails
+`validate_hierarchy`.
 
 ## Recovery policy
 
@@ -154,10 +166,15 @@ recovery reconstruct-hierarchy <model.moc3|model.ir.json>
 
 - default: human tree + statistics + diagnostic summary,
 - `--json` / `--output`: canonical recovered-project JSON,
-- `--strict`: exit 1 when `ambiguous_parent`, `hierarchy_cycle`,
-  `dangling_candidate` or `illegal_relation` is present,
+- `--strict`: checked before writing; exits 1 without emitting output when
+  `ambiguous_parent`, `hierarchy_cycle`, `dangling_candidate` or
+  `illegal_relation` is present,
 - `--explain`: selected parent, rule, evidence, rejected candidates with
-  reasons (canonical id or stored source name; `--json` for machine output).
+  reasons (canonical id or stored source name; `--json` for machine output);
+  diagnostic-only, so it is intentionally not strict-gated,
+- `--max-file-size` also applies to IR JSON inputs,
+- fatal hierarchy validation findings always exit 1 and write nothing,
+- UTF-8 BOMs on IR JSON inputs are accepted.
 
 ## Project document
 

@@ -259,7 +259,8 @@ fn run_export_ir(
 
 fn run_validate_ir(file: &Path, json_output: bool) -> ExitCode {
     log::info!("validating IR {}", file.display());
-    let text = match read_text_file(file) {
+    let limit = InspectOptions::default().limits.max_file_size;
+    let text = match read_text_file(file, limit) {
         Ok(text) => text,
         Err(message) => {
             report_generic_error(file, "IoError", &message, None, json_output, None);
@@ -334,7 +335,7 @@ fn run_reconstruct_hierarchy(
         .map(|extension| extension.eq_ignore_ascii_case("json"))
         .unwrap_or(false);
     let model = if is_ir_json {
-        let text = match read_text_file(input) {
+        let text = match read_text_file(input, options.limits.max_file_size) {
             Ok(text) => text,
             Err(message) => {
                 report_generic_error(input, "IoError", &message, None, true, None);
@@ -376,11 +377,50 @@ fn run_reconstruct_hierarchy(
     };
     let project = reconstruct(&model, &policy);
 
+    // Fatal hierarchy findings mean the recovered project must not be
+    // exported or consumed (work order: fatal gate). This runs before any
+    // output is written, in every mode.
+    if has_fatal(&project.diagnostics) {
+        report_hierarchy_failure(input, &project, true);
+        return ExitCode::FAILURE;
+    }
+
+    // Explain is diagnostic-only and intentionally not strict-gated.
     if let Some(query) = explain {
         return run_explain(input, &project, query, json_output || output.is_some());
     }
 
-    let machine_mode = output.is_none();
+    // Strict gating happens before writing so a rejected project never lands
+    // on disk.
+    if strict {
+        let failures: Vec<&str> = STRICT_FAILURE_CODES
+            .iter()
+            .copied()
+            .filter(|code| {
+                project
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.code == *code)
+            })
+            .collect();
+        if !failures.is_empty() {
+            let message = format!(
+                "strict mode: {} condition(s) present ({}); no output written",
+                failures.len(),
+                failures.join(", ")
+            );
+            report_generic_error(
+                input,
+                "StrictModeViolation",
+                &message,
+                Some("resolve the reported conditions or rerun without --strict"),
+                output.is_none(),
+                None,
+            );
+            return ExitCode::FAILURE;
+        }
+    }
+
     match output {
         Some(path) => {
             let text = match serde_json::to_string_pretty(&project) {
@@ -439,32 +479,40 @@ fn run_reconstruct_hierarchy(
         }
     }
 
-    if strict {
-        let failures: Vec<&str> = STRICT_FAILURE_CODES
-            .iter()
-            .copied()
-            .filter(|code| {
-                project
-                    .diagnostics
-                    .iter()
-                    .any(|diagnostic| diagnostic.code == *code)
-            })
-            .collect();
-        if !failures.is_empty() {
-            let message = format!(
-                "strict mode: {} condition(s) present ({})",
-                failures.len(),
-                failures.join(", ")
-            );
-            if machine_mode && !json_output {
-                eprintln!("error: {message}");
-            } else {
-                log::error!("{message}");
-            }
-            return ExitCode::FAILURE;
-        }
-    }
     ExitCode::SUCCESS
+}
+
+/// Structured failure for a recovered project that fails hierarchy
+/// validation (fatal findings). The diagnostics list is capped so hostile
+/// inputs cannot amplify the error output.
+fn report_hierarchy_failure(
+    input: &Path,
+    project: &hierarchy_recovery::RecoveredProject,
+    json_output: bool,
+) {
+    const MAX_REPORTED: usize = 50;
+    let fatal: Vec<&live2d_ir::Diagnostic> = project
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.severity == Severity::Fatal)
+        .collect();
+    let summary = fatal
+        .first()
+        .map(|diagnostic| format!("{}: {}", diagnostic.code, diagnostic.message))
+        .unwrap_or_else(|| "unknown fatal diagnostic".to_string());
+    let capped: Vec<&live2d_ir::Diagnostic> = fatal.iter().copied().take(MAX_REPORTED).collect();
+    let diagnostics = serde_json::to_value(&capped).unwrap_or(json!([]));
+    report_generic_error(
+        input,
+        "HierarchyValidationFailed",
+        &format!(
+            "hierarchy validation failed with {} fatal diagnostic(s); first: {summary}",
+            fatal.len()
+        ),
+        Some("the recovered project is invalid and was not written; please report a reconstruction bug"),
+        json_output,
+        Some(diagnostics),
+    );
 }
 
 fn run_explain(
@@ -559,9 +607,8 @@ fn render_diagnostics(diagnostics: &[live2d_ir::Diagnostic]) -> String {
     out
 }
 
-fn read_text_file(file: &Path) -> Result<String, String> {
+fn read_text_file(file: &Path, limit: u64) -> Result<String, String> {
     let metadata = std::fs::metadata(file).map_err(|error| error.to_string())?;
-    let limit = InspectOptions::default().limits.max_file_size;
     if metadata.len() > limit {
         return Err(format!(
             "'{}' is {} bytes which exceeds the configured limit of {limit} bytes",
@@ -569,7 +616,11 @@ fn read_text_file(file: &Path) -> Result<String, String> {
             metadata.len()
         ));
     }
-    let bytes = std::fs::read(file).map_err(|error| error.to_string())?;
+    let mut bytes = std::fs::read(file).map_err(|error| error.to_string())?;
+    // Accept UTF-8 BOMs from Windows editors/tools.
+    if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        bytes.drain(..3);
+    }
     String::from_utf8(bytes).map_err(|error| format!("file is not valid UTF-8: {error}"))
 }
 

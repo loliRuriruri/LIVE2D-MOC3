@@ -207,6 +207,89 @@ fn accepts_ir_json_input() {
 }
 
 #[test]
+fn fatal_hierarchy_findings_block_export() {
+    // Duplicate a node id in a canonical IR document: the project then has
+    // fatal validator findings and must not be exported.
+    let moc3 = fixtures_dir().join("hierarchy-001-part-artmesh.moc3");
+    let ir_target = temp_path("tampered.ir.json");
+    let export = run(&[
+        "export-ir",
+        moc3.to_str().unwrap(),
+        "--output",
+        ir_target.to_str().unwrap(),
+    ]);
+    assert!(export.status.success());
+    let text = std::fs::read_to_string(&ir_target).unwrap();
+    let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
+    if let Some(meshes) = value.get_mut("art_meshes").and_then(|v| v.as_array_mut()) {
+        if let Some(first) = meshes.first().cloned() {
+            meshes.push(first);
+        }
+    }
+    let tampered = temp_path("tampered2.ir.json");
+    std::fs::write(&tampered, serde_json::to_string(&value).unwrap()).unwrap();
+
+    let out_target = temp_path("should-not-exist.project.json");
+    let _ = std::fs::remove_file(&out_target);
+    let output = run(&[
+        "reconstruct-hierarchy",
+        tampered.to_str().unwrap(),
+        "--output",
+        out_target.to_str().unwrap(),
+        "--json",
+    ]);
+    let _ = std::fs::remove_file(&ir_target);
+    let _ = std::fs::remove_file(&tampered);
+    assert_eq!(output.status.code(), Some(1), "fatal project must fail");
+    assert!(!out_target.exists(), "rejected project must not be written");
+    let _ = std::fs::remove_file(&out_target);
+}
+
+#[test]
+fn strict_mode_does_not_write_rejected_output() {
+    let cycle = fixtures_dir().join("hierarchy-009-cycle.moc3");
+    let target = temp_path("strict-should-not-exist.project.json");
+    let _ = std::fs::remove_file(&target);
+    let output = run(&[
+        "reconstruct-hierarchy",
+        cycle.to_str().unwrap(),
+        "--strict",
+        "--output",
+        target.to_str().unwrap(),
+    ]);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        !target.exists(),
+        "strict-rejected output must not be written"
+    );
+}
+
+#[test]
+fn ir_json_with_utf8_bom_is_accepted() {
+    let moc3 = fixtures_dir().join("hierarchy-003-part-rotation-artmesh.moc3");
+    let ir_target = temp_path("bom.ir.json");
+    let export = run(&[
+        "export-ir",
+        moc3.to_str().unwrap(),
+        "--output",
+        ir_target.to_str().unwrap(),
+    ]);
+    assert!(export.status.success());
+    let mut bytes = Vec::from([0xEFu8, 0xBB, 0xBF]);
+    bytes.extend_from_slice(&std::fs::read(&ir_target).unwrap());
+    let bom_target = temp_path("bom-with-bom.ir.json");
+    std::fs::write(&bom_target, &bytes).unwrap();
+    let output = run(&["reconstruct-hierarchy", bom_target.to_str().unwrap()]);
+    let _ = std::fs::remove_file(&ir_target);
+    let _ = std::fs::remove_file(&bom_target);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn input_is_not_modified_and_corrupt_input_is_rejected() {
     let path = fixtures_dir().join("hierarchy-012-large-flat.moc3");
     let before = std::fs::read(&path).unwrap();

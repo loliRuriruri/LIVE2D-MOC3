@@ -183,20 +183,28 @@ pub fn build_recovery_graph(model: &Live2DModel, policy: &RecoveryPolicy) -> Rec
 
     // Defensive structural check: every edge endpoint must exist. Stored IR
     // references are validated upstream, but hand-built graphs may not be.
+    // Budgeted so hostile inputs cannot amplify diagnostics linearly.
+    let mut budget = crate::candidates::DiagnosticBudget::new();
+    let mut endpoint_diagnostics: Vec<Diagnostic> = Vec::new();
     for (index, edge) in edges.iter().enumerate() {
         for endpoint in [&edge.child, &edge.parent] {
             if !node_kind.contains_key(endpoint.as_str()) {
-                diagnostics.push(Diagnostic::new(
-                    Severity::Warning,
-                    "dangling_candidate",
-                    format!(
-                        "evidence edge {index} ({}) references unknown node '{endpoint}'",
-                        edge.rule
+                budget.push(
+                    &mut endpoint_diagnostics,
+                    Diagnostic::new(
+                        Severity::Warning,
+                        "dangling_candidate",
+                        format!(
+                            "evidence edge {index} ({}) references unknown node '{endpoint}'",
+                            edge.rule
+                        ),
                     ),
-                ));
+                );
             }
         }
     }
+    budget.finish(&mut endpoint_diagnostics);
+    diagnostics.extend(endpoint_diagnostics);
 
     RecoveryGraph {
         nodes,

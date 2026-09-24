@@ -20,7 +20,6 @@ use crate::cycles::detect_cycles;
 use crate::graph::{
     confidence_rank, Candidate, NodeId, NodeKind, RecoveryGraph, RejectedCandidate, RejectionReason,
 };
-use crate::policy::RecoveryPolicy;
 use crate::rule::RuleId;
 
 /// Outcome of hierarchy resolution for one node.
@@ -77,24 +76,43 @@ pub struct ResolutionTrace {
 }
 
 /// Effective part of a deformer chain: first stored part association walking
-/// up parent deformers (iterative, cycle-safe).
+/// up parent deformers (iterative, cycle-safe, memoized).
+///
+/// The memo keeps chains of arbitrary depth linear: every visited node stores
+/// its answer, so a 20k-deep chain is O(n) instead of O(n * depth).
 fn effective_part<'a>(
     start: &'a str,
     part_of: &BTreeMap<&'a str, Option<&'a str>>,
     parents: &BTreeMap<&'a str, &'a str>,
+    cache: &mut BTreeMap<&'a str, Option<&'a str>>,
 ) -> Option<&'a str> {
+    if let Some(cached) = cache.get(start) {
+        return *cached;
+    }
+    let mut path: Vec<&'a str> = Vec::new();
+    let mut seen: BTreeSet<&'a str> = BTreeSet::new();
     let mut current = Some(start);
-    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut result: Option<&'a str> = None;
     while let Some(node) = current {
+        if let Some(cached) = cache.get(node) {
+            result = *cached;
+            break;
+        }
         if !seen.insert(node) {
-            return None;
+            result = None; // cycle: no trustworthy effective part
+            break;
         }
         if let Some(Some(part)) = part_of.get(node) {
-            return Some(part);
+            result = Some(part);
+            break;
         }
+        path.push(node);
         current = parents.get(node).copied();
     }
-    None
+    for node in path {
+        cache.insert(node, result);
+    }
+    result
 }
 
 /// Resolve candidates for every node and detect cycles.
@@ -103,14 +121,15 @@ fn effective_part<'a>(
 /// diagnostics.
 pub fn resolve_candidates(
     graph: &RecoveryGraph,
-    policy: &RecoveryPolicy,
 ) -> (Vec<ResolutionTrace>, Vec<Vec<NodeId>>, Vec<Diagnostic>) {
     let mut budget = DiagnosticBudget::new();
     let mut diagnostics: Vec<Diagnostic> = Vec::new();
     let mut traces: Vec<ResolutionTrace> = Vec::with_capacity(graph.nodes.len());
 
-    for node in &graph.nodes {
-        let entry = graph.candidates_for(&node.id);
+    // Candidates are built aligned with the node order; index access keeps
+    // resolution O(n log n) instead of scanning per node.
+    for (node_index, node) in graph.nodes.iter().enumerate() {
+        let entry = graph.candidates.get(node_index);
         let (candidates, mut rejected) = match entry {
             Some(entry) => (entry.candidates.clone(), entry.rejected.clone()),
             None => (Vec::new(), Vec::new()),
@@ -283,13 +302,19 @@ pub fn resolve_candidates(
             )
         })
         .collect();
+    let kind_of: BTreeMap<&str, NodeKind> = graph
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), node.kind))
+        .collect();
+    let mut effective_cache: BTreeMap<&str, Option<&str>> = BTreeMap::new();
     for trace in &traces {
         let Some(selected) = &trace.selected else {
             continue;
         };
-        let parent_kind = graph
-            .node(&selected.parent)
-            .map(|node| node.kind)
+        let parent_kind = kind_of
+            .get(selected.parent.as_str())
+            .copied()
             .unwrap_or(NodeKind::Root);
         if !matches!(
             parent_kind,
@@ -297,7 +322,12 @@ pub fn resolve_candidates(
         ) {
             continue;
         }
-        let effective = effective_part(selected.parent.as_str(), &part_of, &parents);
+        let effective = effective_part(
+            selected.parent.as_str(),
+            &part_of,
+            &parents,
+            &mut effective_cache,
+        );
         let stored = part_of.get(trace.child.as_str()).copied().flatten();
         if let (Some(effective), Some(stored)) = (effective, stored) {
             if effective != stored {
@@ -350,6 +380,5 @@ pub fn resolve_candidates(
     }
 
     budget.finish(&mut diagnostics);
-    let _ = policy;
     (traces, cycles, diagnostics)
 }

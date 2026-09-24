@@ -284,19 +284,117 @@ fn explain_reports_rule_and_rejections() {
 }
 
 #[test]
-fn wrong_type_relations_are_rejected() {
-    // Hand-built graph: an art mesh cannot be a parent.
+fn structural_candidate_filters_reject_illegal_edges() {
+    use hierarchy_recovery::{
+        analyze_graph, EvidenceEdge, EvidenceKind, GraphNode, NodeKind, RecoveryGraph, RuleId,
+    };
+    let node = |id: &str, kind: NodeKind, source_index: usize| GraphNode {
+        id: NodeId::new(id),
+        kind,
+        source_index,
+        source_name: None,
+        part_association: None,
+        binding: None,
+    };
+    // Hand-built graph: an art mesh cannot be a parent of anything.
+    let mut graph = RecoveryGraph {
+        nodes: vec![
+            node("artmesh:A", NodeKind::ArtMesh, 0),
+            node("artmesh:B", NodeKind::ArtMesh, 1),
+        ],
+        edges: vec![EvidenceEdge {
+            child: NodeId::new("artmesh:B"),
+            parent: NodeId::new("artmesh:A"),
+            kind: EvidenceKind::ExplicitStoredRelation,
+            confidence: live2d_ir::Confidence::Exact,
+            rule: RuleId::new("HR-004"),
+            note: None,
+        }],
+        candidates: Vec::new(),
+        diagnostics: Vec::new(),
+    };
+    analyze_graph(&mut graph, &RecoveryPolicy::default());
+    let entry = graph.candidates_for(&NodeId::new("artmesh:B")).unwrap();
+    assert!(entry.candidates.is_empty());
+    assert!(entry
+        .rejected
+        .iter()
+        .any(|rejected| rejected.reason == RejectionReason::IllegalRelation));
+    assert!(graph
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == "wrong_type_relation"));
+
+    // Duplicate relation (same legal child/parent/rule twice).
+    let legal_edge = |child: &str, parent: &str| EvidenceEdge {
+        child: NodeId::new(child),
+        parent: NodeId::new(parent),
+        kind: EvidenceKind::ExplicitStoredRelation,
+        confidence: live2d_ir::Confidence::Exact,
+        rule: RuleId::new("HR-004"),
+        note: None,
+    };
+    let mut duplicated = RecoveryGraph {
+        nodes: vec![
+            node("Part_A", NodeKind::Part, 0),
+            node("artmesh:B", NodeKind::ArtMesh, 0),
+        ],
+        edges: vec![
+            legal_edge("artmesh:B", "Part_A"),
+            legal_edge("artmesh:B", "Part_A"),
+        ],
+        candidates: Vec::new(),
+        diagnostics: Vec::new(),
+    };
+    analyze_graph(&mut duplicated, &RecoveryPolicy::default());
+    assert!(duplicated
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == "duplicate_relation"));
+    let entry = duplicated
+        .candidates_for(&NodeId::new("artmesh:B"))
+        .unwrap();
+    assert_eq!(entry.candidates.len(), 1);
+}
+
+#[test]
+fn deep_chain_without_part_associations_stays_fast() {
+    // Regression guard for the memoized effective-part walk: this shape used
+    // to be O(n * depth). 20k nodes must finish well within the bound.
+    let depth = 20_000usize;
+    let mut deformers = Vec::with_capacity(depth);
+    for index in 0..depth {
+        let parent = if index == 0 {
+            None
+        } else {
+            Some(format!("warp:{:06}", index - 1))
+        };
+        deformers.push(warp(&format!("warp:{index:06}"), parent.as_deref(), None));
+    }
     let model = model(
         Vec::new(),
-        Vec::new(),
-        vec![
-            mesh("Mesh_A", None, None),
-            mesh("Mesh_B", Some("Mesh_A"), None),
-        ],
+        deformers,
+        vec![mesh(
+            "Mesh_Deep",
+            Some(&format!("warp:{:06}", depth - 1)),
+            None,
+        )],
         Vec::new(),
     );
+    let started = std::time::Instant::now();
     let project = reconstruct(&model, &RecoveryPolicy::default());
-    let _ = project; // IR types already prevent cross-kind parents; see validator tests.
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_secs(60),
+        "deep chain reconstruction took {elapsed:?}; memoization regressed"
+    );
+    assert!(!live2d_ir::has_fatal(&project.diagnostics));
+    assert_eq!(project.statistics.resolved, depth);
+    assert_eq!(project.statistics.top_level, 1);
+    assert!(!project
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == "exact_relation_conflict"));
 }
 
 #[test]

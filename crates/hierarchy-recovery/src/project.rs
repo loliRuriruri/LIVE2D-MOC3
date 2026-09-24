@@ -165,7 +165,7 @@ pub struct RecoveredProject {
 pub fn build_recovered_project(model: &Live2DModel, policy: &RecoveryPolicy) -> RecoveredProject {
     let mut graph = build_recovery_graph(model, policy);
     build_candidates(&mut graph, policy);
-    let (traces, cycles, resolve_diagnostics) = resolve_candidates(&graph, policy);
+    let (traces, cycles, resolve_diagnostics) = resolve_candidates(&graph);
 
     let mut diagnostics: Vec<Diagnostic> = graph.diagnostics.clone();
     diagnostics.extend(resolve_diagnostics);

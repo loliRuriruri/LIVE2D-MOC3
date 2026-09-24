@@ -137,6 +137,18 @@ mod tests {
     }
 
     #[test]
+    fn docs_mention_every_rule() {
+        let docs = include_str!("../../../docs/HIERARCHY_RECOVERY.md");
+        for info in RULES {
+            assert!(
+                docs.contains(info.id),
+                "docs/HIERARCHY_RECOVERY.md is missing rule {}",
+                info.id
+            );
+        }
+    }
+
+    #[test]
     fn only_heuristic_rules_are_heuristic() {
         for info in RULES {
             if info.confidence == Confidence::Heuristic {
