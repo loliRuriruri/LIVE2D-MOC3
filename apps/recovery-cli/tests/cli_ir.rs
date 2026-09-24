@@ -105,6 +105,9 @@ fn export_ir_compact_is_single_line() {
 #[test]
 fn export_ir_matches_golden_document() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue;
+        }
         let path = fixtures_dir().join(name);
         let output = run(&["export-ir", path.to_str().unwrap()]);
         assert!(output.status.success());

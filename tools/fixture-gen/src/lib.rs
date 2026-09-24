@@ -1479,7 +1479,24 @@ pub const FIXTURE_NAMES: &[&str] = &[
     "fixture-011-v30.moc3",
     "fixture-012-v40.moc3",
     "fixture-013-glue.moc3",
+    "hierarchy-001-part-artmesh.moc3",
+    "hierarchy-002-part-warp-artmesh.moc3",
+    "hierarchy-003-part-rotation-artmesh.moc3",
+    "hierarchy-004-nested-warp.moc3",
+    "hierarchy-005-warp-rotation-artmesh.moc3",
+    "hierarchy-006-multiple-parts.moc3",
+    "hierarchy-007-orphan-artmesh.moc3",
+    "hierarchy-008-ambiguous-parent.moc3",
+    "hierarchy-009-cycle.moc3",
+    "hierarchy-010-part-mismatch.moc3",
+    "hierarchy-011-deep.moc3",
+    "hierarchy-012-large-flat.moc3",
+    "hierarchy-013-scale.moc3",
+    "hierarchy-014-self-parent.moc3",
 ];
+
+/// Fixtures excluded from golden snapshot tests (multi-megabyte documents).
+pub const GOLDEN_SKIP: &[&str] = &["hierarchy-011-deep.moc3", "hierarchy-013-scale.moc3"];
 
 type Builder = (&'static str, fn() -> SyntheticModel);
 
@@ -1498,6 +1515,20 @@ fn builders() -> Vec<Builder> {
         ("fixture-011-v30.moc3", fixture_011),
         ("fixture-012-v40.moc3", fixture_012),
         ("fixture-013-glue.moc3", fixture_013),
+        ("hierarchy-001-part-artmesh.moc3", hierarchy_001),
+        ("hierarchy-002-part-warp-artmesh.moc3", hierarchy_002),
+        ("hierarchy-003-part-rotation-artmesh.moc3", hierarchy_003),
+        ("hierarchy-004-nested-warp.moc3", hierarchy_004),
+        ("hierarchy-005-warp-rotation-artmesh.moc3", hierarchy_005),
+        ("hierarchy-006-multiple-parts.moc3", hierarchy_006),
+        ("hierarchy-007-orphan-artmesh.moc3", hierarchy_007),
+        ("hierarchy-008-ambiguous-parent.moc3", hierarchy_008),
+        ("hierarchy-009-cycle.moc3", hierarchy_009),
+        ("hierarchy-010-part-mismatch.moc3", hierarchy_010),
+        ("hierarchy-011-deep.moc3", hierarchy_011),
+        ("hierarchy-012-large-flat.moc3", hierarchy_012),
+        ("hierarchy-013-scale.moc3", hierarchy_013),
+        ("hierarchy-014-self-parent.moc3", hierarchy_014),
     ]
 }
 
@@ -1811,6 +1842,264 @@ fn fixture_013() -> SyntheticModel {
             info: vec![(0.5, 0), (0.5, 0), (1.0, 1), (1.0, 1)],
         }],
         draw_groups: simple_group(2),
+        ..SyntheticModel::default()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Hierarchy fixtures (AGENT.3)
+// ---------------------------------------------------------------------------
+
+fn part_spec(name: &str, parent: Option<usize>, binding: usize) -> PartSpec {
+    PartSpec {
+        name: name.to_string(),
+        parent,
+        binding,
+        visible: true,
+        enabled: true,
+    }
+}
+
+fn warp_spec(
+    name: &str,
+    parent_deformer: Option<usize>,
+    parent_part: Option<usize>,
+    binding: usize,
+) -> DeformerSpec {
+    DeformerSpec {
+        name: name.to_string(),
+        kind: DeformerKind::Warp {
+            rows: 1,
+            cols: 1,
+            quad: false,
+        },
+        parent_part,
+        parent_deformer,
+        binding,
+    }
+}
+
+fn rotation_spec(
+    name: &str,
+    parent_deformer: Option<usize>,
+    parent_part: Option<usize>,
+    binding: usize,
+) -> DeformerSpec {
+    DeformerSpec {
+        name: name.to_string(),
+        kind: DeformerKind::Rotation { base_angle: 0.0 },
+        parent_part,
+        parent_deformer,
+        binding,
+    }
+}
+
+fn mesh_spec(
+    name: &str,
+    parent_deformer: Option<usize>,
+    parent_part: Option<usize>,
+    binding: usize,
+) -> ArtMeshSpec {
+    ArtMeshSpec {
+        parent_deformer,
+        parent_part,
+        ..ArtMeshSpec::quad(name, binding)
+    }
+}
+
+fn hierarchy_001() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", None, Some(0), 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_002() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![warp_spec("WarpDeformer_Synthetic_00", None, Some(0), 0)],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(0), Some(0), 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_003() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![rotation_spec(
+            "RotationDeformer_Synthetic_00",
+            None,
+            Some(0),
+            0,
+        )],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(0), Some(0), 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_004() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![
+            warp_spec("WarpDeformer_Synthetic_00", None, Some(0), 0),
+            warp_spec("WarpDeformer_Synthetic_01", Some(0), None, 0),
+        ],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(1), None, 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_005() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![
+            warp_spec("WarpDeformer_Synthetic_00", None, Some(0), 0),
+            rotation_spec("RotationDeformer_Synthetic_00", Some(0), None, 0),
+        ],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(1), None, 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_006() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![
+            part_spec("Part_Synthetic_00", None, 0),
+            part_spec("Part_Synthetic_01", Some(0), 0),
+            part_spec("Part_Synthetic_02", Some(1), 0),
+        ],
+        art_meshes: vec![
+            mesh_spec("ArtMesh_Synthetic_00", None, Some(0), 0),
+            mesh_spec("ArtMesh_Synthetic_01", None, Some(1), 0),
+            mesh_spec("ArtMesh_Synthetic_02", None, Some(2), 0),
+        ],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_007() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        art_meshes: vec![
+            mesh_spec("ArtMesh_Synthetic_00", None, Some(0), 0),
+            mesh_spec("ArtMesh_Orphan", None, None, 0),
+        ],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_008() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parameters: vec![ParamSpec::two_key("ParamSynthetic_Shared")],
+        bindings: vec![BindingSpec { tables: vec![0] }],
+        parts: vec![
+            part_spec("Part_Synthetic_00", None, 0),
+            part_spec("Part_Synthetic_01", None, 0),
+        ],
+        art_meshes: vec![mesh_spec("ArtMesh_Orphan", None, None, 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_009() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![
+            warp_spec("WarpDeformer_Synthetic_00", Some(1), Some(0), 0),
+            warp_spec("WarpDeformer_Synthetic_01", Some(0), None, 0),
+        ],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(0), None, 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_010() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![
+            part_spec("Part_Synthetic_00", None, 0),
+            part_spec("Part_Synthetic_01", None, 0),
+        ],
+        deformers: vec![warp_spec("WarpDeformer_Synthetic_00", None, Some(0), 0)],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(0), None, 0)]
+            .into_iter()
+            .map(|mut mesh| {
+                mesh.parent_part = Some(1);
+                mesh
+            })
+            .collect(),
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_011() -> SyntheticModel {
+    let depth = 1500usize;
+    let mut deformers = Vec::with_capacity(depth);
+    for index in 0..depth {
+        let parent = if index == 0 { None } else { Some(index - 1) };
+        let parent_part = if index == 0 { Some(0) } else { None };
+        deformers.push(warp_spec(
+            &format!("WarpDeformer_{index:04}"),
+            parent,
+            parent_part,
+            0,
+        ));
+    }
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers,
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", Some(depth - 1), None, 0)],
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_012() -> SyntheticModel {
+    let mesh_count = 1500usize;
+    let art_meshes = (0..mesh_count)
+        .map(|index| mesh_spec(&format!("ArtMesh_{index:04}"), None, Some(0), 0))
+        .collect();
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        art_meshes,
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_013() -> SyntheticModel {
+    let warp_count = 2000usize;
+    let deformers = (0..warp_count)
+        .map(|index| warp_spec(&format!("WarpDeformer_{index:04}"), None, Some(0), 0))
+        .collect();
+    let art_meshes = (0..warp_count * 2)
+        .map(|index| mesh_spec(&format!("ArtMesh_{index:04}"), Some(index / 2), Some(0), 0))
+        .collect();
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers,
+        art_meshes,
+        ..SyntheticModel::default()
+    }
+}
+
+fn hierarchy_014() -> SyntheticModel {
+    SyntheticModel {
+        version: 2,
+        parts: vec![part_spec("Part_Synthetic_00", None, 0)],
+        deformers: vec![warp_spec("WarpDeformer_Synthetic_00", Some(0), Some(0), 0)],
+        art_meshes: vec![mesh_spec("ArtMesh_Synthetic_00", None, Some(0), 0)],
         ..SyntheticModel::default()
     }
 }

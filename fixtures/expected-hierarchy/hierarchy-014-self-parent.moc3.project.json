@@ -1,0 +1,217 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "Part_Synthetic_00"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "Part_Synthetic_00",
+      "kind": "part",
+      "source_index": 0,
+      "source_name": "Part_Synthetic_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [
+        "WarpDeformer_Synthetic_00",
+        "ArtMesh_Synthetic_00"
+      ],
+      "trace": {
+        "child": "Part_Synthetic_00",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "WarpDeformer_Synthetic_00",
+      "kind": "warp_deformer",
+      "source_index": 0,
+      "source_name": "WarpDeformer_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-003",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "WarpDeformer_Synthetic_00",
+        "kind": "warp_deformer",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-003",
+          "evidence_index": 1
+        },
+        "rejected": [
+          {
+            "parent": "WarpDeformer_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-002",
+            "reason": "illegal_self_parent"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-004",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-004",
+          "evidence_index": 2
+        },
+        "rejected": []
+      }
+    }
+  ],
+  "containers": [],
+  "cycles": [],
+  "statistics": {
+    "nodes": 3,
+    "resolved": 2,
+    "top_level": 1,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 2,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 0,
+    "diagnostics": 1
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "Part_Synthetic_00",
+        "kind": "part",
+        "source_index": 0,
+        "source_name": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "WarpDeformer_Synthetic_00",
+        "kind": "warp_deformer",
+        "source_index": 0,
+        "source_name": "WarpDeformer_Synthetic_00",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Synthetic_00",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [
+      {
+        "child": "WarpDeformer_Synthetic_00",
+        "parent": "WarpDeformer_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-002",
+        "note": "stored deformer.parent_deformer"
+      },
+      {
+        "child": "WarpDeformer_Synthetic_00",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-003",
+        "note": "stored deformer.parent_part"
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "Part_Synthetic_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "WarpDeformer_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-003",
+            "evidence_index": 1
+          }
+        ],
+        "rejected": [
+          {
+            "parent": "WarpDeformer_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-002",
+            "reason": "illegal_self_parent"
+          }
+        ]
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "evidence_index": 2
+          }
+        ],
+        "rejected": []
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "illegal_relation",
+      "message": "node 'WarpDeformer_Synthetic_00' would be its own parent (rule HR-002)"
+    }
+  ]
+}

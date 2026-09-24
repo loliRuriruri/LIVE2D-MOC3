@@ -211,6 +211,9 @@ fn golden_reports_match() {
     let update = std::env::var("UPDATE_GOLDEN").is_ok();
     std::fs::create_dir_all(support::expected_dir()).unwrap();
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue;
+        }
         let report = report_for(name);
         let actual = format!("{}\n", serde_json::to_string_pretty(&report).unwrap());
         let path = support::golden_path(name);

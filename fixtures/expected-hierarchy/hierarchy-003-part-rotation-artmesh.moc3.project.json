@@ -1,0 +1,212 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "Part_Synthetic_00"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "Part_Synthetic_00",
+      "kind": "part",
+      "source_index": 0,
+      "source_name": "Part_Synthetic_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [
+        "RotationDeformer_Synthetic_00"
+      ],
+      "trace": {
+        "child": "Part_Synthetic_00",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "RotationDeformer_Synthetic_00",
+      "kind": "rotation_deformer",
+      "source_index": 0,
+      "source_name": "RotationDeformer_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-003",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [
+        "ArtMesh_Synthetic_00"
+      ],
+      "trace": {
+        "child": "RotationDeformer_Synthetic_00",
+        "kind": "rotation_deformer",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-003",
+          "evidence_index": 0
+        },
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "RotationDeformer_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-005",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "RotationDeformer_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-005",
+          "evidence_index": 1
+        },
+        "rejected": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "reason": "demoted_to_association"
+          }
+        ]
+      }
+    }
+  ],
+  "containers": [],
+  "cycles": [],
+  "statistics": {
+    "nodes": 3,
+    "resolved": 2,
+    "top_level": 1,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 2,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 0,
+    "diagnostics": 0
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "Part_Synthetic_00",
+        "kind": "part",
+        "source_index": 0,
+        "source_name": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "RotationDeformer_Synthetic_00",
+        "kind": "rotation_deformer",
+        "source_index": 0,
+        "source_name": "RotationDeformer_Synthetic_00",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Synthetic_00",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [
+      {
+        "child": "RotationDeformer_Synthetic_00",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-003",
+        "note": "stored deformer.parent_part"
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "parent": "RotationDeformer_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-005",
+        "note": "stored art_mesh.parent_deformer"
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "Part_Synthetic_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "RotationDeformer_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-003",
+            "evidence_index": 0
+          }
+        ],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "RotationDeformer_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-005",
+            "evidence_index": 1
+          }
+        ],
+        "rejected": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "reason": "demoted_to_association"
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": []
+}

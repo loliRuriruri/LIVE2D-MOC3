@@ -22,6 +22,9 @@ fn run_pipeline(bytes: &[u8]) {
 #[test]
 fn truncations_and_bad_magic_fail_without_panics() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue; // covered by `large_fixtures_are_sampled_through_the_pipeline`
+        }
         let bytes = support::read_fixture(name);
         let step = (bytes.len() / 37).max(1);
         let mut cut = step;
@@ -45,6 +48,9 @@ fn truncations_and_bad_magic_fail_without_panics() {
 #[test]
 fn byte_flips_never_panic_through_the_ir_pipeline() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue; // covered by `large_fixtures_are_sampled_through_the_pipeline`
+        }
         let bytes = support::read_fixture(name);
         let stride = if name.starts_with("fixture-001") {
             1
@@ -62,6 +68,33 @@ fn byte_flips_never_panic_through_the_ir_pipeline() {
                 panic!("panic in IR pipeline for {name} with byte {offset} flipped");
             }
             offset += stride;
+        }
+    }
+}
+
+#[test]
+fn large_fixtures_are_sampled_through_the_pipeline() {
+    // Bounded sampling for the multi-megabyte fixtures excluded from the
+    // full sweeps.
+    for name in fixture_gen::GOLDEN_SKIP {
+        let bytes = support::read_fixture(name);
+        for cut in [bytes.len() / 2, bytes.len() - 1] {
+            let truncated = bytes.get(..cut).unwrap();
+            let outcome = catch_unwind(AssertUnwindSafe(|| {
+                build_ir_from_bytes(truncated, &InspectOptions::default()).is_err()
+            }));
+            match outcome {
+                Ok(is_err) => assert!(is_err, "truncated {name} unexpectedly mapped"),
+                Err(_) => panic!("panic while mapping truncated {name}"),
+            }
+        }
+        for offset in [6usize, bytes.len() / 2] {
+            let mut mutated = bytes.clone();
+            if let Some(byte) = mutated.get_mut(offset) {
+                *byte ^= 0xFF;
+            }
+            let outcome = catch_unwind(AssertUnwindSafe(|| run_pipeline(&mutated)));
+            assert!(outcome.is_ok(), "panic in pipeline for {name} at {offset}");
         }
     }
 }

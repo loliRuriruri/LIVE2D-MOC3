@@ -18,6 +18,11 @@ pub fn expected_ir_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/expected-ir")
 }
 
+/// Directory containing the golden recovered-project documents.
+pub fn expected_hierarchy_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/expected-hierarchy")
+}
+
 /// Read a fixture by name.
 pub fn read_fixture(name: &str) -> Vec<u8> {
     std::fs::read(fixtures_dir().join(name))

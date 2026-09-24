@@ -13,6 +13,9 @@ fn golden_ir_documents_match() {
     let update = std::env::var("UPDATE_GOLDEN_IR").is_ok();
     std::fs::create_dir_all(support::expected_ir_dir()).unwrap();
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue;
+        }
         let path = support::fixtures_dir().join(name);
         let model = build_ir_from_file(&path, &InspectOptions::default())
             .unwrap_or_else(|error| panic!("{name} failed to map: {error}"));
@@ -35,6 +38,9 @@ fn golden_ir_documents_match() {
 #[test]
 fn golden_ir_documents_import_cleanly() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue;
+        }
         let golden = support::expected_ir_dir().join(format!("{name}.ir.json"));
         let text = std::fs::read_to_string(&golden)
             .unwrap_or_else(|error| panic!("missing golden {}: {error}", golden.display()));

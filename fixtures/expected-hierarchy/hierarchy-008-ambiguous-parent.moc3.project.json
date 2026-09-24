@@ -1,0 +1,199 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "Part_Synthetic_00",
+      "Part_Synthetic_01",
+      "$unresolved"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "Part_Synthetic_00",
+      "kind": "part",
+      "source_index": 0,
+      "source_name": "Part_Synthetic_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "Part_Synthetic_00",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "Part_Synthetic_01",
+      "kind": "part",
+      "source_index": 1,
+      "source_name": "Part_Synthetic_01",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "Part_Synthetic_01",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Orphan",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Orphan",
+      "synthetic": false,
+      "status": "unresolved",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Orphan",
+        "kind": "art_mesh",
+        "state": "unresolved",
+        "rejected": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "heuristic",
+            "rule": "HR-010",
+            "reason": "policy_disabled_heuristic"
+          },
+          {
+            "parent": "Part_Synthetic_01",
+            "confidence": "heuristic",
+            "rule": "HR-010",
+            "reason": "policy_disabled_heuristic"
+          }
+        ],
+        "note": "2 heuristic candidate(s) blocked by policy (HR-010); enable --allow-heuristic to consider them"
+      }
+    }
+  ],
+  "containers": [
+    {
+      "id": "$unresolved",
+      "kind": "unresolved",
+      "synthetic": true,
+      "members": [
+        "ArtMesh_Orphan"
+      ]
+    }
+  ],
+  "cycles": [],
+  "statistics": {
+    "nodes": 3,
+    "resolved": 0,
+    "top_level": 2,
+    "unresolved": 1,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 0,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 1,
+    "diagnostics": 2
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "Part_Synthetic_00",
+        "kind": "part",
+        "source_index": 0,
+        "source_name": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "Part_Synthetic_01",
+        "kind": "part",
+        "source_index": 1,
+        "source_name": "Part_Synthetic_01",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Orphan",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Orphan",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [
+      {
+        "child": "ArtMesh_Orphan",
+        "parent": "Part_Synthetic_00",
+        "kind": "binding_relationship",
+        "confidence": "heuristic",
+        "rule": "HR-010",
+        "note": "shares a keyform binding with this part"
+      },
+      {
+        "child": "ArtMesh_Orphan",
+        "parent": "Part_Synthetic_01",
+        "kind": "binding_relationship",
+        "confidence": "heuristic",
+        "rule": "HR-010",
+        "note": "shares a keyform binding with this part"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "Part_Synthetic_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "Part_Synthetic_01",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Orphan",
+        "candidates": [],
+        "rejected": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "heuristic",
+            "rule": "HR-010",
+            "reason": "policy_disabled_heuristic"
+          },
+          {
+            "parent": "Part_Synthetic_01",
+            "confidence": "heuristic",
+            "rule": "HR-010",
+            "reason": "policy_disabled_heuristic"
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "info",
+      "code": "heuristic_parenting_disabled",
+      "message": "1 orphan node(s) could receive heuristic parents (HR-010); pass --allow-heuristic to enable. Unresolved nodes are preserved."
+    },
+    {
+      "severity": "warning",
+      "code": "orphan_node",
+      "message": "node 'ArtMesh_Orphan' (ArtMesh) was left unresolved (2 rejected candidate(s))"
+    }
+  ]
+}

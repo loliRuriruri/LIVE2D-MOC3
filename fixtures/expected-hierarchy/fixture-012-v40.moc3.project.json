@@ -1,0 +1,132 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 3,
+    "version_label": "3 (4.0.00-4.1.05)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "WarpDeformer_Synthetic_00"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "WarpDeformer_Synthetic_00",
+      "kind": "warp_deformer",
+      "source_index": 0,
+      "source_name": "WarpDeformer_Synthetic_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [
+        "ArtMesh_Synthetic_00"
+      ],
+      "trace": {
+        "child": "WarpDeformer_Synthetic_00",
+        "kind": "warp_deformer",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "WarpDeformer_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-005",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "WarpDeformer_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-005",
+          "evidence_index": 0
+        },
+        "rejected": []
+      }
+    }
+  ],
+  "containers": [],
+  "cycles": [],
+  "statistics": {
+    "nodes": 2,
+    "resolved": 1,
+    "top_level": 1,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 1,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 0,
+    "diagnostics": 0
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "WarpDeformer_Synthetic_00",
+        "kind": "warp_deformer",
+        "source_index": 0,
+        "source_name": "WarpDeformer_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Synthetic_00",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "parent": "WarpDeformer_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-005",
+        "note": "stored art_mesh.parent_deformer"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "WarpDeformer_Synthetic_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "WarpDeformer_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-005",
+            "evidence_index": 0
+          }
+        ],
+        "rejected": []
+      }
+    ]
+  },
+  "diagnostics": []
+}

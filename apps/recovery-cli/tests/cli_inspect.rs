@@ -22,6 +22,9 @@ fn run(args: &[&str]) -> std::process::Output {
 #[test]
 fn inspect_json_matches_golden_report() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue;
+        }
         let path = fixtures_dir().join(name);
         let output = run(&["inspect", path.to_str().unwrap(), "--json"]);
         assert!(

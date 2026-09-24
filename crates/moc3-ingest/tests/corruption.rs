@@ -60,6 +60,9 @@ fn bad_endian_flag_is_rejected() {
 #[test]
 fn truncations_are_rejected_without_panics() {
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue; // covered by `large_fixtures_are_sampled`
+        }
         let bytes = support::read_fixture(name);
         let step = (bytes.len() / 37).max(1);
         let mut cut = step;
@@ -80,6 +83,9 @@ fn truncations_are_rejected_without_panics() {
 fn single_byte_flips_never_panic() {
     // Full sweep on the smallest fixture plus strided sweeps on all fixtures.
     for name in fixture_gen::FIXTURE_NAMES {
+        if fixture_gen::GOLDEN_SKIP.contains(name) {
+            continue; // covered by `large_fixtures_are_sampled`
+        }
         let bytes = support::read_fixture(name);
         let stride = if name.starts_with("fixture-001") {
             1
@@ -97,6 +103,41 @@ fn single_byte_flips_never_panic() {
                 panic!("panic while parsing {name} with byte {offset} flipped");
             }
             offset += stride;
+        }
+    }
+}
+
+#[test]
+fn large_fixtures_are_sampled() {
+    // Bounded, deterministic corruption sampling for the multi-megabyte
+    // fixtures that are excluded from the full sweeps.
+    for name in fixture_gen::GOLDEN_SKIP {
+        let bytes = support::read_fixture(name);
+        for cut in [bytes.len() / 4, bytes.len() / 2, bytes.len() - 1] {
+            let truncated = bytes.get(..cut).unwrap();
+            let outcome = catch_unwind(AssertUnwindSafe(|| try_parse(truncated).is_err()));
+            match outcome {
+                Ok(is_err) => assert!(is_err, "truncated {name} at {cut} unexpectedly parsed"),
+                Err(_) => panic!("panic while parsing truncated {name} at {cut}"),
+            }
+        }
+        for offset in [
+            0usize,
+            4,
+            6,
+            bytes.len() / 3,
+            bytes.len() / 2,
+            bytes.len() - 7,
+        ] {
+            let mut mutated = bytes.clone();
+            if let Some(byte) = mutated.get_mut(offset) {
+                *byte ^= 0xFF;
+            }
+            let outcome = catch_unwind(AssertUnwindSafe(|| try_parse(&mutated)));
+            assert!(
+                outcome.is_ok(),
+                "panic while parsing mutated {name} at {offset}"
+            );
         }
     }
 }

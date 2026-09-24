@@ -1,0 +1,356 @@
+{
+  "schema": "live2d-recovery/recovered-project/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 2,
+    "version_label": "2 (3.3.00-3.3.03)",
+    "byte_order": "little"
+  },
+  "source_schema": "live2d-ir/1",
+  "policy": {
+    "allow_heuristic_parenting": false,
+    "unresolved_strategy": "preserve",
+    "conflict_strategy": "leave_ambiguous"
+  },
+  "root": {
+    "id": "$root",
+    "synthetic": true,
+    "children": [
+      "Part_Synthetic_00"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "Part_Synthetic_00",
+      "kind": "part",
+      "source_index": 0,
+      "source_name": "Part_Synthetic_00",
+      "synthetic": false,
+      "status": "top_level",
+      "binding": "binding:000000",
+      "children": [
+        "Part_Synthetic_01",
+        "ArtMesh_Synthetic_00"
+      ],
+      "trace": {
+        "child": "Part_Synthetic_00",
+        "kind": "part",
+        "state": "top_level",
+        "rejected": []
+      }
+    },
+    {
+      "id": "Part_Synthetic_01",
+      "kind": "part",
+      "source_index": 1,
+      "source_name": "Part_Synthetic_01",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-001",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [
+        "Part_Synthetic_02",
+        "ArtMesh_Synthetic_01"
+      ],
+      "trace": {
+        "child": "Part_Synthetic_01",
+        "kind": "part",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-001",
+          "evidence_index": 0
+        },
+        "rejected": []
+      }
+    },
+    {
+      "id": "Part_Synthetic_02",
+      "kind": "part",
+      "source_index": 2,
+      "source_name": "Part_Synthetic_02",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_01",
+      "confidence": "exact",
+      "rule": "HR-001",
+      "part_association": "Part_Synthetic_01",
+      "binding": "binding:000000",
+      "children": [
+        "ArtMesh_Synthetic_02"
+      ],
+      "trace": {
+        "child": "Part_Synthetic_02",
+        "kind": "part",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_01",
+          "confidence": "exact",
+          "rule": "HR-001",
+          "evidence_index": 1
+        },
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_00",
+      "kind": "art_mesh",
+      "source_index": 0,
+      "source_name": "ArtMesh_Synthetic_00",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_00",
+      "confidence": "exact",
+      "rule": "HR-004",
+      "part_association": "Part_Synthetic_00",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_00",
+          "confidence": "exact",
+          "rule": "HR-004",
+          "evidence_index": 2
+        },
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_01",
+      "kind": "art_mesh",
+      "source_index": 1,
+      "source_name": "ArtMesh_Synthetic_01",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_01",
+      "confidence": "exact",
+      "rule": "HR-004",
+      "part_association": "Part_Synthetic_01",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_01",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_01",
+          "confidence": "exact",
+          "rule": "HR-004",
+          "evidence_index": 3
+        },
+        "rejected": []
+      }
+    },
+    {
+      "id": "ArtMesh_Synthetic_02",
+      "kind": "art_mesh",
+      "source_index": 2,
+      "source_name": "ArtMesh_Synthetic_02",
+      "synthetic": false,
+      "status": "resolved",
+      "parent": "Part_Synthetic_02",
+      "confidence": "exact",
+      "rule": "HR-004",
+      "part_association": "Part_Synthetic_02",
+      "binding": "binding:000000",
+      "children": [],
+      "trace": {
+        "child": "ArtMesh_Synthetic_02",
+        "kind": "art_mesh",
+        "state": "resolved",
+        "selected": {
+          "parent": "Part_Synthetic_02",
+          "confidence": "exact",
+          "rule": "HR-004",
+          "evidence_index": 4
+        },
+        "rejected": []
+      }
+    }
+  ],
+  "containers": [],
+  "cycles": [],
+  "statistics": {
+    "nodes": 6,
+    "resolved": 5,
+    "top_level": 1,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "cycle_detected": 0,
+    "exact": 5,
+    "derived": 0,
+    "heuristic": 0,
+    "cycles": 0,
+    "orphans": 0,
+    "diagnostics": 0
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "Part_Synthetic_00",
+        "kind": "part",
+        "source_index": 0,
+        "source_name": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "Part_Synthetic_01",
+        "kind": "part",
+        "source_index": 1,
+        "source_name": "Part_Synthetic_01",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "Part_Synthetic_02",
+        "kind": "part",
+        "source_index": 2,
+        "source_name": "Part_Synthetic_02",
+        "part_association": "Part_Synthetic_01",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_00",
+        "kind": "art_mesh",
+        "source_index": 0,
+        "source_name": "ArtMesh_Synthetic_00",
+        "part_association": "Part_Synthetic_00",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_01",
+        "kind": "art_mesh",
+        "source_index": 1,
+        "source_name": "ArtMesh_Synthetic_01",
+        "part_association": "Part_Synthetic_01",
+        "binding": "binding:000000"
+      },
+      {
+        "id": "ArtMesh_Synthetic_02",
+        "kind": "art_mesh",
+        "source_index": 2,
+        "source_name": "ArtMesh_Synthetic_02",
+        "part_association": "Part_Synthetic_02",
+        "binding": "binding:000000"
+      }
+    ],
+    "edges": [
+      {
+        "child": "Part_Synthetic_01",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-001",
+        "note": "stored part.parent"
+      },
+      {
+        "child": "Part_Synthetic_02",
+        "parent": "Part_Synthetic_01",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-001",
+        "note": "stored part.parent"
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "parent": "Part_Synthetic_00",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      },
+      {
+        "child": "ArtMesh_Synthetic_01",
+        "parent": "Part_Synthetic_01",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      },
+      {
+        "child": "ArtMesh_Synthetic_02",
+        "parent": "Part_Synthetic_02",
+        "kind": "explicit_stored_relation",
+        "confidence": "exact",
+        "rule": "HR-004",
+        "note": "stored art_mesh.parent_part"
+      }
+    ],
+    "candidates": [
+      {
+        "child": "Part_Synthetic_00",
+        "candidates": [],
+        "rejected": []
+      },
+      {
+        "child": "Part_Synthetic_01",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-001",
+            "evidence_index": 0
+          }
+        ],
+        "rejected": []
+      },
+      {
+        "child": "Part_Synthetic_02",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_01",
+            "confidence": "exact",
+            "rule": "HR-001",
+            "evidence_index": 1
+          }
+        ],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Synthetic_00",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_00",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "evidence_index": 2
+          }
+        ],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Synthetic_01",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_01",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "evidence_index": 3
+          }
+        ],
+        "rejected": []
+      },
+      {
+        "child": "ArtMesh_Synthetic_02",
+        "candidates": [
+          {
+            "parent": "Part_Synthetic_02",
+            "confidence": "exact",
+            "rule": "HR-004",
+            "evidence_index": 4
+          }
+        ],
+        "rejected": []
+      }
+    ]
+  },
+  "diagnostics": []
+}
