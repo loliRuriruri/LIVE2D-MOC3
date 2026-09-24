@@ -40,6 +40,34 @@ The hierarchy stage uses stable rule ids `HR-001..HR-010`; the full table
 AGENT.1's inspection-only hierarchy candidates were superseded by this rule
 system; the `inspect` report remains unchanged for its phase.
 
+## Keyform rules (AGENT.4 implemented)
+
+The keyform stage uses stable rule ids `KB-001..KB-007` (binding evidence)
+and `KF-001..KF-010` (grids/forms); the full table lives in
+`docs/KEYFORM_RECOVERY.md` (a test keeps the code table and the document in
+sync). Summary:
+
+- `KB-001..KB-002`: stored binding references and key tables become bands
+  and axes (`Exact`); stored key order is preserved.
+- `KB-003..KB-005`: dangling parameters, duplicate/unsorted/out-of-range
+  keys and blend-shape axes are reported and preserved, never repaired.
+- `KB-006`: glue bindings are deferred (glue pairing semantics Unknown).
+- `KB-007`: targets without a stored binding become zero-dimensional static
+  bands with a single form.
+- `KF-001..KF-002`: expected cardinality is checked arithmetic; overflow or
+  limit violations stay unresolved and are never materialized.
+- `KF-003..KF-004`: dense means stored count == expected; any mismatch is
+  reported and the grid stays sparse/unknown (no padding, no duplication).
+- `KF-005..KF-006`: multi-dimensional ordering is never guessed; 0D/1D
+  ordering follows the single stored sequence.
+- `KF-007..KF-010`: form spans must be contiguous; payloads are typed and
+  fields the file does not store stay absent; geometry is referenced, not
+  copied; no Cartesian materialization.
+
+Confidence follows the same taxonomy as AGENT.2/3: stored axes `Exact`,
+cardinality/classification `Derived`, ordering and unresolved semantics
+`Unknown`; `Heuristic` is unused in AGENT.4.
+
 ## Planned order of fidelity work (AGENT.6, from the master spec)
 
 1. Hierarchy, 2. Parameters, 3. Keyforms, 4. Draw order, 5. Opacity,

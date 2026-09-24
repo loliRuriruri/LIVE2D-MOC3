@@ -12,6 +12,21 @@ model. A runtime oracle evaluates the model (parameters -> vertices, opacities,
 draw order) and produces a behavior snapshot that can be compared against our
 IR-driven evaluation.
 
+## AGENT.4 status: ORACLE READY BUT UNVALIDATED
+
+AGENT.4 prepared the interface the oracle plan needs:
+
+- the `RecoveredKeyformModel` names every target, its axes and its stored
+  forms (`docs/KEYFORM_RECOVERY.md`), so a future evaluator can consume the
+  recovered semantics without re-deriving bindings;
+- the differential harness already compares binding/axis evidence with a
+  raw reference (`docs/reports/agent-4/differential/`), which is the
+  data-path an evaluator would extend;
+- no owned or compatible model exists to run a behavioral comparison in
+  this environment, so the oracle status is **ORACLE READY, UNVALIDATED**
+  (work order section 40). No synthetic translation of the comparison was
+  attempted.
+
 ## Candidate oracles
 
 | Oracle | License | Status | Notes |

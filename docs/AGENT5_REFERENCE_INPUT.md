@@ -4,13 +4,34 @@ Hand-off note for the CMO3 writer phase (`crates/cmo3-writer`,
 `docs/ARCHITECTURE.md`). AGENT.3.5 produced **no writer code**; it produced
 reference facts, a mapping plan and a failure checklist.
 
-## Primary artifact
+## Primary artifacts
 
 - `docs/CMO3_MAPPING_PLAN.md` - recovered-structure -> CMO3 concept mapping,
   confirmed-at-audit facts (`CModelSource`, `CPartSource`, `EditorEdition=15`,
   `targetVersionNo=3000`, `latestVersionOfModelerNo=5000000`,
-  `useLegacyDrawOrder__testImpl=false`, CAFF obfuscation key `0x42`), fidelity
+  `useLegacyDrawOrder__testImpl=false`, CAFF obfuscation key `0x42`), the
+  AGENT.4 `RecoveredKeyformModel` -> CMO3 keyform concept mapping, fidelity
   sequencing constraints, open questions and prohibited practices.
+- `docs/KEYFORM_RECOVERY.md` - the semantic input contract
+  (`live2d-recovery/recovered-keyforms/1`): binding bands, parameter axes,
+  grids (dense/sparse/unknown), typed target forms and rule ids.
+- CLI: `recovery recover-keyforms <model.moc3|model.ir.json>
+  [--json|--output|--strict|--explain]`.
+
+## AGENT.4 conclusions the writer must honor
+
+- The writer consumes Live2D IR + RecoveredProject + RecoveredKeyformModel;
+  it performs serialization, not semantic inference (work order section 75).
+- Target forms reference geometry through the IR by form index/count
+  (KF-009); the writer resolves positions from the IR, never from the
+  keyform JSON.
+- Multi-axis grid ordering is `unknown` in the recovered document; the
+  writer must choose any serialization order explicitly and never claim the
+  document determined it.
+- Interpolation metadata (`interpolationType`/`extendedInterpolationType`)
+  is not stored in `.moc3`; it must not be fabricated (work order section 44).
+- Glue and blend-shape keyforms stay out of the writer's semantic input
+  until their semantics are independently validated.
 
 ## Constraints inherited from AGENT.3.5
 

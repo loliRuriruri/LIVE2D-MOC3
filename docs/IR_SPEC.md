@@ -6,11 +6,22 @@ been validated yet; the schema may still change. Do not treat it as a stable
 public contract.
 **Implemented:** AGENT.2 (`crates/live2d-ir`, mapper in `recovery-core`).
 
-## 0. Downstream note (AGENT.3)
+## 0. Downstream notes (AGENT.3/AGENT.4)
 
 Hierarchy reconstruction consumes this IR read-only and emits its own
 document (`live2d-recovery/recovered-project/1`, see
-`docs/HIERARCHY_RECOVERY.md`). The IR schema is unchanged by AGENT.3.
+`docs/HIERARCHY_RECOVERY.md`). Keyform recovery consumes this IR (plus the
+recovered project for cross-layer checks) read-only and emits
+`live2d-recovery/recovered-keyforms/1` (see `docs/KEYFORM_RECOVERY.md`).
+The IR schema is unchanged by AGENT.3 and AGENT.4.
+
+Binding semantics clarification used by AGENT.4 (evidence from the parser
+cross-check): `Binding.keyform_grid_size` is the *reachable* grid (product
+of key-table sizes) and declared keyform counts must be **at least** that
+product; extra stored forms are allowed and make the recovered grid layout
+`unknown` (they are never trimmed). Stored keys are raw: duplicates,
+unsorted order and out-of-range values are representable and are preserved
+by this schema.
 
 ## 1. Purpose and boundaries
 

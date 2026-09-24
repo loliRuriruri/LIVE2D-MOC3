@@ -182,3 +182,33 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
   audit adds guard tests, evidence artifacts and planning documents
   (`CMO3_MAPPING_PLAN.md`, `RUNTIME_ORACLE_PLAN.md`,
   `GROUND_TRUTH_BENCHMARK.md`, `AGENT4/5_REFERENCE_INPUT.md`).
+
+## 10. AGENT.4 research (semantic keyform recovery)
+
+- **Binding semantics.** MOC3 stores, per object, a keyform binding index
+  and a keyform range; the binding carries key tables whose product is the
+  *reachable* grid and the parser requires the declared forms to cover that
+  product (`product > count` is an error, extra forms are allowed). This
+  made "sparse" only reachable through hand-edited IR, and fixed the
+  classification rules: stored == expected -> dense, stored > expected ->
+  unknown layout, both reported, never repaired.
+- **Ordering is evidence-free in the file.** No source states which axis
+  varies fastest; AGENT.4 therefore records `unknown` ordering for every
+  multi-axis grid (KF-005) and only derives ordering for 0D/1D sequences.
+- **Count units confirmed again.** The per-object keyform counts are
+  key-index counts (keyform positions agree at 16 floats), so the harness
+  derives `stored_forms` from keyform entries rather than float pools, and
+  the py-moc3 differential compares per-kind counts (DF-005 explains the
+  per-object disagreement on relocated bodies).
+- **Key values are raw.** Duplicate keys (`[-1,0,0,1]`), unsorted keys and
+  out-of-range keys are all representable; all three are preserved verbatim
+  with diagnostics; non-finite keys cannot enter canonical JSON, so they are
+  reported positionally (`non_finite_key_indices`) and make the axis
+  unusable.
+- **Geometry ownership.** The IR already stores per-keyform geometry; the
+  keyform document references it by form index/count (KF-009), keeping a
+  300-form mesh's keyform document ~10x smaller than the IR in the
+  amplification test.
+- **Rule system extended:** binding rules `KB-001..KB-007`, keyform rules
+  `KF-001..KF-010`, documented in `docs/KEYFORM_RECOVERY.md` and asserted in
+  sync by a crate test. No AGENT.2/3 rule changed.

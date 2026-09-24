@@ -1,16 +1,18 @@
 # Test Plan
 
-Scope: AGENT.0-AGENT.3.5 (bootstrap, read-only inspector, normalized IR,
-hierarchy reconstruction, external reference audit). Test types follow master
-spec section 14: unit, integration, snapshot/golden, corruption, fuzz
-(smoke), regression. Current total: **182 tests, all passing** (27 synthetic
-fixtures).
+Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
+hierarchy reconstruction, external reference audit, semantic keyform
+recovery). Test types follow master spec section 14: unit, integration,
+snapshot/golden, corruption, fuzz (smoke), regression. Current total:
+**228 tests, all passing** (44 synthetic fixtures).
 
 AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
 placement tolerance) and `tools/reference-harness` (dev-only differential
-harness, 18 offline tests including `read_capped` output-limit boundaries and
-`is_unsupported` key-segment boundaries). External requirements are never
-part of the default run:
+harness, offline tests including `read_capped` output-limit boundaries and
+`is_unsupported` key-segment boundaries). AGENT.4 additions: the
+`keyform-recovery` crate suite, `recovery-core` keyform pipeline/golden
+tests, CLI keyform tests and the extended differential keyform sections.
+External requirements are never part of the default run:
 
 ## How to run
 
@@ -22,6 +24,7 @@ cargo run -p fixture-gen -- fixtures/synthetic     # regenerate fixtures
 $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
 $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_ir_documents_match
 $env:UPDATE_GOLDEN_HIERARCHY="1"; cargo test -p recovery-core --test hierarchy_recovery golden_recovered_projects_match
+$env:UPDATE_GOLDEN_KEYFORMS="1"; cargo test -p recovery-core --test keyform_recovery golden_keyform_documents_match
 ```
 
 External differential runs (never required for development; env-gated):
@@ -54,7 +57,11 @@ cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc
 | Hierarchy CLI | `apps/recovery-cli/tests/cli_hierarchy.rs` | tree markers, JSON determinism, `--output` equality, `--strict` exit codes, `--allow-heuristic`, `--explain`, IR JSON input equivalence, corrupt input handling |
 | Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary checks for `live2d-ir` and `hierarchy-recovery`** (`cargo metadata` graph) |
 | Layout interop | `crates/moc3-ingest/tests/layout_interop.rs` | relocated-body (py-moc3 offset convention) files parse to byte-identical inspection semantics (offsets/name/size excluded) |
-| Differential harness | `tools/reference-harness/tests/harness.rs` (offline) | snapshot determinism, mock consensus/dispute/order-only tolerance, float policy, unsupported/missing classification, ours-unsupported handling, subprocess timeout/output caps, report determinism and wording |
+| Differential harness | `tools/reference-harness/tests/harness.rs` (offline) | snapshot determinism, mock consensus/dispute/order-only tolerance, float policy, unsupported/missing classification, ours-unsupported handling, subprocess timeout/output caps, report determinism and wording, keyform evidence summary and comparison |
+| Keyform unit + IR-level negatives | `crates/keyform-recovery/tests/keyform_recovery.rs` | 1D/2D/3D grids, 0D static bands, duplicate/unsorted/out-of-range/non-finite keys, dangling parameter/binding/target (IR-level negative fixtures), cardinality limit/overflow, axis/limit caps, typed target payloads, blend-shape experimental, glue deferral, determinism, byte-identical JSON round-trip, duplicate-grid fatal validation, geometry non-amplification, large dataset, project cross-check, explain |
+| Keyform pipeline + goldens | `crates/recovery-core/tests/keyform_recovery.rs` | per-fixture expectations for all 17 keyform fixtures, 17 golden `recovered-keyforms/1` documents (import + re-validate), determinism/round-trip over every fixture, body-placement A/B equality, strict violations, archived AGENT.3.5 evidence retention, large dense dataset |
+| Keyform CLI | `apps/recovery-cli/tests/cli_keyforms.rs` | human report counts, deterministic JSON, `--output` equality, IR JSON input parity, `--strict` exit codes, non-finite CLI refusal, `--explain` trace, input immutability |
+| Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
 
@@ -80,6 +87,34 @@ nesting a second group); fixture 013 exercises glue. The offscreen-surface
 reference path has no fixture (the parser rejects non-default values when no
 surfaces exist); that gap is documented in LIMITATIONS and covered by
 validator-level tests only.
+
+### Keyform fixture inventory (`fixtures/synthetic/keyform-*`, AGENT.4)
+
+| Fixture | Shape |
+|---|---|
+| 001 | zero-dimensional: empty binding, one static form per target |
+| 002 | 1D, three keys |
+| 003 | 2D, 3x3 |
+| 004 | 2D, 2x3 |
+| 005 | 3D, 2x2x2 |
+| 006 | part draw-order forms |
+| 007 | warp deformer forms |
+| 008 | rotation deformer forms |
+| 009 | art mesh forms |
+| 010 | multiple bindings (one parameter each) |
+| 011 | multiple parameters on one binding, two targets |
+| 012 | duplicate stored keys (preserved) |
+| 013 | unsorted stored keys (preserved in order) |
+| 014 | stored forms exceed expected cardinality (5 vs 4) |
+| 016 | non-finite stored key (reported positionally; IR golden skipped) |
+| 019 | deep nested hierarchy targets sharing one binding |
+| 020 | larger dense dataset (64 forms) |
+
+Negative cases that cannot exist in a valid `.moc3` file (dangling
+parameter, dangling binding/target, sparse partial grid with fewer forms
+than the bound grid, cardinality overflow/limit, non-finite handling at the
+library layer, form-span gaps) are IR-level negative fixtures built in
+`crates/keyform-recovery/tests/` (work order section 53).
 
 ### Hierarchy fixture inventory (`fixtures/synthetic/hierarchy-*`)
 

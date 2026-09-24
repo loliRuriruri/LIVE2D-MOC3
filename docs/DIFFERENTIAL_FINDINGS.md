@@ -125,9 +125,53 @@ test in `crates/moc3-ingest/tests/layout_interop.rs`.
 - **Action:** documented; no production change. Any future differential
   report that disputes these fields has to carry this finding as context.
 
+## AGENT.4 extension (binding/keyform evidence)
+
+The harness snapshot gained a `keyforms` section (AGENT.4 work order section
+32): `targets`, `stored_forms`, `bindings`, `axes`, per-kind form counts,
+`axis_keys`, plus ours-only `axis_parameters`, `target_forms` and grid-shape
+counts. py-moc3 supplies the raw aggregates it can read
+(`part/warp/rotation/art_mesh.keyform_counts`, `keyform_binding.keys_begin/counts`,
+`parameter.keyform_binding_counts`) and marks the grid-shape/per-target
+sections unsupported.
+
+New archived runs: `docs/reports/agent-4/differential/` (same inputs as
+R1-R3, extended snapshot):
+
+| Run | Input | Comparable | Agreement | Disagreement |
+|---|---|---|---|---|
+| R4 | `relocated-002-b.moc3` | 61 | 30 | 6 |
+| R5 | `fixture-010-v53.moc3` | 53 | 36 | 8 |
+| R6 | `fixture-002-artmesh-param.moc3` | 0 (py-moc3 REFERENCE_ERROR) | 0 | 0 |
+
+Keyform evidence on R4: bindings, axes, raw axis keys, target counts and
+rotation/warp form counts agree; `axis_keys` agreement is direct evidence
+that our stored-key normalization matches the raw key pool py-moc3 reads.
+
+### DF-005 - py-moc3 per-object keyform counts disagree on relocated bodies
+
+- **Observation (R4):** `part_forms` (ours 2 / py 0), `art_mesh_forms`
+  (ours 2 / py 1) and `stored_forms` (ours 4 / py 1) differ, while the
+  format-level `counts.keyform_positions` (16) and the raw key arrays agree.
+- **Interpretation:** this is the DF-004 deviation at the per-object layer:
+  on a py-convention body, py-moc3's part/art-mesh blocks are read with its
+  own stride/order, so its `*.keyform_counts` arrays do not address the
+  objects it lists. Our per-target counts come from the IR keyform lists
+  whose total float count matches the agreed `counts.keyform_positions`.
+- **Classification:** `E2` (ours corroborated by parser counts + PurismCore
+  ordering) vs `E3` (py-moc3 outlier), same family as DF-004.
+- **Impact:** py-moc3 must not be used as an oracle for per-object keyform
+  counts on relocated bodies; aggregate format-level counts remain usable.
+- **Action:** documented; the harness marks per-target evidence ours-only
+  and keeps the raw-key comparison (which agrees).
+
+DF-001..DF-004 keep their documented status; no finding was closed or
+reclassified by AGENT.4.
+
 ## What did not change
 
 - No parser, IR, hierarchy or CLI semantics changed because of any finding.
-- No rule (`HR-###`, naming, confidence taxonomy) was relaxed.
+- No rule (`HR-###`, `KB-###`, `KF-###`, naming, confidence taxonomy) was
+  relaxed.
 - Real-world compatibility remains **UNVALIDATED**; no owned real `.moc3`
   exists in the repository (see `docs/GROUND_TRUTH_BENCHMARK.md`).

@@ -1,13 +1,17 @@
 # Architecture
 
 Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0
-through AGENT.3.5 complete** (research/bootstrap, read-only MOC3 inspector,
-normalized Live2D IR, hierarchy reconstruction, external reference audit).
-Later phases exist only as reserved, empty crates.
+through AGENT.4 complete** (research/bootstrap, read-only MOC3 inspector,
+normalized Live2D IR, hierarchy reconstruction, external reference audit,
+semantic keyform recovery). Later phases exist only as reserved, empty
+crates.
 
-The AGENT.3.5 audit is documentation + dev tooling only: the production
-pipeline is unchanged. Its harness (`tools/reference-harness`) is never a
-dependency of any production crate and is excluded from the shipped tool.
+AGENT.4 adds `crates/keyform-recovery` between the recovered project and any
+future writer: it consumes `live2d-ir` + `hierarchy-recovery` read-only and
+emits `live2d-recovery/recovered-keyforms/1` (EXPERIMENTAL). It never sees
+binary offsets, never copies geometry and never interpolates. The AGENT.3.5
+harness (`tools/reference-harness`) stays dev-only and is never a dependency
+of any production crate.
 
 ## Pipeline
 
@@ -31,6 +35,11 @@ MOC3 / model3.json / Texture
             |                                         docs/HIERARCHY_RECOVERY.md)
        RecoveredProjectIR   recovered-project/1 (experimental)
             |
+   Keyform Recovery         crates/keyform-recovery  (AGENT.4, implemented)
+   (bindings/grids/forms)                            (see
+            |                                         docs/KEYFORM_RECOVERY.md)
+   RecoveredKeyformModel    recovered-keyforms/1 (experimental)
+            |
    CMO3 Writer              crates/cmo3-writer        (AGENT.5, reserved)
             |
    Validation               crates/project-validator  (AGENT.7, reserved)
@@ -47,6 +56,25 @@ MOC3 / model3.json / Texture
 - Geometry is never copied; nodes keep ids, evidence and metadata only.
 - Traversals, cycle detection and rendering are iterative (deep chains are
   fixture-tested at 20k nodes, rendering at depth limits).
+
+### Keyform layer (AGENT.4)
+
+- `crates/keyform-recovery` consumes `Live2DModel` + optionally
+  `RecoveredProject` and produces `RecoveredKeyformModel` (bands, axes,
+  grids, typed target forms, traces, unresolved entries, statistics).
+  **It must never depend on `moc3-ingest`/`recovery-core`**; the workspace
+  smoke test enforces the boundary.
+- Pipeline stages are separate functions (`collect_binding_evidence`,
+  `normalize_axes`, `build_binding_bands`, `derive_grid_shape`, `map_forms`,
+  `validate_recovered_keyforms`, `recover`); there is no single mega-rule.
+- Stored axes stay `Exact`; cardinality/comparisons are `Derived`; ordering
+  of multi-dimensional grids and unresolved semantics stay `Unknown`.
+- Nothing is repaired: duplicates are not deduplicated, unsorted keys are
+  not sorted, missing forms are never padded, mismatched grids stay
+  partial/unknown.
+- Geometry is never copied; target forms reference IR payloads by index and
+  count (KF-009). Cardinality is checked arithmetic with hard caps and is
+  never materialized (KF-002/KF-010).
 
 ### IR layer (AGENT.2)
 
@@ -78,6 +106,7 @@ Hard rules carried over from the master spec:
 | `crates/moc3-ingest` | read-only MOC3 parser, limits, errors, report builder, bulk pools | `serde` |
 | `crates/live2d-ir` | normalized IR, typed ids, validator, canonical JSON | `serde`, `serde_json` |
 | `crates/hierarchy-recovery` | recovery graph, resolver, hierarchy validator, project JSON | `live2d-ir`, `serde`, `serde_json` |
+| `crates/keyform-recovery` | binding bands, parameter axes, keyform grids, target forms, validator, canonical JSON | `live2d-ir`, `hierarchy-recovery`, `serde`, `serde_json` |
 | `crates/recovery-core` | file IO, inspection orchestration, IR mapper, IR export/import | `moc3-ingest`, `live2d-ir`, `serde`, `serde_json` |
 | `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest`, `live2d-ir`, `hierarchy-recovery` |
 | `crates/hierarchy-recovery` | recovery graph (reserved: AGENT.3) | - |
@@ -166,3 +195,12 @@ identically) and the dev-only differential harness tests
 (`tools/reference-harness/tests/harness.rs`, mock providers only). Real
 external comparisons are manual and env-gated
 (`docs/DIFFERENTIAL_FINDINGS.md`); they are never part of `cargo test`.
+
+AGENT.4 adds keyform crate tests (axis normalization, 1D/2D/3D grids,
+cardinality limits/overflow, duplicates/unsorted/non-finite, dangling
+references, typed target payloads, determinism, round-trip, geometry
+non-amplification, IR-level negative fixtures), recovery-core pipeline tests
+(`crates/recovery-core/tests/keyform_recovery.rs`: per-fixture expectations,
+17 golden keyform documents, import/validate, body-placement A/B equality),
+CLI end-to-end tests (`apps/recovery-cli/tests/cli_keyforms.rs`) and the
+extended differential keyform sections.

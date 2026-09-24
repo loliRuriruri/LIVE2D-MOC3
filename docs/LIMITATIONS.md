@@ -132,6 +132,29 @@ so nothing is silently dropped.
   open spec decisions this audit surfaced (oracle provisioning, owned files,
   writer questions).
 
+## AGENT.4 (keyform recovery) limitations
+
+- **Real-world keyform accuracy: UNVALIDATED.** No owned `.moc3` exists; all
+  keyform evidence comes from synthetic fixtures plus the py-moc3 raw
+  differential (which has its own documented deviations, DF-001..DF-005).
+- Multi-dimensional grid ordering is deliberately `Unknown`: AGENT.4 does
+  not know which axis varies fastest, so consumers must not assume
+  row-major/column-major from this document.
+- Glue keyform semantics are deferred (KB-006); glue forms are preserved
+  only as IR data and are not keyform targets.
+- Blend-shape axes are preserved but experimental (KB-005): no
+  interpolation semantics are claimed for them.
+- Sparse grids are only reachable through hand-edited IR (the MOC3 parser
+  rejects files whose declared forms do not cover the bound grid); the
+  keyform layer reports them without repair.
+- Non-finite stored keys are reported positionally by the keyform layer, but
+  the CLI refuses such inputs earlier: NaN/Inf are Fatal IR diagnostics
+  (`live2d-ir/1` invariant), so `recover-keyforms` exits 1 on those files.
+- Interpolation/evaluation (parameter vector -> final vertices) is out of
+  scope; see `docs/RUNTIME_ORACLE_PLAN.md` for the planned oracle.
+- Cardinality is capped (`MAX_GRID_CARDINALITY = 1_000_000`); larger grids
+  stay unresolved rather than expanded.
+
 ## Tooling
 
 - `cargo-fuzz` integration is planned after parser stabilisation (master

@@ -10,17 +10,20 @@ that the user owns or is authorized to analyze:
         |
    Live2D IR            (normalized representation) <- AGENT.2
         |
-   Recovery Graph       (hierarchy reconstruction)  <- AGENT.3/4
+   Recovery Graph       (hierarchy reconstruction)  <- AGENT.3
+        |
+   Keyform Recovery     (bindings/grids/forms)      <- AGENT.4
         |
    CMO3 Writer          (editor project output)     <- AGENT.5
         |
    Structural Validation (comparison engine)        <- AGENT.7
 ```
 
-**Current status: AGENT.0-AGENT.3 complete** (research/bootstrap, read-only
-MOC3 inspector, normalized Live2D IR, hierarchy reconstruction) and passing
-all acceptance criteria. No CMO3 writer, no PSD recovery, no GUI, no keyform
-reconstruction - those are gated behind later phases (master spec v0.1).
+**Current status: AGENT.0-AGENT.4 complete** (research/bootstrap, read-only
+MOC3 inspector, normalized Live2D IR, hierarchy reconstruction, semantic
+keyform recovery) and passing all acceptance criteria. No CMO3 writer, no
+PSD recovery, no GUI - those are gated behind later phases (master spec
+v0.1).
 
 ## Quickstart
 
@@ -35,6 +38,9 @@ recovery validate-ir model.ir.json
 
 recovery reconstruct-hierarchy path\to\model.moc3
 recovery reconstruct-hierarchy model.ir.json --json --output recovered.project.json
+
+recovery recover-keyforms path\to\model.moc3
+recovery recover-keyforms model.ir.json --json --output model.keyforms.json
 
 cargo test
 cargo clippy --workspace --all-targets --all-features
@@ -73,10 +79,12 @@ document plus a human-readable tree and structure statistics. See
 crates/moc3-ingest/       read-only MOC3 parser + inspection report + pools
 crates/live2d-ir/         normalized IR, validator, canonical JSON
 crates/hierarchy-recovery/ recovery graph, resolver, hierarchy validator
-crates/recovery-core/     file IO, inspection orchestration, IR mapper
+crates/keyform-recovery/  binding bands, parameter axes, keyform grids,
+                          target forms, validator, canonical JSON
+crates/recovery-core/     file IO, inspection orchestration, IR mapper,
+                          keyform pipeline wrappers
 apps/recovery-cli/        `recovery` binary (inspect / export-ir / validate-ir /
-                          reconstruct-hierarchy)
-crates/hierarchy-recovery/(reserved: AGENT.3)
+                          reconstruct-hierarchy / recover-keyforms)
 crates/cmo3-writer/       (reserved: AGENT.5)
 crates/project-validator/ (reserved: AGENT.7)
 crates/texture-tools/     (reserved: AGENT.8)

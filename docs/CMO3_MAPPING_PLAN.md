@@ -39,6 +39,25 @@ invent them.
 | Hierarchy edges | parent ordering in the part/deformer trees | plan (use resolved parent only; ambiguity must fail closed) |
 | Draw order | draw-order parameter + per-art-mesh reference | plan (respect `useLegacyDrawOrder` behavior of the target) |
 
+## AGENT.4 hand-off: RecoveredKeyformModel -> CMO3 concepts
+
+AGENT.4 produced `live2d-recovery/recovered-keyforms/1`; the writer must map
+it without re-inference (work order sections 42, 75):
+
+| Recovered keyform concept | CMO3 concept (from Stretchy docs / moc2cmo audit) | Status |
+|---|---|---|
+| `BindingBand` + `ParameterAxis` | `KeyformBindingSource` + parameter references (`parameterGuid`/parameter id, `keys`) | names unconfirmed (E3) |
+| `KeyformGrid` (axes, cardinality, dense/sparse) | `KeyformGridSource` + `KeyformOnGrid` entries | names unconfirmed (E3) |
+| Target forms (`PartTargetKeyforms`, `WarpTargetKeyforms`, `RotationTargetKeyforms`, `ArtMeshTargetKeyforms`) | keyform entries per object source | plan |
+| `GridOrdering::Unknown` | writer must choose an explicit ordering and document the mapping; it must not claim the recovered document determined it | open question |
+| Interpolation metadata | `interpolationType` / `extendedInterpolationType` | **must stay unset/Unknown**: MOC3 stores no interpolation type; forcing LINEAR for all bindings is prohibited (work order section 44) |
+| Geometry (`FormGeometryRef`) | writer resolves positions from the Live2D IR (single owner, KF-009); the keyform document carries indices/counts only | plan |
+
+Writer readiness: the semantic inputs are now explicit, but the CMO3
+element/attribute names above are not confirmed, GUID policy is undefined,
+and no owned editor round-trip exists - so **CMO3 mapping readiness:
+PARTIAL**.
+
 ## Sequencing constraints (from the master spec fidelity order)
 
 Hierarchy -> Parameters -> Keyforms -> Draw order -> Opacity -> Masks ->
