@@ -39,6 +39,16 @@ invent them.
 | Hierarchy edges | parent ordering in the part/deformer trees | plan (use resolved parent only; ambiguity must fail closed) |
 | Draw order | draw-order parameter + per-art-mesh reference | plan (respect `useLegacyDrawOrder` behavior of the target) |
 
+## AGENT.5 evidence upgrade (pinned sources)
+
+The CAFF layer and the XML skeleton are now **E2** (two independent MIT
+implementations agree) with field-level names quoted in
+`docs/CMO3_MINIMAL_REQUIREMENTS.md`; the version profile is pinned in
+`docs/CMO3_VERSION_PROFILE.md`. Remaining field-level UNKNOWNs are the
+ModelImage filter graph, the layered-image chain and texture-input
+extensions - the AGENT.5 stop condition recorded in
+`docs/CMO3_VALIDATION.md`.
+
 ## AGENT.4 hand-off: RecoveredKeyformModel -> CMO3 concepts
 
 AGENT.4 produced `live2d-recovery/recovered-keyforms/1`; the writer must map

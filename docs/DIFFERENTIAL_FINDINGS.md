@@ -168,6 +168,15 @@ that our stored-key normalization matches the raw key pool py-moc3 reads.
 DF-001..DF-004 keep their documented status; no finding was closed or
 reclassified by AGENT.4.
 
+## AGENT.5 note (CMO3 differential not yet applicable)
+
+The CMO3 differential harness (work order sections 61-65) was not built:
+there is no writer output to compare yet, `moc2cmo` is not executable in
+this environment (source audit only), and byte equality is explicitly not a
+goal. DF-001..DF-005 are untouched by AGENT.5. When Gate 5B is reached, the
+semantic CMO3 diff (counts, hierarchy edges, keys, geometry counts, mask
+refs with GUID/order normalization) is the planned comparison.
+
 ## What did not change
 
 - No parser, IR, hierarchy or CLI semantics changed because of any finding.

@@ -11,6 +11,15 @@ recovered hierarchy matches what an artist authored. Only files exported by
 the project owner from licensed Cubism Editor can serve as ground truth, and
 they must be declared as owned before use.
 
+## AGENT.5 addendum: owned `.cmo3` reference files
+
+The CMO3 writer cannot resolve the image/filter/layer chain from public
+sources alone. An **owned `.cmo3` export** (any model exported by the
+project owner from Cubism Editor) would resolve the remaining UNKNOWN
+fields under the same evidence rules as `.moc3` files: owner-declared
+license basis, checksum manifest, and differential use only. Until then,
+Gate 5B stays NOT REACHED.
+
 ## Acquisition requirements
 
 1. Export a matrix of models from Cubism Editor, at least:

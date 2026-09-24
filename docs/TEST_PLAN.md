@@ -4,7 +4,9 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**239 tests, all passing** (44 synthetic fixtures).
+**264 tests, all passing** (44 synthetic fixtures). AGENT.5 is PARTIAL: only
+the CAFF/identity/XML/profile/mapping layers exist (see
+`docs/CMO3_VALIDATION.md`).
 
 AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
 placement tolerance) and `tools/reference-harness` (dev-only differential
@@ -61,7 +63,10 @@ cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc
 | Keyform unit + IR-level negatives | `crates/keyform-recovery/tests/keyform_recovery.rs` | 1D/2D/3D grids, 0D static bands, duplicate/unsorted/out-of-range/non-finite keys, dangling parameter/binding/target (IR-level negative fixtures), cardinality limit/overflow, axis/limit caps, sparse partial grid (fewer forms than the bound product, no padding), form-span gaps and out-of-bounds indices (validator Fatal), non-finite payload refusal, tampered-explain hardening, typed target payloads, blend-shape experimental, glue deferral, determinism, byte-identical JSON round-trip, duplicate-grid fatal validation, geometry non-amplification, large dataset, project cross-check, explain |
 | Keyform pipeline + goldens | `crates/recovery-core/tests/keyform_recovery.rs` | per-fixture expectations for all 17 keyform fixtures, 17 golden `recovered-keyforms/1` documents (import + re-validate), determinism/round-trip over every fixture, body-placement A/B equality, strict violations, archived AGENT.3.5 evidence retention, large dense dataset |
 | Keyform CLI | `apps/recovery-cli/tests/cli_keyforms.rs` | human report counts, deterministic JSON, `--output` equality, IR JSON input parity, `--strict` exit codes, non-finite CLI refusal, `--explain` trace, input immutability |
-| Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |
+| CMO3 CAFF (AGENT.5) | `crates/cmo3-writer` unit tests | round-trip with default/zero/negative keys, guard bytes, truncation/bad magic, corrupted payload visibility, out-of-range offsets, unsafe/duplicate paths, entry caps, varint lengths, compressed-mode recognition (no guessing) |
+| CMO3 identity/XML/profile | `crates/cmo3-writer` unit tests | pool allocation determinism, UUID shape/variant/determinism, escaping of all five XML entities, canonical float formatting, profile values match both pinned sources, unique import list |
+| CMO3 mapping | `crates/cmo3-writer/tests/mapping.rs` | strict `MissingTextureAsset` failure, strict success with assets, writer-default trace separation, archive entry naming safety, determinism |
+| Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery and cmo3-writer must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
 

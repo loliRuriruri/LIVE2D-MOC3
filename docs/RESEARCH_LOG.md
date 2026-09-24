@@ -212,3 +212,22 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
 - **Rule system extended:** binding rules `KB-001..KB-007`, keyform rules
   `KF-001..KF-010`, documented in `docs/KEYFORM_RECOVERY.md` and asserted in
   sync by a crate test. No AGENT.2/3 rule changed.
+
+## 11. AGENT.5 research (CMO3 container and main.xml)
+
+- **CAFF resolved to E2.** Two independent MIT writers agree on the exact
+  binary layout (magic/versions/format id, int32 BE key, preview block,
+  obfuscated varint strings, per-entry start/size/flags, guard bytes
+  `[98, 99]`, integer-level XOR with the sign-extended int64 mask, modes
+  16/33/37 with ZIP `contents` payloads). Stretchy's format document also
+  records a real Hiyori archive (`imageFileBuf_3.png`, key `-816980164`).
+- **main.xml skeleton resolved to E2** with the full object chain and field
+  names (see `docs/CMO3_MINIMAL_REQUIREMENTS.md`); the image/filter/layer
+  chain remains field-level UNKNOWN and is the active AGENT.5 stop
+  condition - it is not implemented rather than guessed.
+- **Version profile pinned:** Editor 5.x target (`fileFormatVersion`
+  402030000, edition 15, target 3000, modeler 5000000, the nine version
+  PIs, the 125-class import list).
+- **License discipline:** all facts come from MIT sources (Stretchy Studio
+  `5fd958def9ed`, moc2cmo `2527e24e93`) by source reading only; no code was
+  copied, and the LGPL Quadrism project remained behavioral-only.

@@ -40,7 +40,12 @@ MOC3 / model3.json / Texture
             |                                         docs/KEYFORM_RECOVERY.md)
    RecoveredKeyformModel    recovered-keyforms/1 (experimental)
             |
-   CMO3 Writer              crates/cmo3-writer        (AGENT.5, reserved)
+   CMO3 Writer              crates/cmo3-writer        (AGENT.5, PARTIAL:
+            |                                         CAFF + identity + XML
+            |                                         layers done; serializer
+            |                                         blocked by image-pipeline
+            |                                         evidence - see
+            |                                         docs/CMO3_VALIDATION.md)
             |
    Validation               crates/project-validator  (AGENT.7, reserved)
 ```
@@ -110,7 +115,7 @@ Hard rules carried over from the master spec:
 | `crates/recovery-core` | file IO, inspection orchestration, IR mapper, IR export/import | `moc3-ingest`, `live2d-ir`, `serde`, `serde_json` |
 | `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest`, `live2d-ir`, `hierarchy-recovery` |
 | `crates/hierarchy-recovery` | recovery graph (reserved: AGENT.3) | - |
-| `crates/cmo3-writer` | CMO3 serializer (reserved: AGENT.5) | - |
+| `crates/cmo3-writer` | CAFF encoder/decoder, object-pool identity, GUID strategies, version profile, typed XML writer, semantic mapping (serializer pending) | `live2d-ir`, `hierarchy-recovery`, `keyform-recovery`, `serde` |
 | `crates/project-validator` | structural comparison (reserved: AGENT.7) | - |
 | `crates/texture-tools` | texture/PSD tooling (reserved: AGENT.8) | - |
 | `tools/fixture-gen` | synthetic MOC3 fixture writer (tests only) | `moc3-ingest` |

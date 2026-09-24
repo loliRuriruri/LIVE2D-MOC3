@@ -161,6 +161,21 @@ so nothing is silently dropped.
   reported positionally; canonical export refuses documents that contain
   them (`NonFiniteValue`), because JSON cannot represent NaN/Inf.
 
+## AGENT.5 (CMO3 writer) limitations
+
+- **The writer is PARTIAL.** CAFF (Gate 5A) passes; `main.xml` serialization
+  (Gate 5B) is not reached because the image/filter/layer chain required by
+  both pinned minimal generators lacks field-level evidence
+  (`docs/CMO3_VALIDATION.md`, `docs/CMO3_MINIMAL_REQUIREMENTS.md`). No
+  `.cmo3` is produced today.
+- Cubism Editor open is `NOT_TESTED`; structural success is never called
+  editor compatibility.
+- CAFF writing supports RAW entries only; ZIP modes 33/37 are recognised
+  but their payloads are not encoded or decoded.
+- Semantic mapping (strict/best-effort) exists and is tested; it records
+  writer-required defaults separately from recovered data.
+- PSD recovery and GUI remain out of scope.
+
 ## Tooling
 
 - `cargo-fuzz` integration is planned after parser stabilisation (master
