@@ -127,6 +127,13 @@ pub fn build_recovery_graph(model: &Live2DModel, policy: &RecoveryPolicy) -> Rec
         .filter(|edge| edge.kind == EvidenceKind::ExplicitStoredRelation)
         .map(|edge| edge.child.0.clone())
         .collect();
+    // Index bindings once: the HR-010 lookup used to be a linear scan per
+    // orphan mesh (O(meshes * bindings) on the default path).
+    let binding_by_id: BTreeMap<&str, &live2d_ir::Binding> = model
+        .bindings
+        .iter()
+        .map(|binding| (binding.id.as_str(), binding))
+        .collect();
     let mut blocked_heuristic = 0usize;
     for mesh in &model.art_meshes {
         if children_with_explicit_evidence.contains(mesh.id.as_str()) {
@@ -135,11 +142,7 @@ pub fn build_recovery_graph(model: &Live2DModel, policy: &RecoveryPolicy) -> Rec
         let Some(binding_id) = &mesh.binding else {
             continue;
         };
-        let Some(binding) = model
-            .bindings
-            .iter()
-            .find(|binding| &binding.id == binding_id)
-        else {
+        let Some(binding) = binding_by_id.get(binding_id.as_str()).copied() else {
             continue;
         };
         let mut parts: Vec<&str> = binding

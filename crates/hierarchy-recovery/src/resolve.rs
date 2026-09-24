@@ -234,18 +234,16 @@ pub fn resolve_candidates(
                 .iter()
                 .map(|candidate| candidate.parent.clone())
                 .collect();
-            for candidate in &candidates {
-                if !tier
-                    .iter()
-                    .any(|tied_candidate| tied_candidate.parent == candidate.parent)
-                {
-                    rejected.push(RejectedCandidate {
-                        parent: candidate.parent.clone(),
-                        confidence: candidate.confidence,
-                        rule: candidate.rule.clone(),
-                        reason: RejectionReason::LowerConfidence,
-                    });
-                }
+            // Candidates are sorted by confidence, so the top tier is a
+            // prefix; everything after it is lower confidence (O(k), not
+            // O(k^2) membership scans).
+            for candidate in candidates.iter().skip(tier.len()) {
+                rejected.push(RejectedCandidate {
+                    parent: candidate.parent.clone(),
+                    confidence: candidate.confidence,
+                    rule: candidate.rule.clone(),
+                    reason: RejectionReason::LowerConfidence,
+                });
             }
             let mut listed: Vec<String> = tied.iter().map(|parent| parent.0.clone()).collect();
             listed.truncate(8);

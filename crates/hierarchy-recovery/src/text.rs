@@ -1,4 +1,4 @@
-//! Human-readable rendering: recovered tree, statistics and explain mode.
+﻿//! Human-readable rendering: recovered tree, statistics and explain mode.
 //!
 //! All renderers are iterative (no recursion) and cycle-safe: a node is
 //! shown once; later encounters are marked instead of recursing forever.
@@ -61,7 +61,7 @@ enum Item<'a> {
 }
 
 impl Item<'_> {
-    fn label(&self, project: &RecoveredProject) -> String {
+    fn label(&self, node_by_id: &BTreeMap<&str, &RecoveredNode>) -> String {
         match self {
             Item::Node(node) => node_label(node),
             Item::Container(container) => match container.kind {
@@ -79,11 +79,11 @@ impl Item<'_> {
                 cycle.nodes.len()
             ),
             Item::CycleMember(node, parent) => {
-                let label = project
-                    .nodes
-                    .iter()
-                    .find(|candidate| candidate.id == **node)
-                    .map(node_label)
+                // Indexed lookup: the previous linear scan per member made
+                // rendering large cycles O(cycle_len * nodes).
+                let label = node_by_id
+                    .get(node.as_str())
+                    .map(|candidate| node_label(candidate))
                     .unwrap_or_else(|| node.0.clone());
                 match parent {
                     Some(parent) => format!("{label} (parent: {parent})"),
@@ -143,7 +143,7 @@ pub fn render_tree(project: &RecoveredProject, max_depth: usize) -> String {
                 }
             }
             Item::Container(container) => {
-                let label = item.label(project);
+                let label = item.label(&node_by_id);
                 let _ = writeln!(out, "{indent}{label}");
                 if depth >= max_depth {
                     continue;
@@ -164,7 +164,7 @@ pub fn render_tree(project: &RecoveredProject, max_depth: usize) -> String {
                 }
             }
             Item::Cycle(cycle) => {
-                let label = item.label(project);
+                let label = item.label(&node_by_id);
                 let _ = writeln!(out, "{indent}{label}");
                 if depth >= max_depth {
                     continue;
@@ -177,7 +177,7 @@ pub fn render_tree(project: &RecoveredProject, max_depth: usize) -> String {
                 }
             }
             Item::CycleMember(_, _) => {
-                let label = item.label(project);
+                let label = item.label(&node_by_id);
                 let _ = writeln!(out, "{indent}{label}");
             }
         }

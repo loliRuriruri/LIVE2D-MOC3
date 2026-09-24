@@ -250,6 +250,58 @@ fn deep_chain_is_iterative() {
 }
 
 #[test]
+fn many_orphans_with_bindings_stay_fast() {
+    // Regression guard for the HR-010 lookup: this used to be
+    // O(art_meshes * bindings). 20k meshes and bindings must finish well
+    // within the bound even in a debug build.
+    let count = 20_000usize;
+    let mut art_meshes = Vec::with_capacity(count);
+    let mut bindings = Vec::with_capacity(count);
+    for index in 0..count {
+        let binding_id = format!("binding:{index:06}");
+        art_meshes.push(with_binding(
+            mesh(&format!("artmesh:{index:06}"), None, None),
+            &binding_id,
+        ));
+        bindings.push(binding(&binding_id, Vec::new()));
+    }
+    let model = model(Vec::new(), Vec::new(), art_meshes, bindings);
+    let started = std::time::Instant::now();
+    let project = reconstruct(&model, &RecoveryPolicy::default());
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_secs(60),
+        "orphan/binding reconstruction took {elapsed:?}; indexing regressed"
+    );
+    assert_eq!(project.statistics.unresolved, count);
+    assert!(!live2d_ir::has_fatal(&project.diagnostics));
+}
+
+#[test]
+fn large_cycle_renders_once() {
+    // Regression guard for cycle rendering: member labels used to be looked
+    // up with a linear scan per member.
+    let count = 5_000usize;
+    let mut deformers = Vec::with_capacity(count);
+    for index in 0..count {
+        let parent = format!("warp:{:06}", (index + 1) % count);
+        deformers.push(warp(&format!("warp:{index:06}"), Some(&parent), None));
+    }
+    let model = model(Vec::new(), deformers, Vec::new(), Vec::new());
+    let started = std::time::Instant::now();
+    let project = reconstruct(&model, &RecoveryPolicy::default());
+    let tree = hierarchy_recovery::text::render_tree(&project, 64);
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_secs(60),
+        "large cycle rendering took {elapsed:?}; indexing regressed"
+    );
+    assert_eq!(project.cycles.len(), 1);
+    assert_eq!(project.cycles[0].nodes.len(), count);
+    assert!(tree.contains("Cycle 0"));
+}
+
+#[test]
 fn reconstruction_is_deterministic_and_idempotent() {
     let model = model(
         vec![part("Part_A", None), part("Part_B", Some("Part_A"))],

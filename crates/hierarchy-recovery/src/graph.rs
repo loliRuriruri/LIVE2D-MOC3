@@ -333,11 +333,17 @@ impl RecoveryGraph {
     }
 
     /// Find a node by id.
+    ///
+    /// Linear scan; intended for tests and one-off lookups. Hot paths build
+    /// their own maps (see `resolve.rs`) so large models stay near-linear.
     pub fn node(&self, id: &NodeId) -> Option<&GraphNode> {
         self.nodes.iter().find(|node| &node.id == id)
     }
 
     /// Candidate set for a child.
+    ///
+    /// Linear scan; intended for tests and one-off lookups, not for loops
+    /// over every node (use the index-aligned `candidates` vector there).
     pub fn candidates_for(&self, child: &NodeId) -> Option<&ParentCandidates> {
         self.candidates.iter().find(|entry| &entry.child == child)
     }

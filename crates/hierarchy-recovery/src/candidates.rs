@@ -91,7 +91,6 @@ pub fn build_candidates(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
     for node in &graph.nodes {
         let mut accepted: Vec<Candidate> = Vec::new();
         let mut rejected: Vec<RejectedCandidate> = Vec::new();
-        let mut accepted_edges: Vec<(usize, usize)> = Vec::new(); // (edge index, accepted slot)
         let mut has_deformer_candidate = false;
 
         let edge_indices = edges_by_child
@@ -214,7 +213,6 @@ pub fn build_candidates(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
             {
                 has_deformer_candidate = true;
             }
-            accepted_edges.push((index, accepted.len()));
             accepted.push(Candidate {
                 parent: edge.parent.clone(),
                 confidence: edge.confidence,
@@ -246,7 +244,8 @@ pub fn build_candidates(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
             accepted = kept;
         }
 
-        // Deduplicate by parent keeping the strongest candidate.
+        // Deduplicate by parent keeping the strongest candidate. The sort
+        // places equal parents adjacently, so this is O(k log k), not O(k^2).
         accepted.sort_by(|left, right| {
             confidence_rank(right.confidence)
                 .cmp(&confidence_rank(left.confidence))
@@ -255,10 +254,11 @@ pub fn build_candidates(graph: &mut RecoveryGraph, policy: &RecoveryPolicy) {
         });
         let mut deduped: Vec<Candidate> = Vec::with_capacity(accepted.len());
         for candidate in accepted {
-            if deduped
-                .iter()
-                .any(|existing| existing.parent == candidate.parent)
-            {
+            let duplicate = deduped
+                .last()
+                .map(|previous| previous.parent == candidate.parent)
+                .unwrap_or(false);
+            if duplicate {
                 rejected.push(RejectedCandidate {
                     parent: candidate.parent,
                     confidence: candidate.confidence,
