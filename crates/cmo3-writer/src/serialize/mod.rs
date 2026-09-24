@@ -1,9 +1,15 @@
 //! Minimal MODEL_IMAGE-mode CMO3 document serialization (AGENT.5.1).
 //!
 //! The orchestrator allocates every pool id up front and passes explicit ids
-//! into the builders (`builders.rs`), so no reference can dangle. Structure
-//! follows the pinned evidence in `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`;
-//! writer-required constants are recorded in `docs/CMO3_WRITER_DEFAULTS.md`.
+//! into the builders (`builders.rs`). Structure follows the pinned evidence
+//! in `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`; writer-required constants are
+//! recorded in `docs/CMO3_WRITER_DEFAULTS.md`.
+//!
+//! **Precondition:** the project must pass [`crate::validate::validate_typed`]
+//! (and the result must be rescanned by [`crate::validate::scan_xml`]) before
+//! the bytes are used. [`crate::write_minimal_cmo3`] enforces this; calling
+//! `serialize` directly on an unvalidated project can produce dangling refs
+//! (for example a missing layered image or an empty part list).
 
 mod builders;
 
@@ -660,8 +666,10 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             children.push(reference_anon("CLayer", *layer_id));
         }
         root_super.push(children);
-        root_super.push(null_leaf("layerIdentifier"));
         root_group.push(root_super);
+        // Both pinned sources place `layerIdentifier` directly under
+        // `CLayerGroup` (outside the `ACLayerGroup` super element).
+        root_group.push(null_leaf("layerIdentifier"));
         shared.push(root_group);
 
         for (index, layer) in layered.layers.iter().enumerate() {
@@ -764,9 +772,7 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
             .attr("count", "1");
         linked.push(reference_anon("CLayeredImageGuid", layered_guid));
         group.push(linked);
-        let mut images = XmlElement::new("carray_list")
-            .attr("xs.n", "_modelImages")
-            .attr("count", project.model_images.len().to_string());
+        let mut images = XmlElement::new("carray_list").attr("xs.n", "_modelImages");
         for (model_index, model_image_out) in project.model_images.iter().enumerate() {
             let layer_id = layer_pool_ids
                 .get(model_image_out.layer)
@@ -807,6 +813,10 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
                 height,
             ));
         }
+        // Count derives from the entries actually emitted (no desync).
+        images
+            .attributes
+            .push(("count".to_string(), images.children.len().to_string()));
         group.push(images);
         shared.push(group);
     }

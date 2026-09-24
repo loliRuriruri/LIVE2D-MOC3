@@ -811,8 +811,8 @@
           <CLayer xs.ref="#77"/>
           <CLayer xs.ref="#78"/>
         </carray_list>
-        <null xs.n="layerIdentifier"/>
       </ACLayerGroup>
+      <null xs.n="layerIdentifier"/>
     </CLayerGroup>
     <CLayer xs.id="#76" xs.idx="76">
       <ACImageLayer xs.n="super">

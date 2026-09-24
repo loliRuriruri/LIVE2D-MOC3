@@ -286,7 +286,7 @@ pub struct TextureOut {
     pub hash: String,
 }
 
-/// One synthetic layered-image layer (one visible mesh).
+/// One synthetic layered-image layer (one textured mesh).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LayerOut {
     /// Deterministic layer semantic id (`layer:{index}`).

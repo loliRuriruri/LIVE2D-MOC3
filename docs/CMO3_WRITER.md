@@ -3,7 +3,7 @@
 Status: **AGENT.5.1 complete for the minimal MODEL_IMAGE document** (Gate 5A
 PASS; Gate 5B PASS structurally; Cubism open NOT_TESTED). The writer now
 produces a `.cmo3` containing `main.xml`, one synthetic layered image with
-one layer per visible mesh, per-mesh ModelImage filter graphs, texture
+one layer per textured mesh, per-mesh ModelImage filter graphs, texture
 inputs, MODEL_IMAGE-mode texture manager, root/real parts and one static
 quad per mesh. Evidence: `docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`; defaults
 and LINEAR policy: `docs/CMO3_WRITER_DEFAULTS.md`; gate ledger:

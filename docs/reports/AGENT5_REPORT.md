@@ -1,5 +1,11 @@
 # AGENT.5 COMPLETION REPORT
 
+> **Superseded for Gate 5B status by `docs/reports/AGENT5.1_REPORT.md`**
+> (AGENT.5.1 resolved the image-pipeline blocker and reached Gate 5B
+> structurally; Cubism open remains NOT_TESTED). This file is kept as the
+> historical AGENT.5 partial record; its "main.xml NOT REACHED" and test
+> counts describe the state at `3466a91`.
+
 ```text
 === LIVE2D RECOVERY AGENT.5 REPORT ===
 

@@ -86,7 +86,7 @@ each `CModelImage` has its own selector map with the **same**
 |---|---|---|---|---|---|---|
 | `CLayeredImage` | `name`,`memo`,`width`,`height`,`psdFile`,`description`,`guid`,`psdBytes`,`psdFileLastModified`,`_rootLayer`,`layerSet`,`icon16`,`icon64` | in this order | REQUIRED | both | E2 | one synthetic image |
 | `CLayeredImage` | `psdFile` | `<file xs.n="psdFile">NAME</file>` text-only; `psdBytes` always null | REQUIRED | both | E2 | synthetic name (traced) |
-| `CLayerGroup` (root) | `ACLayerGroup super`→`ACLayerEntry super` (`name`, `memo`, `isVisible`, `isClipping`, `blend`, `guid`, `group`, `opacity255`, `_optionOfIOption`, `_layeredImage`) then `_children`, `layerIdentifier` | shared | REQUIRED | both | E2 | one root group |
+| `CLayerGroup` (root) | `CLayerGroup` contains `ACLayerGroup super` (which contains `ACLayerEntry super` with `name`, `memo`, `isVisible`, `isClipping`, `blend`, `guid`, `group`, `opacity255`, `_optionOfIOption`, `_layeredImage`, then `_children`), followed by `layerIdentifier` directly under `CLayerGroup` | shared | REQUIRED | both place `layerIdentifier` outside `ACLayerGroup` | E2 | one root group, exact placement pinned |
 | `CLayer` | same `ACLayerEntry` prefix + `imageResource`, `boundsOnImageDoc`, `layerIdentifier`, `icon16/64`, `layerInfo`, `_optionOfIOption` | shared | REQUIRED | both | E2 | one layer per mesh |
 | `CLayer` | `layerId` | `00-00-{index:02}-01` ([A]) / `00-00-00-{i+1:02}` ([B]) | differs in width | E3 | [A] format chosen |
 | `CLayerGuid` | inline element with `uuid`+`note` (not a ref) | REQUIRED | both | E2 | inline, synthetic uuid |

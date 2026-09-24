@@ -789,13 +789,11 @@ pub fn build_project(
             reason: "AGENT.4 keyform grids are out of AGENT.5.1 scope; one static form per target",
         });
     }
-    if !model.parameters.is_empty() {
-        defaults.push(WriterDefault {
-            semantic: "$parameters".to_string(),
-            field: "parameter.substitution",
-            reason: "recovered parameters are not emitted in the minimal writer; a single synthetic parameter drives the static forms",
-        });
-    }
+    defaults.push(WriterDefault {
+        semantic: "$parameters".to_string(),
+        field: "parameter.substitution",
+        reason: "the minimal writer emits a single synthetic parameter (Param_Minimal) and does not serialize recovered parameter tables",
+    });
 
     // ---- textures --------------------------------------------------------
     let textures_out: Vec<TextureOut> = textures

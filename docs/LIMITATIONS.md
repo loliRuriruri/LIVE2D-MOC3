@@ -173,6 +173,10 @@ so nothing is silently dropped.
   placeholders (`docs/CMO3_WRITER_DEFAULTS.md`).
 - Cubism Editor open remains NOT_TESTED; structural validation is never
   reported as editor compatibility.
+- `write_minimal_cmo3` currently clones each texture asset once into the
+  CAFF entry list and the encoder copies payloads into the output buffer
+  (~2x texture bytes transiently). Acceptable for the canvas-sized minimal
+  fixtures; a streaming path is noted for production atlases.
 - Cubism Editor open is `NOT_TESTED`; structural success is never called
   editor compatibility.
 - CAFF writing supports RAW entries only; ZIP modes 33/37 are recognised

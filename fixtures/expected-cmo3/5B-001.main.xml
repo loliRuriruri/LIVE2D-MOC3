@@ -421,8 +421,8 @@
         <carray_list xs.n="_children" count="1">
           <CLayer xs.ref="#48"/>
         </carray_list>
-        <null xs.n="layerIdentifier"/>
       </ACLayerGroup>
+      <null xs.n="layerIdentifier"/>
     </CLayerGroup>
     <CLayer xs.id="#48" xs.idx="48">
       <ACImageLayer xs.n="super">
