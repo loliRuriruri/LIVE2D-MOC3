@@ -154,6 +154,48 @@ fn keyform_recovery_is_independent_from_the_binary_parser() {
 }
 
 #[test]
+fn cmo3_writer_is_independent_from_the_binary_parser() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest = std::fs::read_to_string(root.join("crates/cmo3-writer/Cargo.toml")).unwrap();
+    assert!(
+        !manifest.contains("moc3-ingest") && !manifest.contains("recovery-core"),
+        "cmo3-writer/Cargo.toml must not reference the parser or orchestration crates"
+    );
+
+    let output = std::process::Command::new(env!("CARGO"))
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .current_dir(&root)
+        .output()
+        .expect("failed to run cargo metadata");
+    assert!(output.status.success());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let packages = value
+        .get("packages")
+        .and_then(|packages| packages.as_array())
+        .expect("metadata packages");
+    let package = packages
+        .iter()
+        .find(|package| package.get("name").and_then(|name| name.as_str()) == Some("cmo3-writer"))
+        .expect("cmo3-writer package in metadata");
+    let dependencies: Vec<&str> = package
+        .get("dependencies")
+        .and_then(|dependencies| dependencies.as_array())
+        .map(|dependencies| {
+            dependencies
+                .iter()
+                .filter_map(|dependency| dependency.get("name").and_then(|name| name.as_str()))
+                .collect()
+        })
+        .unwrap_or_default();
+    for forbidden in ["moc3-ingest", "recovery-core", "fixture-gen"] {
+        assert!(
+            !dependencies.contains(&forbidden),
+            "cmo3-writer must not depend on {forbidden} (declared: {dependencies:?})"
+        );
+    }
+}
+
+#[test]
 fn live2d_ir_is_independent_from_the_binary_parser() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
 

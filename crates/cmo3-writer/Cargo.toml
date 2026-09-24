@@ -1,10 +1,17 @@
 [package]
 name = "cmo3-writer"
-description = "CMO3 serializer (reserved for AGENT.5; not implemented)"
+description = "Minimal-to-fidelity CMO3 writer (AGENT.5)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+
+[dependencies]
+hierarchy-recovery.workspace = true
+keyform-recovery.workspace = true
+live2d-ir.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

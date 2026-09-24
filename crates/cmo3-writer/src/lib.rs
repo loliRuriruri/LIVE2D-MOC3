@@ -1,12 +1,27 @@
-//! CMO3 serializer.
+//! Minimal-to-fidelity CMO3 writer (AGENT.5).
 //!
-//! **Status: reserved for AGENT.5 and intentionally empty.** The master spec
-//! requires that no CMO3 bytes are produced before the inspector, IR, and
-//! hierarchy stages are complete and reviewed. The writer will be structured
-//! as `Project IR -> Serializer -> Cmo3VersionProfile -> CMO3`, never as
-//! hardcoded byte patterns.
+//! The writer performs **serialization only**: it consumes the Live2D IR,
+//! the recovered project and the recovered keyform model and emits a `.cmo3`
+//! container. It never guesses hierarchy, reconstructs keyforms or invents
+//! bindings (work order section 0).
+//!
+//! Pipeline (work order section 6):
+//!
+//! ```text
+//! semantic inputs -> Cmo3Project -> identity allocation -> XML document
+//!                 -> CAFF entries -> CAFF encoder -> .cmo3 bytes
+//! ```
+//!
+//! The crate must never depend on `moc3-ingest`: binary layout details of the
+//! runtime format are unknown here.
 
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 
-/// Phase that will implement this crate.
-pub const PLANNED_PHASE: &str = "AGENT.5";
+pub mod caff;
+pub mod ids;
+pub mod map;
+pub mod model;
+pub mod profile;
+pub mod textures;
+pub mod xml;
