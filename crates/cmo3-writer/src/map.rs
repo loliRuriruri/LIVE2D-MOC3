@@ -734,7 +734,8 @@ pub fn build_project(
 
 fn round_i32(value: f32, semantic: &str, field: &str) -> Result<i32, WriteError> {
     let value = finite(value, semantic, field)?;
-    if value < i32::MIN as f32 || value > i32::MAX as f32 {
+    let upper = 2_147_483_648.0_f32; // 2^31, exclusive
+    if value < -upper || value >= upper {
         return Err(error(
             "NumericOverflow",
             format!("'{semantic}' field '{field}' does not fit an i32"),

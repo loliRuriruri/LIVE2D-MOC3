@@ -33,14 +33,15 @@ CModelImage:3
 ```
 
 Stretchy's Hiyori reference file uses a different set (`CModelSource:14`,
-`CParameterGroup:3`, `ModelImageEntry:2`) ??that profile is **not** our
+`CParameterGroup:3`, `ModelImageEntry:2`) - that profile is **not** our
 target.
 
 ## Import instructions
 
 `<?import fully.qualified.Class?>` (nested classes use `$`), emitted in a
-fixed deterministic order from `IMPORT_CLASSES` (the moc2cmo list, 124 classes). Both writers emit the full list; the editor matches by name and
-ignores unknown entries (E3).
+fixed deterministic order from `IMPORT_CLASSES` (the moc2cmo list, 124
+classes; asserted by a unit test). Both writers emit the full list; the
+editor matches by name and ignores unknown entries (E3).
 
 ## Version-sensitive objects
 
@@ -50,4 +51,3 @@ ignores unknown entries (E3).
   forms.
 - `CModelImage:3` is the image resource version referenced by the deferred
   image pipeline.
-

@@ -48,10 +48,13 @@ writers' enumeration; the recovered document deliberately reports ordering
 as unknown).
 
 Interpolation metadata: the recovered keyform document does not determine
-an interpolation type; when the serializer is implemented it must resolve
-the `LINEAR` question explicitly (serialization-required default, traced -
-never claimed as recovered, per work order sections 40-41). Nothing is
-emitted today.
+an interpolation type. How the serializer should handle the
+editor-required `interpolationType`/`extendedInterpolationType` fields is an
+**open spec question**: `docs/CMO3_MAPPING_PLAN.md` records "forcing LINEAR
+for all bindings is prohibited" (AGENT.4 hand-off), while a writer-required
+constant with a trace entry would satisfy work-order sections 40-41 without
+claiming recovered semantics. This must be decided before Gate 5B; nothing
+is emitted today.
 
 ## Evidence base
 

@@ -6,7 +6,7 @@ adding more fidelity.
 
 | Gate | Meaning | Status | Evidence |
 |---|---|---|---|
-| 5A | CAFF archive structure valid | **PASS** | encoder + test decoder + validator; 13 CAFF tests (round-trip default/zero/negative keys, guard, corruption, unsafe/duplicate paths, caps, varints, compressed-mode recognition) |
+| 5A | CAFF archive structure valid | **PASS** | encoder + test decoder + validator; 15 CAFF tests (round-trip default/zero/negative keys, guard, corruption, unsafe/duplicate paths, caps, varints incl. negative-key multi-byte, encoder rejection of compressed modes, decoder recognition without guessing). Independently re-parsed and fuzzed (160k hostile inputs, zero panics) during review. |
 | 5B | minimal `main.xml` structurally valid | **NOT REACHED** | serializer not implemented; field-level evidence complete, draft with dangling refs discarded |
 | 5C | minimal CMO3 opens in Cubism Editor | **NOT TESTED** | no Cubism Editor environment; never claimed |
 | 5D | Parts / ArtMeshes serialized | NOT REACHED | blocked by 5B |

@@ -227,7 +227,7 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
   condition - it is not implemented rather than guessed.
 - **Version profile pinned:** Editor 5.x target (`fileFormatVersion`
   402030000, edition 15, target 3000, modeler 5000000, the nine version
-  PIs, the 125-class import list).
+  PIs, the 124-class import list).
 - **License discipline:** all facts come from MIT sources (Stretchy Studio
   `5fd958def9ed`, moc2cmo `2527e24e93`) by source reading only; no code was
   copied, and the LGPL Quadrism project remained behavioral-only.
