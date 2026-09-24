@@ -62,3 +62,52 @@ fn checked_in_fixtures_match_the_generator() {
         assert_eq!(on_disk, generated, "fixture {name} is stale");
     }
 }
+
+#[test]
+fn live2d_ir_is_independent_from_the_binary_parser() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+
+    // Static manifest check (fast and hermetic).
+    let manifest = std::fs::read_to_string(root.join("crates/live2d-ir/Cargo.toml")).unwrap();
+    assert!(
+        !manifest.contains("moc3-ingest"),
+        "live2d-ir/Cargo.toml must not reference moc3-ingest"
+    );
+
+    // Dependency-graph check via cargo metadata (no build, workspace only).
+    let output = std::process::Command::new(env!("CARGO"))
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .current_dir(&root)
+        .output()
+        .expect("failed to run cargo metadata");
+    assert!(
+        output.status.success(),
+        "cargo metadata failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let packages = value
+        .get("packages")
+        .and_then(|packages| packages.as_array())
+        .expect("metadata packages");
+    let live2d_ir = packages
+        .iter()
+        .find(|package| package.get("name").and_then(|name| name.as_str()) == Some("live2d-ir"))
+        .expect("live2d-ir package in metadata");
+    let dependencies: Vec<&str> = live2d_ir
+        .get("dependencies")
+        .and_then(|dependencies| dependencies.as_array())
+        .map(|dependencies| {
+            dependencies
+                .iter()
+                .filter_map(|dependency| dependency.get("name").and_then(|name| name.as_str()))
+                .collect()
+        })
+        .unwrap_or_default();
+    for forbidden in ["moc3-ingest", "recovery-core", "fixture-gen"] {
+        assert!(
+            !dependencies.contains(&forbidden),
+            "live2d-ir must not depend on {forbidden} (declared: {dependencies:?})"
+        );
+    }
+}

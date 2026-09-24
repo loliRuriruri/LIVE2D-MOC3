@@ -1,60 +1,220 @@
-# Live2D IR Specification (draft)
+# Live2D IR Specification
 
-**Status: draft for AGENT.2. Not implemented in AGENT.1.**
+**Schema:** `live2d-ir/1`
+**Status:** `EXPERIMENTAL` (work order section 31). No real Cubism export has
+been validated yet; the schema may still change. Do not treat it as a stable
+public contract.
+**Implemented:** AGENT.2 (`crates/live2d-ir`, mapper in `recovery-core`).
 
-The IR is the normalized representation between the binary parser and all
-downstream recovery stages. It must not leak parser internals (raw offsets,
-parallel arrays, count tables).
+## 1. Purpose and boundaries
 
-## Target shape (master spec section 6)
-
-```text
-ModelProject
-+- Metadata          (source version, canvas, provenance notes)
-+- Canvas
-+- Parameters[]      id, name, minimum, maximum, default, current, keyforms
-+- Parts[]           id, name, parent, children, opacity, draw_order
-+- ArtMeshes[]       id, name, parent, vertices, uv, indices,
-                     texture_reference, opacity, draw_order,
-                     clipping_masks, parameter_bindings
-+- Deformers[]       Deformer = WarpDeformer | RotationDeformer
-                     id, name, parent, children, transform, bindings, keyforms
-+- Drawables[]       unified draw list ordered by draw order resolution
-+- Textures[]        texture_page, width, height, source, region
-+- Masks[]           mask relationships between drawables
-+- Bindings[]        parameter key tables and interpolation data
-```
-
-## Rules
-
-1. **Normalization only.** The IR contains resolved references (indices ->
-   ids), no raw byte offsets. Parallel arrays become objects.
-2. **IDs.** `source_id` (as stored), `recovered_id` (deterministic fallback,
-   `ArtMesh_0001` style), `display_name` (may be empty -> fallback used).
-3. **Confidence.** Every derived field carries a recovery confidence
-   (`Exact`, `Derived`, `Heuristic`, `Unknown`) like the hierarchy edges in
-   AGENT.1.
-4. **Determinism.** Same `RawMoc3` -> byte-identical IR JSON. No unordered
-   containers in output paths.
-5. **No lossy drops.** Data AGENT.2 does not interpret yet stays in an
-   `uninterpreted` section rather than disappearing.
-
-## Inputs available from AGENT.1
-
-`moc3-ingest` currently extracts: header, canvas, counts, parameters, parts,
-deformers (typed), art meshes (ids/parents/texture/flags/vertex counts/
-ranges/resolved masks), masks, draw order groups/items, glue structure,
-bindings and key tables, runtime scratch inventory, unknown slots, anomalies.
-
-AGENT.2 must additionally read the pools that AGENT.1 only counts:
-`keyform_position.xy`, `uv.xy`, `position_indices`, `key.values`,
-per-keyform values (opacity/draw order/rotations/colors) and glue info.
-
-## CLI contract (planned)
+The IR is the normalized semantic model between the binary parser and every
+downstream stage:
 
 ```text
-recovery export-ir model.moc3        -> model.ir.json
+MOC3 -> moc3-ingest (RawMoc3 + ModelPools)
+     -> recovery-core::ir_mapper  (mapper layer)
+     -> live2d-ir (Live2DModel)   (this specification)
+     -> recovery-core::export_ir_json / import_ir_json
+     -> canonical JSON
 ```
 
-The IR JSON needs its own schema identifier (for example
-`live2d-recovery/ir/1`) and golden tests, exactly like the AGENT.1 report.
+Hard rules:
+
+- `live2d-ir` **must not depend on `moc3-ingest`** (or any binary-format
+  crate). The dependency direction is enforced by a workspace test.
+- Semantic entities never contain offsets, table slots, pointers or section
+  indices. Binary-shaped leftovers live only inside `unknowns` (small,
+  structured, preserved for future format research).
+- Nothing is invented: fields the file does not store (base opacity, base
+  draw order, parameter "current" values, texture dimensions/paths) are
+  `null` and carry `Unknown` provenance.
+- No hierarchy heuristics, interpolation, or keyform reconstruction; those
+  are AGENT.3/AGENT.4.
+
+## 2. Top-level document
+
+```json
+{
+  "schema": "live2d-ir/1",
+  "schema_status": "experimental",
+  "source": { "format": "moc3", "version_byte": 2,
+              "version_label": "2 (3.3.00-3.3.03)", "byte_order": "little" },
+  "metadata": { "generator": "live2d-recovery", "generator_phase": "AGENT.2",
+                "entity_counts": { "parameters": 1, "parts": 1, "...": 0 } },
+  "canvas": { "...": "..." },
+  "parameters": [], "parts": [], "deformers": [], "art_meshes": [],
+  "drawables": [], "mask_groups": [], "textures": [], "glue": [],
+  "bindings": [], "unknowns": { "...": "..." }, "diagnostics": []
+}
+```
+
+Field order is the serialization order (deterministic). `source` describes the
+source container; `schema` describes this document - the two versions are
+never conflated. `metadata` contains no timestamps and no file paths.
+
+## 3. Entities
+
+| Entity | Id type | Key fields |
+|---|---|---|
+| `Parameter` | `ParameterId` | minimum/maximum/default, current (always null), repeat, decimal_places, kind (`normal`/`blend_shape`), key_values, extension_key_values (4.2+) |
+| `Part` | `PartId` | parent, children (derived), opacity (null), draw_order (null), keyform_draw_orders, binding, visible, enabled, offscreen_surface_index (5.3+) |
+| `Deformer` (`kind`: `warp`/`rotation`) | `DeformerId` | parent_part, parent_deformer, children_deformers/children_art_meshes (derived), binding, visible, enabled; warp: rows/columns/vertex_count/quad_transform + keyforms (opacity, positions); rotation: base_angle + keyforms (opacity, angle, origin, scale, reflect_x/y) |
+| `ArtMesh` | `ArtMeshId` | parent_part, parent_deformer, texture, vertex_count, uvs, indices, keyforms (opacity, draw_order, positions), flags, blend_mode (+raw for 5.3+), opacity/draw_order (null), binding, mask_groups |
+| `MaskGroup` | `MaskGroupId` | target ArtMesh, sources (stored mask list of the target) |
+| `Texture` | `TextureId` | page_index; width/height/source_path null until `model3.json` support |
+| `Glue` | `GlueId` | art_mesh_a/b, binding, keyform_intensities, info entries |
+| `Binding` | `BindingId` | keyform_grid (per-parameter key counts), keyform_grid_size, parameters (key values resolved through key table ownership), used_by (derived) |
+
+`drawables` lists the art mesh ids in source order. Resolved draw order is a
+later-phase concern; ordering here is canonical, not visual.
+
+### Deliberately not modeled in AGENT.2
+
+- blend shapes, constraints, offscreens and keyform color pools (present in
+  the file, validated, reported via an `unmapped_sections` diagnostic),
+- per-keyform interpolation/selection (AGENT.4),
+- base opacity / base draw order (not stored in the file),
+- texture dimensions and image paths (`model3.json` territory).
+
+## 4. Identifier policy
+
+1. `id` = the stored identifier text when it is non-empty and unique inside
+   its entity kind.
+2. Otherwise a deterministic fallback is generated from the source index:
+   `parameter:000004`, `part:000001`, `artmesh:000012`, `warp:000003`,
+   `rotation:000002`, `texture:000000`, `mask:000001`, `glue:000002`,
+   `binding:000005`.
+3. The first occurrence of a duplicated source name keeps the name; later
+   occurrences receive the fallback (`duplicate_source_id`, Recoverable).
+4. `source_name` always preserves the stored text when present, even when the
+   canonical id had to fall back.
+5. Forbidden: UUIDs, randomness, timestamps, hash-order dependence.
+
+The warp/rotation fallbacks share one uniqueness namespace (a deformer can
+never collide with another deformer).
+
+## 5. Reference policy
+
+- All references are typed ids (`PartId`, `DeformerId`, `ArtMeshId`,
+  `TextureId`, `MaskGroupId`, `GlueId`, `BindingId`, `ParameterId`); wrong
+  entity kinds are impossible by construction and are re-checked by the
+  validator on import.
+- Stored relations (`parent_part`, `parent_deformer`, mask lists, binding
+  indices) are `Exact`.
+- Structural facts computed by the mapper are `Derived`: reverse links
+  (`children`, `children_deformers`, `children_art_meshes`, `used_by`),
+  texture page entities, mask group entities, binding `keyform_grid`,
+  `y_axis_reversed`, art mesh `blend_mode`.
+- Hierarchy cycles are reported (`hierarchy_cycle`, Warning); resolution is
+  AGENT.3 work.
+
+## 6. Provenance
+
+```json
+{ "confidence": "exact" | "derived" | "heuristic" | "unknown",
+  "source": "moc3:art_mesh.parent_part", "note": "optional" }
+```
+
+- Every entity carries one `provenance` object.
+- Fields whose confidence differs from the entity get a `field_provenance`
+  entry (`current`, base `opacity`/`draw_order`, `origin`,
+  `y_axis_reversed`, `blend_mode`, glue `info` pairing semantics).
+- Absent fields must be documented with an `Unknown` field provenance; the
+  validator warns (`missing_field_provenance`) when that is missing.
+
+## 7. Unknown preservation
+
+`unknowns` keeps data the semantic layer does not interpret yet:
+
+```json
+{ "header_reserved_nonzero_bytes": 0,
+  "undefined_offset_slots": [ { "slot": 120, "value": 1234 } ],
+  "unknown_count_fields": [ { "index": 40, "value": 7 } ],
+  "runtime_sections": [ { "name": "art_mesh.id_runtime",
+                          "element_count": 2, "byte_size": 16 } ] }
+```
+
+Rules: empty/zero entries are omitted; contents are counts and identifiers
+only (never payload dumps); the whole binary is never embedded. The
+validator and mapper never drop these entries.
+
+## 8. Canonical ordering
+
+| Collection | Order |
+|---|---|
+| parameters, parts, deformers, art_meshes, glue, bindings | source order |
+| drawables | art mesh source order |
+| mask_groups | ascending target art mesh index |
+| textures | ascending page number |
+| children / used_by | source order (parts, then deformers, then art meshes, then glue for bindings) |
+| diagnostics | parser anomalies, mapper notes, validator findings (deterministic within each group) |
+
+No output path depends on hash-map iteration.
+
+## 9. Validation rules (`validate_ir`)
+
+Fatal diagnostics block export (`to_json_str` refuses them, `export-ir` exits
+1 with a structured error and the diagnostic list).
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `schema_mismatch` | Fatal | document is not `live2d-ir/1` |
+| `metadata_count_mismatch` | Fatal | declared counts differ from arrays |
+| `duplicate_id`, `duplicate_texture_page` | Fatal | id/page uniqueness |
+| `dangling_reference`, `mask_reference_missing` | Fatal | typed references must resolve |
+| `inconsistent_reverse_link` | Fatal | children/used_by must match the forward links |
+| `drawables_mismatch` | Fatal | drawables must list art mesh ids in order |
+| `parameter_range_invalid` | Fatal | `minimum <= default <= maximum` |
+| `non_finite_value` | Fatal | NaN/Inf never enter canonical JSON |
+| `uv_count_mismatch`, `vertex_count_mismatch` | Fatal | counts must agree with `vertex_count` |
+| `index_out_of_range` | Fatal | triangle indices `< vertex_count` |
+| `warp_grid_mismatch` | Fatal | `vertex_count == (rows+1)*(cols+1)` |
+| `binding_grid_mismatch` | Fatal | grid size equals product of dimensions |
+| `non_canonical_order` | Fatal | textures ascending; keyform indices sequential |
+| `index_count_not_triangular` | Warning | index count not a multiple of 3 |
+| `empty_mask_group` | Warning | mask group without sources |
+| `missing_field_provenance` | Warning | absent field lacks `Unknown` provenance |
+| `hierarchy_cycle` | Warning | stored parent chain contains a cycle |
+| `unmapped_sections`, `unknown_blend_mode`, `orphan_key_table` | Warning | mapper-level notes |
+| `empty_source_id`, `duplicate_source_id` | Recoverable | deterministic fallback used |
+| `moc3_*` parser anomalies | Info/Warning | forwarded from the parser |
+
+## 10. Export / import / round-trip
+
+- `recovery export-ir <file> [--output PATH] [--compact]` - pretty JSON is
+  the default; output bytes are identical for identical input (SHA256-stable).
+- `recovery validate-ir <file.ir.json> [--json]` - imports the document,
+  re-validates it and reports diagnostics; exit 1 on any Fatal.
+- Library: `export_ir_json` (validates first), `import_ir_json` (schema
+  check), `validate_ir`.
+- Round-trip contract: `MOC3 -> IR -> JSON -> IR -> JSON` must be
+  byte-identical at the JSON stage and equal as models (tested for all 12
+  fixtures). `IR JSON -> MOC3` is intentionally **not** implemented.
+
+## 11. Example (trimmed from `fixture-002` golden)
+
+```json
+{
+  "schema": "live2d-ir/1",
+  "schema_status": "experimental",
+  "source": { "format": "moc3", "version_byte": 2,
+              "version_label": "2 (3.3.00-3.3.03)", "byte_order": "little" },
+  "bindings": [
+    {
+      "id": "binding:000000",
+      "keyform_grid_size": 2,
+      "keyform_grid": [2],
+      "parameters": [ { "parameter": "ParamSynthetic_AngleX",
+                        "key_values": [-30.0, 30.0] } ],
+      "used_by": [ { "kind": "part", "id": "Part_Synthetic_00" },
+                   { "kind": "art_mesh", "id": "ArtMesh_Synthetic_00" } ],
+      "provenance": { "confidence": "derived", "source": "moc3:binding",
+                      "note": "parameters resolved through the parameter key table ranges; reverse links derived" }
+    }
+  ],
+  "unknowns": { "runtime_sections": [ { "name": "part.id_runtime",
+                                        "element_count": 1, "byte_size": 8 } ] },
+  "diagnostics": []
+}
+```

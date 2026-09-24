@@ -16,6 +16,7 @@ use std::collections::BTreeMap;
 use crate::counts::{parse_count_info, CountInfo};
 use crate::error::{ErrorKind, Moc3Error, Moc3Result};
 use crate::limits::Limits;
+use crate::pools::{ModelPools, ParsedModel};
 use crate::raw::*;
 use crate::reader::{ByteView, IdField};
 use crate::table::{self, Elem, SlotDef};
@@ -167,11 +168,27 @@ fn check_range(
     Ok(())
 }
 
-/// Parse a whole MOC3 file.
+/// Parse a whole MOC3 file (inspection path).
 ///
 /// The input slice is never modified and no state is shared between calls, so
 /// repeated parses of the same bytes always produce the same result.
+///
+/// Bulk value pools (key values, UVs, indices, keyform values) are not read
+/// here; use [`parse_full`] when the caller needs them.
 pub fn parse(data: &[u8], limits: &Limits) -> Moc3Result<RawMoc3> {
+    parse_impl(data, limits, false).map(|parsed| parsed.raw)
+}
+
+/// Parse a whole MOC3 file including the bulk value pools.
+///
+/// Same validation and determinism guarantees as [`parse`]. The returned
+/// [`ParsedModel`] pairs the raw model with the flat pools its ranges point
+/// into (used by the Live2D IR mapper).
+pub fn parse_full(data: &[u8], limits: &Limits) -> Moc3Result<ParsedModel> {
+    parse_impl(data, limits, true)
+}
+
+fn parse_impl(data: &[u8], limits: &Limits, extract_pools: bool) -> Moc3Result<ParsedModel> {
     let file_len = data.len() as u64;
     limits.check_file_size(file_len)?;
 
@@ -535,25 +552,83 @@ pub fn parse(data: &[u8], limits: &Limits) -> Moc3Result<RawMoc3> {
         byte_order,
         header_padding_nonzero,
     };
+    let pools = if extract_pools {
+        read_pools(&sections, &view, version.has_v42_sections())?
+    } else {
+        ModelPools::default()
+    };
 
-    Ok(RawMoc3 {
-        header,
-        canvas,
-        counts,
-        parameters,
-        parts,
-        deformers,
-        art_meshes,
-        masks,
-        draw_order_groups,
-        draw_order_items,
-        glues,
-        bindings,
-        key_tables,
-        runtime_sections,
-        unknown_slots,
-        anomalies,
-        not_extracted,
+    Ok(ParsedModel {
+        raw: RawMoc3 {
+            header,
+            canvas,
+            counts,
+            parameters,
+            parts,
+            deformers,
+            art_meshes,
+            masks,
+            draw_order_groups,
+            draw_order_items,
+            glues,
+            bindings,
+            key_tables,
+            runtime_sections,
+            unknown_slots,
+            anomalies,
+            not_extracted,
+        },
+        pools,
+    })
+}
+
+/// Read the bulk value pools. Ranges were validated by the section walk, so
+/// these reads reuse the same checked accessors as the inspection path.
+fn read_pools(
+    sections: &Sections,
+    view: &ByteView<'_>,
+    version_has_v42: bool,
+) -> Moc3Result<ModelPools> {
+    let parameter_extension_key_begin = if version_has_v42 {
+        sections.i32_arr(view, table::S_PARAMETER_EXT_KEY_BEGIN)?
+    } else {
+        Vec::new()
+    };
+    let parameter_extension_key_count = if version_has_v42 {
+        sections.i32_arr(view, table::S_PARAMETER_EXT_KEY_COUNT)?
+    } else {
+        Vec::new()
+    };
+    Ok(ModelPools {
+        key_values: sections.f32_arr(view, table::S_KEY_VALUES)?,
+        parameter_extension_key_begin,
+        parameter_extension_key_count,
+        uvs: sections.f32_arr(view, table::S_UV_XY)?,
+        indices: sections.u16_arr(view, table::S_POSITION_INDICES)?,
+        keyform_positions: sections.f32_arr(view, table::S_KEYFORM_POSITION_XY)?,
+        part_keyform_draw_orders: sections.f32_arr(view, table::S_PART_KEYFORM_DRAW_ORDER)?,
+        warp_keyform_begin: sections.i32_arr(view, table::S_WARP_KEYFORM_BEGIN)?,
+        warp_keyform_count: sections.i32_arr(view, table::S_WARP_KEYFORM_COUNT)?,
+        warp_keyform_opacity: sections.f32_arr(view, table::S_WARP_KEYFORM_OPACITY)?,
+        warp_keyform_position_begin: sections
+            .i32_arr(view, table::S_WARP_KEYFORM_POSITION_BEGIN)?,
+        rotation_keyform_begin: sections.i32_arr(view, table::S_ROTATION_KEYFORM_BEGIN)?,
+        rotation_keyform_count: sections.i32_arr(view, table::S_ROTATION_KEYFORM_COUNT)?,
+        rotation_keyform_opacity: sections.f32_arr(view, table::S_ROTATION_KEYFORM_OPACITY)?,
+        rotation_keyform_angle: sections.f32_arr(view, table::S_ROTATION_KEYFORM_ANGLE)?,
+        rotation_keyform_origin_x: sections.f32_arr(view, table::S_ROTATION_KEYFORM_ORIGIN_X)?,
+        rotation_keyform_origin_y: sections.f32_arr(view, table::S_ROTATION_KEYFORM_ORIGIN_Y)?,
+        rotation_keyform_scale: sections.f32_arr(view, table::S_ROTATION_KEYFORM_SCALE)?,
+        rotation_keyform_reflect_x: sections.i32_arr(view, table::S_ROTATION_KEYFORM_REFLECT_X)?,
+        rotation_keyform_reflect_y: sections.i32_arr(view, table::S_ROTATION_KEYFORM_REFLECT_Y)?,
+        art_mesh_keyform_opacity: sections.f32_arr(view, table::S_ART_MESH_KEYFORM_OPACITY)?,
+        art_mesh_keyform_draw_order: sections
+            .f32_arr(view, table::S_ART_MESH_KEYFORM_DRAW_ORDER)?,
+        art_mesh_keyform_position_begin: sections
+            .i32_arr(view, table::S_ART_MESH_KEYFORM_POSITION_BEGIN)?,
+        glue_info_weight: sections.f32_arr(view, table::S_GLUE_INFO_WEIGHT)?,
+        glue_info_position_index: sections.u16_arr(view, table::S_GLUE_INFO_POSITION_INDEX)?,
+        glue_keyform_intensity: sections.f32_arr(view, table::S_GLUE_KEYFORM_INTENSITY)?,
     })
 }
 

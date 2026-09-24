@@ -17,27 +17,35 @@ that the user owns or is authorized to analyze:
    Structural Validation (comparison engine)        <- AGENT.7
 ```
 
-**Current status: AGENT.0 (research/bootstrap) and AGENT.1 (read-only MOC3
-inspector) complete and passing all acceptance criteria.** No CMO3 writer, no
-PSD recovery, no GUI - those are gated behind later phases (master spec
-v0.1).
+**Current status: AGENT.0 (research/bootstrap), AGENT.1 (read-only MOC3
+inspector) and AGENT.2 (normalized Live2D IR) complete and passing all
+acceptance criteria.** No CMO3 writer, no PSD recovery, no GUI, no hierarchy
+heuristics - those are gated behind later phases (master spec v0.1).
 
 ## Quickstart
 
 ```text
 cargo build --release
 
-recovery inspect path\to\model.moc3
+recovery inspect path\to\model.moc3                     # human report
 recovery inspect path\to\model.moc3 --json > report.json
 
+recovery export-ir path\to\model.moc3 --output model.ir.json
+recovery validate-ir model.ir.json
+
 cargo test
-cargo clippy --workspace --all-targets
+cargo clippy --workspace --all-targets --all-features
 ```
 
 The inspector reports: MOC3 version, canvas, counts, parameter ids,
 parts, drawables (art meshes), deformers, texture references, masking
 relationships, hierarchy candidates with confidence, runtime scratch
 sections, anomalies, and what is intentionally not extracted yet.
+
+`export-ir` produces the canonical, format-independent Live2D IR
+(`live2d-ir/1`, currently **experimental**): typed stable identifiers,
+provenance/confidence, preserved unknowns, structured diagnostics, and
+byte-stable JSON that round-trips back through `validate-ir`.
 
 ## Legal / scope
 
@@ -52,10 +60,10 @@ sections, anomalies, and what is intentionally not extracted yet.
 ## Repository layout
 
 ```text
-crates/moc3-ingest/       read-only MOC3 parser + inspection report
-crates/recovery-core/     file IO + inspection orchestration
-apps/recovery-cli/        `recovery` binary
-crates/live2d-ir/         (reserved: AGENT.2)
+crates/moc3-ingest/       read-only MOC3 parser + inspection report + pools
+crates/live2d-ir/         normalized IR, validator, canonical JSON
+crates/recovery-core/     file IO, inspection orchestration, IR mapper
+apps/recovery-cli/        `recovery` binary (inspect / export-ir / validate-ir)
 crates/hierarchy-recovery/(reserved: AGENT.3)
 crates/cmo3-writer/       (reserved: AGENT.5)
 crates/project-validator/ (reserved: AGENT.7)
@@ -74,7 +82,7 @@ docs/                     architecture, format research, test plan, ...
 | `docs/FORMAT_NOTES.md` | MOC3 layout facts with evidence and confidence levels |
 | `docs/RESEARCH_LOG.md` | research chronology and decisions |
 | `docs/LICENSE_NOTES.md` | reference licenses and usage policy |
-| `docs/IR_SPEC.md` | Live2D IR draft (AGENT.2) |
+| `docs/IR_SPEC.md` | Live2D IR schema `live2d-ir/1` (experimental) |
 | `docs/RECOVERY_RULES.md` | confidence/naming/hierarchy rules (AGENT.3+) |
 | `docs/TEST_PLAN.md` | test matrix and acceptance-criteria mapping |
 | `docs/LIMITATIONS.md` | what is not verified / not extracted yet |

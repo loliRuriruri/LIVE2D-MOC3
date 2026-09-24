@@ -21,5 +21,15 @@ Fixture policy (master spec sections 2 and 20):
    $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
    ```
 
+4. **expected-ir/** - golden canonical IR documents (`<fixture>.ir.json`),
+   produced by `recovery export-ir <fixture>`. Regenerate with:
+
+   ```text
+   $env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_ir_documents_match
+   ```
+
+   Goldens are review targets, not automatically authoritative: inspect a
+   diff before accepting a regenerated document.
+
 The checked-in synthetic fixtures are verified against the generator by
 tests (`checked_in_fixtures_match_generator`), so they cannot silently drift.

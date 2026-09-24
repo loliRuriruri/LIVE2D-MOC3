@@ -1,17 +1,19 @@
 # Test Plan
 
-Scope: AGENT.0/AGENT.1 (bootstrap + read-only inspector). Test types follow
-master spec section 14: unit, integration, snapshot/golden, corruption, fuzz
-(smoke), regression.
+Scope: AGENT.0/AGENT.1 (bootstrap + read-only inspector) and AGENT.2
+(normalized IR). Test types follow master spec section 14: unit, integration,
+snapshot/golden, corruption, fuzz (smoke), regression. Current total: **103
+tests, all passing**.
 
 ## How to run
 
 ```text
 cargo test                     # everything
-cargo clippy --workspace --all-targets
+cargo clippy --workspace --all-targets --all-features
 cargo fmt --all --check
 cargo run -p fixture-gen -- fixtures/synthetic     # regenerate fixtures
 $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
+$env:UPDATE_GOLDEN_IR="1"; cargo test -p recovery-core --test ir_golden golden_ir_documents_match
 ```
 
 ## Matrix
@@ -24,7 +26,12 @@ $env:UPDATE_GOLDEN="1"; cargo test -p moc3-ingest --test parse_fixtures
 | Corruption | `crates/moc3-ingest/tests/corruption.rs` | structured errors (no panics) for truncation, bad magic/version/endian, patched counts/offsets/references, random bytes |
 | Fuzz smoke | corruption tests (`single_byte_flips_never_panic`, `random_inputs_never_panic`) | bounded, deterministic no-panic sweep; `catch_unwind` catches escapes |
 | End-to-end CLI | `apps/recovery-cli/tests/cli_inspect.rs` | exit codes, JSON error envelope, golden equality, repeated-run equality, input file immutability |
-| Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection |
+| IR unit (no parser) | `crates/live2d-ir/tests/validate.rs`, in-crate unit tests | id assignment policy, validator matrix (fatal vs warning vs recoverable), JSON export refusal on fatal, import error codes, hand-built models only |
+| IR mapping | `crates/recovery-core/tests/ir_mapping.rs` | per-fixture semantic assertions (ids, key values, grids, reverse links, masks, textures, blend modes), duplicate/empty-id determinism, unknown preservation, NaN/range failures |
+| IR golden | `crates/recovery-core/tests/ir_golden.rs` + `fixtures/expected-ir/` | 12/12 canonical IR snapshots; goldens re-imported and validated |
+| IR corruption | `crates/recovery-core/tests/ir_corruption.rs` | truncations/byte flips/random bytes through parse->map->validate->serialize with zero panics; malformed IR import (syntax/schema/dangling ref) |
+| IR CLI | `apps/recovery-cli/tests/cli_ir.rs` | export determinism, `--output` equality, `--compact`, structured failures (parser and IR validation), validate-ir golden accept/reject |
+| Workspace smoke | `tests/workspace-smoke/tests/smoke.rs` | recovery-core pipeline determinism, fixture staleness detection, **parser-independence boundary check** (`cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
 

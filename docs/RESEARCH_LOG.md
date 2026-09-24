@@ -88,3 +88,33 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
 - 5.3 offscreen rendering semantics and blend shape windows (AGENT.6).
 - CMO3 container format research plan (AGENT.5 pre-work).
 - Whether the exporter guarantees zeroed reserved header bytes.
+
+## 7. AGENT.2 research (IR normalization)
+
+- **Blend mode semantics confirmed before mapping.** PurismCore's
+  `include/PurismCore.h` documents the constant flags: bit 0 additive, bit 1
+  multiplicative (mutually exclusive), bit 2 double sided, bit 3 inverted
+  mask; and 5.3+ stores an explicit blend mode field with the extended
+  `csmColorBlendType` enum (Normal=0 ... Color=17). The IR maps these into a
+  named `blend_mode` plus the raw 5.3 value; unknown raw values stay
+  `unknown` and are reported.
+- **Parameter extension keys** (`parameter.extension_key_begin/count`,
+  slots 103/104, 4.2+) were validated in AGENT.1 but not extracted; AGENT.2
+  added them to `ModelPools` so blend-shape key values can be read without
+  touching `RawMoc3` (which keeps the AGENT.1 inspect goldens byte-stable).
+- **Regression discovered by the IR tests:** the generic array reader in
+  `moc3-ingest/src/reader.rs` advanced 4 bytes per element for every type,
+  which was invisible while `u16` pools were only counted, and broke as soon
+  as `parse_full` read the triangle index pool. Fixed by passing the element
+  stride explicitly; a reader unit test locks the behaviour (master spec
+  section 14: every found bug gets a regression test).
+- **Pools chosen for AGENT.2** (all bounded by the existing limits, read
+  only by `parse_full`): key values, extension key ranges, UVs, triangle
+  indices, keyform positions, per-part draw orders, warp/rotation/art mesh
+  keyform opacity/geometry/color-begin arrays, glue info and intensities.
+  Keyform color *pool contents* stay unmapped and are reported as
+  `unmapped_sections` (AGENT.6).
+- **Dependency direction enforced**: the IR crate has no path dependency on
+  the parser (checked by a workspace test that walks the `cargo metadata`
+  graph), and the mapper consumes the parser output by value so no large
+  buffer is copied more than once.

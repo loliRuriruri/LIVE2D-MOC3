@@ -1,8 +1,8 @@
 # Architecture
 
-Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0 +
-AGENT.1 complete** (research/bootstrap and read-only MOC3 inspector). Later
-phases exist only as reserved, empty crates.
+Live2D Project Recovery Tool (master spec v0.1). Current status: **AGENT.0,
+AGENT.1 and AGENT.2 complete** (research/bootstrap, read-only MOC3 inspector,
+normalized Live2D IR). Later phases exist only as reserved, empty crates.
 
 ## Pipeline
 
@@ -11,11 +11,15 @@ MOC3 / model3.json / Texture
             |
        MOC3 Ingest          crates/moc3-ingest        (AGENT.1, implemented)
             |
-       Raw Model            RawMoc3 (raw, on-disk shaped)
+   ParsedModel { RawMoc3 + ModelPools }               (parse_full for IR)
             |
-       Normalizer           crates/live2d-ir          (AGENT.2, reserved)
+   Mapper (normalizer)      crates/recovery-core::ir_mapper (AGENT.2)
             |
-       Live2D IR            ModelProject
+       Live2D IR            crates/live2d-ir          (AGENT.2, implemented)
+            |
+   IR Validator             live2d-ir::validate_ir    (AGENT.2)
+            |
+   Canonical JSON           export-ir / validate-ir   (AGENT.2)
             |
    Recovery Graph Engine    crates/hierarchy-recovery (AGENT.3/AGENT.4, reserved)
             |
@@ -25,6 +29,20 @@ MOC3 / model3.json / Texture
             |
    Validation               crates/project-validator  (AGENT.7, reserved)
 ```
+
+### IR layer (AGENT.2)
+
+- `crates/live2d-ir` owns the semantic model, typed ids, provenance,
+  diagnostics, the validator and the JSON codec. **It must never depend on
+  `moc3-ingest`**; a workspace test (`workspace-smoke`) checks both the
+  manifest and the `cargo metadata` dependency graph.
+- The mapper lives in `recovery-core` (which may depend on both sides). It
+  consumes `ParsedModel` by value, so the flat pools are copied exactly once
+  into IR structures and the parser buffers are dropped afterwards.
+- Parser-only views (`inspect`) keep using `parse`, which does not read the
+  bulk pools; `parse_full` is the IR entry point.
+- Unknown/binary-shaped data lives in `unknowns` (counts and identifiers
+  only); semantic entities never carry offsets or table slots.
 
 Hard rules carried over from the master spec:
 
@@ -39,10 +57,10 @@ Hard rules carried over from the master spec:
 
 | Crate | Role | Depends on |
 |---|---|---|
-| `crates/moc3-ingest` | read-only MOC3 parser, limits, errors, report builder | `serde` |
-| `crates/recovery-core` | file IO, size guard, inspection orchestration | `moc3-ingest` |
-| `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest` |
-| `crates/live2d-ir` | IR types (reserved: AGENT.2) | - |
+| `crates/moc3-ingest` | read-only MOC3 parser, limits, errors, report builder, bulk pools | `serde` |
+| `crates/live2d-ir` | normalized IR, typed ids, validator, canonical JSON | `serde`, `serde_json` |
+| `crates/recovery-core` | file IO, inspection orchestration, IR mapper, IR export/import | `moc3-ingest`, `live2d-ir`, `serde`, `serde_json` |
+| `apps/recovery-cli` | `recovery` binary (clap) | `recovery-core`, `moc3-ingest`, `live2d-ir` |
 | `crates/hierarchy-recovery` | recovery graph (reserved: AGENT.3) | - |
 | `crates/cmo3-writer` | CMO3 serializer (reserved: AGENT.5) | - |
 | `crates/project-validator` | structural comparison (reserved: AGENT.7) | - |
@@ -113,7 +131,9 @@ from.
 
 ## Test strategy
 
-See `docs/TEST_PLAN.md`. Summary: unit tests in `moc3-ingest`; integration
-tests for fixtures/corruption; golden reports; CLI end-to-end tests
-(determinism, exit codes, input immutability); workspace smoke tests. All
-checked-in fixture data is synthetic (see `fixtures/README.md`).
+See `docs/TEST_PLAN.md`. Summary: unit tests in `moc3-ingest` and
+`live2d-ir`; integration tests for fixtures/corruption; golden inspection
+reports and golden IR documents; mapper/round-trip/validator tests; CLI
+end-to-end tests (determinism, exit codes, input immutability); workspace
+smoke tests including the parser-independence boundary check. All checked-in
+fixture data is synthetic (see `fixtures/README.md`).

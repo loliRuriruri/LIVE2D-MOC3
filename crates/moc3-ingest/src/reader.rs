@@ -177,22 +177,30 @@ impl<'a> ByteView<'a> {
 
     /// Read `count` `u32` values into a fresh `Vec`.
     pub fn u32_vec(&self, offset: u64, count: u64, context: &'static str) -> Moc3Result<Vec<u32>> {
-        self.read_vec(offset, count, context, |view, at| view.u32_at(at, context))
+        self.read_vec(offset, count, 4, context, |view, at| {
+            view.u32_at(at, context)
+        })
     }
 
     /// Read `count` `i32` values into a fresh `Vec`.
     pub fn i32_vec(&self, offset: u64, count: u64, context: &'static str) -> Moc3Result<Vec<i32>> {
-        self.read_vec(offset, count, context, |view, at| view.i32_at(at, context))
+        self.read_vec(offset, count, 4, context, |view, at| {
+            view.i32_at(at, context)
+        })
     }
 
     /// Read `count` `f32` values into a fresh `Vec`.
     pub fn f32_vec(&self, offset: u64, count: u64, context: &'static str) -> Moc3Result<Vec<f32>> {
-        self.read_vec(offset, count, context, |view, at| view.f32_at(at, context))
+        self.read_vec(offset, count, 4, context, |view, at| {
+            view.f32_at(at, context)
+        })
     }
 
     /// Read `count` `u16` values into a fresh `Vec`.
     pub fn u16_vec(&self, offset: u64, count: u64, context: &'static str) -> Moc3Result<Vec<u16>> {
-        self.read_vec(offset, count, context, |view, at| view.u16_at(at, context))
+        self.read_vec(offset, count, 2, context, |view, at| {
+            view.u16_at(at, context)
+        })
     }
 
     /// Read `count` bytes into a fresh `Vec`.
@@ -200,10 +208,14 @@ impl<'a> ByteView<'a> {
         Ok(self.slice(offset, count, context)?.to_vec())
     }
 
+    /// Read a typed array; `stride` is the on-disk element size in bytes and
+    /// must match the element type (`u16` arrays advance by two bytes, not
+    /// four).
     fn read_vec<T, F>(
         &self,
         offset: u64,
         count: u64,
+        stride: u64,
         context: &'static str,
         mut read: F,
     ) -> Moc3Result<Vec<T>>
@@ -223,25 +235,24 @@ impl<'a> ByteView<'a> {
             )
         })?;
         for i in 0..count {
-            let at = offset
-                .checked_add(i.checked_mul(4).ok_or_else(|| {
-                    Moc3Error::in_context(
-                        ErrorKind::Internal {
-                            what: "element offset overflow",
-                        },
-                        offset,
-                        context,
-                    )
-                })?)
-                .ok_or_else(|| {
-                    Moc3Error::in_context(
-                        ErrorKind::Internal {
-                            what: "element offset overflow",
-                        },
-                        offset,
-                        context,
-                    )
-                })?;
+            let step = i.checked_mul(stride).ok_or_else(|| {
+                Moc3Error::in_context(
+                    ErrorKind::Internal {
+                        what: "element offset overflow",
+                    },
+                    offset,
+                    context,
+                )
+            })?;
+            let at = offset.checked_add(step).ok_or_else(|| {
+                Moc3Error::in_context(
+                    ErrorKind::Internal {
+                        what: "element offset overflow",
+                    },
+                    offset,
+                    context,
+                )
+            })?;
             out.push(read(self, at)?);
         }
         Ok(out)
@@ -352,6 +363,19 @@ mod tests {
         let big = ByteView::new(&bytes, ByteOrder::Big);
         assert_eq!(big.u32_at(0, "test").unwrap_or(0), 0x7856_3412);
         assert_eq!(big.u16_at(0, "test").unwrap_or(0), 0x7856);
+    }
+
+    #[test]
+    fn u16_arrays_advance_two_bytes_per_element() {
+        // Regression: the generic array reader used to advance four bytes per
+        // element for every type, which broke `u16` pools once they were
+        // actually read (AGENT.2 parse_full).
+        let bytes = [0x01u8, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00];
+        let view = ByteView::new(&bytes, ByteOrder::Little);
+        let values = view.u16_vec(0, 4, "test").unwrap_or_default();
+        assert_eq!(values, vec![1, 2, 3, 4]);
+        let too_many = view.u16_vec(0, 5, "test");
+        assert!(too_many.is_err());
     }
 
     #[test]

@@ -1,30 +1,49 @@
-//! Live2D Intermediate Representation (IR).
+//! Normalized Live2D Intermediate Representation.
 //!
-//! **Status: reserved for AGENT.2.** The master spec forbids implementing the
-//! IR before the read-only inspector passes its acceptance criteria. This
-//! crate intentionally contains no logic yet; it exists so the workspace
-//! layout matches the specification from the start.
+//! This crate is the semantic layer between the binary parser and every
+//! downstream recovery stage. **It has no dependency on `moc3-ingest` (or any
+//! other binary-format crate)** and must never gain one: the mapper that
+//! converts `RawMoc3` into these types lives in `recovery-core`.
 //!
-//! Planned content (master spec section 6):
+//! Guarantees:
 //!
-//! ```text
-//! ModelProject
-//! +- Metadata
-//! +- Canvas
-//! +- Parameters[]
-//! +- Parts[]
-//! +- ArtMeshes[]
-//! +- Deformers[]        (WarpDeformer | RotationDeformer)
-//! +- Drawables[]
-//! +- Textures[]
-//! +- Masks[]
-//! +- Bindings[]
-//! ```
+//! - typed, stable entity identifiers (source name when unique, otherwise a
+//!   deterministic `kind:NNNNNN` fallback),
+//! - references are typed ids, never raw indices or file offsets,
+//! - recovery confidence (`provenance`) travels with the data,
+//! - unknown information is preserved in a separate [`model::Unknowns`]
+//!   section, never dropped,
+//! - canonical JSON export/import with round-trip support,
+//! - a deterministic [`validate::validate_ir`] that flags broken models.
 //!
-//! The IR must be a *normalized* representation: binary parser internals
-//! (raw offsets, parallel arrays) are not exposed.
+//! Schema status: **experimental** (`live2d-ir/1`); no real-file validation
+//! has happened yet, so the schema may still change.
 
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
+#![deny(clippy::indexing_slicing)]
 
-/// Phase that will implement this crate.
-pub const PLANNED_PHASE: &str = "AGENT.2";
+pub mod diagnostics;
+pub mod geometry;
+pub mod ids;
+pub mod json;
+pub mod model;
+pub mod provenance;
+pub mod validate;
+
+pub use diagnostics::{count_severity, has_fatal, Diagnostic, EntityRef, Severity};
+pub use geometry::{Uv, Vec2};
+pub use ids::{
+    ArtMeshId, BindingId, DeformerId, GlueId, IdAssigner, IdAssignment, IdOutcome, MaskGroupId,
+    ParameterId, PartId, TextureId,
+};
+pub use json::{from_json_str, to_json_str, IrExportError, IrImportError};
+pub use model::{
+    ArtMesh, ArtMeshKeyform, Binding, BindingParameter, BindingTarget, BlendMode, Canvas, Deformer,
+    DeformerCommon, DrawableFlags, Endianness, EntityCounts, Glue, GlueInfoEntry, Live2DModel,
+    MaskGroup, Metadata, Parameter, ParameterKind, Part, RotationDeformer, RotationKeyform,
+    RuntimeSectionInfo, SchemaStatus, SourceFormat, Texture, UndefinedSlot, UnknownCountField,
+    Unknowns, WarpDeformer, WarpKeyform, SCHEMA_ID,
+};
+pub use provenance::{Confidence, FieldProvenance, Provenance};
+pub use validate::validate_ir;

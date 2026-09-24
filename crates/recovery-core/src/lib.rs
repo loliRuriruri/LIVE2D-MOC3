@@ -12,9 +12,13 @@ use std::fmt;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use live2d_ir::{IrExportError, IrImportError, Live2DModel};
 use moc3_ingest::{
-    build_inspection_report, parse, InspectionReport, Limits, Moc3Error, SourceInfo,
+    build_inspection_report, parse, parse_full, InspectionReport, Limits, Moc3Error, ParsedModel,
+    SourceInfo,
 };
+
+pub mod ir_mapper;
 
 /// Options for [`inspect_file`].
 #[derive(Debug, Clone, Default)]
@@ -118,29 +122,7 @@ pub fn inspect_file(
     path: &Path,
     options: &InspectOptions,
 ) -> Result<InspectionReport, InspectError> {
-    // Read through a hard cap (`take`) so a file that grows between the size
-    // check and the read can never exceed the limit. This closes the
-    // metadata/read race (the parser re-checks the byte length anyway).
-    let limit = options.limits.max_file_size;
-    let file = std::fs::File::open(path).map_err(|source| InspectError::Io {
-        path: path.to_path_buf(),
-        source,
-    })?;
-    let mut bytes = Vec::new();
-    let mut reader = file.take(limit.saturating_add(1));
-    reader
-        .read_to_end(&mut bytes)
-        .map_err(|source| InspectError::Io {
-            path: path.to_path_buf(),
-            source,
-        })?;
-    if bytes.len() as u64 > limit {
-        return Err(InspectError::TooLarge {
-            path: path.to_path_buf(),
-            size: bytes.len() as u64,
-            limit,
-        });
-    }
+    let bytes = read_file_capped(path, options.limits.max_file_size)?;
     let model = parse(&bytes, &options.limits).map_err(|source| InspectError::Parse {
         path: path.to_path_buf(),
         source,
@@ -171,4 +153,66 @@ pub fn inspect_bytes(
             file_size: bytes.len() as u64,
         },
     ))
+}
+
+/// Read a file through a hard cap (`take`) so a file that grows between the
+/// size check and the read can never exceed the limit.
+fn read_file_capped(path: &Path, limit: u64) -> Result<Vec<u8>, InspectError> {
+    let file = std::fs::File::open(path).map_err(|source| InspectError::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    let mut bytes = Vec::new();
+    let mut reader = file.take(limit.saturating_add(1));
+    reader
+        .read_to_end(&mut bytes)
+        .map_err(|source| InspectError::Io {
+            path: path.to_path_buf(),
+            source,
+        })?;
+    if bytes.len() as u64 > limit {
+        return Err(InspectError::TooLarge {
+            path: path.to_path_buf(),
+            size: bytes.len() as u64,
+            limit,
+        });
+    }
+    Ok(bytes)
+}
+
+/// Map an already parsed model (with pools) into the Live2D IR.
+pub fn build_ir(parsed: ParsedModel) -> Live2DModel {
+    ir_mapper::map_parsed_model(parsed)
+}
+
+/// Parse `.moc3` bytes (including bulk pools) and map them to the Live2D IR.
+pub fn build_ir_from_bytes(
+    bytes: &[u8],
+    options: &InspectOptions,
+) -> Result<Live2DModel, Moc3Error> {
+    let parsed = parse_full(bytes, &options.limits)?;
+    Ok(build_ir(parsed))
+}
+
+/// Read a `.moc3` file read-only and map it to the Live2D IR.
+pub fn build_ir_from_file(
+    path: &Path,
+    options: &InspectOptions,
+) -> Result<Live2DModel, InspectError> {
+    let bytes = read_file_capped(path, options.limits.max_file_size)?;
+    let parsed = parse_full(&bytes, &options.limits).map_err(|source| InspectError::Parse {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    Ok(build_ir(parsed))
+}
+
+/// Serialize an IR model to canonical JSON (validating first).
+pub fn export_ir_json(model: &Live2DModel, pretty: bool) -> Result<String, IrExportError> {
+    live2d_ir::to_json_str(model, pretty)
+}
+
+/// Parse an IR model from canonical JSON and check the schema id.
+pub fn import_ir_json(text: &str) -> Result<Live2DModel, IrImportError> {
+    live2d_ir::from_json_str(text)
 }

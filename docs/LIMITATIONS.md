@@ -58,10 +58,35 @@ so nothing is silently dropped.
   interpreted; their semantics are marked `Unverified`/`Unknown` in
   `FORMAT_NOTES.md`.
 
+## AGENT.2 (IR) limitations
+
+- **Schema status is EXPERIMENTAL** (`live2d-ir/1`). It is not a stable
+  public contract until real-file validation has happened.
+- Not modeled yet (present in the file, validated, reported through an
+  `unmapped_sections` diagnostic): blend shapes and constraints, offscreen
+  surfaces (5.3), keyform color pools (multiply/screen).
+- Keyform *selection/interpolation* (which keyform is active for a given
+  parameter state) is AGENT.4 work; the IR stores the raw per-object
+  keyform lists plus the binding grid dimensions.
+- Base opacity and base draw order do not exist in `.moc3`; they are `null`
+  with `Unknown` provenance. Original names, layer names and PSD structure
+  are absent by definition.
+- Texture `width`/`height`/`source_path` stay `null` until `model3.json`
+  support lands in a later phase.
+- Import validates structure, not provenance: a hand-edited document can
+  claim `Exact` confidence for invented values. Trust imported IR only from
+  trusted sources.
+- Memory: the mapper copies each bulk pool once (parser `ModelPools` to IR
+  fields) and then drops the parser buffers; worst-case peak is roughly the
+  pool size plus the IR size, bounded by `Limits`.
+
 ## Tooling
 
 - `cargo-fuzz` integration is planned after parser stabilisation (master
   spec section 15). Until then, deterministic corruption sweeps provide the
-  no-panic evidence.
-- Golden reports are machine-generated; review diffs instead of trusting
-  them blindly when the report schema changes.
+  no-panic evidence (now including the full IR pipeline).
+- Golden reports and golden IR documents are machine-generated; review diffs
+  instead of trusting them blindly when a schema changes.
+- The IR golden importer test expects the checked-in goldens; regenerate
+  them in two steps (`golden_ir_documents_match` with `UPDATE_GOLDEN_IR=1`,
+  then the full suite) because the two golden tests run in parallel.

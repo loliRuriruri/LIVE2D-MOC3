@@ -251,7 +251,38 @@ identifiers.
 
 ---
 
-## 11. Not yet verified (explicit list)
+## 11. AGENT.2 additions (IR normalization)
+
+- **Drawable flag bits** (slot `art_mesh.drawable_flags`, u8): bit 0 additive
+  blending, bit 1 multiplicative blending (mutually exclusive), bit 2 double
+  sided, bit 3 inverted mask; bits 4-7 unknown. Evidence: PurismCore
+  `include/PurismCore.h` constant flags (`csmBlendAdditive`,
+  `csmBlendMultiplicative`, `csmIsDoubleSided`, `csmIsInvertedMask`).
+  Confidence: `Confirmed`. Implementation: mapper maps bits to
+  `DrawableFlags` and a derived `blend_mode` (`AddCompatible` /
+  `MultiplyCompatible` / `Normal`).
+- **Blend mode field (5.3+)**: version-6 files carry an explicit i32 blend
+  mode (slot 153) using the extended `csmColorBlendType` enum (0 Normal,
+  1 AddCompatible, 2 MultiplyCompatible, 3 Add, 4 AddGlow, 5 Darken,
+  6 Multiply, 7 ColorBurn, 8 LinearBurn, 9 Lighten, 10 Screen, 11 ColorDodge,
+  12 Overlay, 13 SoftLight, 14 HardLight, 15 LinearLight, 16 Hue, 17 Color).
+  Evidence: PurismCore `include/PurismCore.h` + `psm__remap_blend_mode`.
+  Confidence: `Observed`. Unknown raw values are preserved and reported
+  (`unknown_blend_mode`).
+- **Parameter extension keys (4.2+)**: slots 103/104 give a per-parameter
+  range into the global key value pool for blend-shape parameters.
+  Confidence: `Observed` (single implementation; ranges validated).
+  Implementation: `ModelPools::parameter_extension_key_begin/count`, mapped
+  to `Parameter.extension_key_values`.
+- **Keyform color pools (4.2+)**: counts and ranges exist and are validated,
+  but the values are not mapped into the IR yet (AGENT.6); the IR reports an
+  `unmapped_sections` diagnostic when the pools are non-empty.
+- **Runtime scratch sections** are preserved in the IR as name + element
+  count + byte size only (never offsets/payloads).
+- **Regression note:** triangle index pools are `u16`; per-element reads must
+  advance two bytes (the parser reader bug found by AGENT.2 tests).
+
+## 12. Not yet verified (explicit list)
 
 - any real-file behaviour (no owned `.moc3` available at AGENT.1 time),
 - big-endian files (supported in the reader, never observed),

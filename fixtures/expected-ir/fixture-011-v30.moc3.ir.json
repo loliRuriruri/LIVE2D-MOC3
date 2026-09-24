@@ -1,0 +1,335 @@
+{
+  "schema": "live2d-ir/1",
+  "schema_status": "experimental",
+  "source": {
+    "format": "moc3",
+    "version_byte": 1,
+    "version_label": "1 (3.0.00-3.2.07)",
+    "byte_order": "little"
+  },
+  "metadata": {
+    "generator": "live2d-recovery",
+    "generator_phase": "AGENT.2",
+    "entity_counts": {
+      "parameters": 1,
+      "parts": 1,
+      "deformers": 0,
+      "warp_deformers": 0,
+      "rotation_deformers": 0,
+      "art_meshes": 1,
+      "mask_groups": 0,
+      "textures": 1,
+      "glue": 0,
+      "bindings": 1
+    }
+  },
+  "canvas": {
+    "width": 800.0,
+    "height": 600.0,
+    "origin": {
+      "x": 400.0,
+      "y": 300.0
+    },
+    "pixels_per_unit": 1000.0,
+    "y_axis_reversed": false,
+    "field_provenance": [
+      {
+        "field": "origin",
+        "provenance": {
+          "confidence": "exact",
+          "source": "moc3:canvas_info.origin",
+          "note": "stored values; the exact coordinate meaning is only partially confirmed"
+        }
+      },
+      {
+        "field": "y_axis_reversed",
+        "provenance": {
+          "confidence": "derived",
+          "source": "moc3:canvas_info.flags",
+          "note": "bit 0 of the canvas flag byte"
+        }
+      }
+    ],
+    "provenance": {
+      "confidence": "exact",
+      "source": "moc3:canvas_info"
+    }
+  },
+  "parameters": [
+    {
+      "id": "ParamSynthetic_AngleX",
+      "source_name": "ParamSynthetic_AngleX",
+      "minimum": -30.0,
+      "maximum": 30.0,
+      "default": 0.0,
+      "repeat": false,
+      "decimal_places": 2,
+      "kind": "normal",
+      "key_values": [
+        -30.0,
+        30.0
+      ],
+      "field_provenance": [
+        {
+          "field": "current",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:parameter",
+            "note": "current value is runtime state and is not stored in the file"
+          }
+        }
+      ],
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:parameter"
+      }
+    }
+  ],
+  "parts": [
+    {
+      "id": "Part_Synthetic_00",
+      "source_name": "Part_Synthetic_00",
+      "keyform_draw_orders": [
+        0.0,
+        1.0
+      ],
+      "binding": "binding:000000",
+      "visible": true,
+      "enabled": true,
+      "field_provenance": [
+        {
+          "field": "opacity",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:part",
+            "note": "base opacity is keyform/runtime dependent and not stored"
+          }
+        },
+        {
+          "field": "draw_order",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:part",
+            "note": "base draw order is keyform dependent; see keyform_draw_orders"
+          }
+        }
+      ],
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:part"
+      }
+    }
+  ],
+  "deformers": [],
+  "art_meshes": [
+    {
+      "id": "ArtMesh_Synthetic_00",
+      "source_name": "ArtMesh_Synthetic_00",
+      "parent_part": "Part_Synthetic_00",
+      "texture": "texture:000000",
+      "vertex_count": 4,
+      "uvs": [
+        {
+          "u": 0.1,
+          "v": 0.1
+        },
+        {
+          "u": 0.9,
+          "v": 0.1
+        },
+        {
+          "u": 0.9,
+          "v": 0.9
+        },
+        {
+          "u": 0.1,
+          "v": 0.9
+        }
+      ],
+      "indices": [
+        0,
+        1,
+        2,
+        0,
+        2,
+        3
+      ],
+      "keyforms": [
+        {
+          "index": 0,
+          "opacity": 1.0,
+          "draw_order": 0.0,
+          "positions": [
+            {
+              "x": 0.0,
+              "y": 0.0
+            },
+            {
+              "x": 100.0,
+              "y": 0.0
+            },
+            {
+              "x": 100.0,
+              "y": 100.0
+            },
+            {
+              "x": 0.0,
+              "y": 100.0
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "opacity": 1.0,
+          "draw_order": 1.0,
+          "positions": [
+            {
+              "x": 2.0,
+              "y": 0.0
+            },
+            {
+              "x": 102.0,
+              "y": 0.0
+            },
+            {
+              "x": 102.0,
+              "y": 100.0
+            },
+            {
+              "x": 2.0,
+              "y": 100.0
+            }
+          ]
+        }
+      ],
+      "flags": {
+        "additive": false,
+        "multiplicative": false,
+        "double_sided": false,
+        "inverted_mask": false
+      },
+      "blend_mode": "normal",
+      "binding": "binding:000000",
+      "field_provenance": [
+        {
+          "field": "opacity",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:art_mesh",
+            "note": "base opacity is keyform/runtime dependent and not stored"
+          }
+        },
+        {
+          "field": "draw_order",
+          "provenance": {
+            "confidence": "unknown",
+            "source": "moc3:art_mesh",
+            "note": "base draw order is keyform dependent; see keyforms[].draw_order"
+          }
+        },
+        {
+          "field": "blend_mode",
+          "provenance": {
+            "confidence": "derived",
+            "source": "moc3:art_mesh.drawable_flags",
+            "note": "derived from flag bits (pre-5.3) or the blend mode field (5.3+)"
+          }
+        }
+      ],
+      "provenance": {
+        "confidence": "exact",
+        "source": "moc3:art_mesh"
+      }
+    }
+  ],
+  "drawables": [
+    "ArtMesh_Synthetic_00"
+  ],
+  "mask_groups": [],
+  "textures": [
+    {
+      "id": "texture:000000",
+      "page_index": 0,
+      "provenance": {
+        "confidence": "derived",
+        "source": "moc3:art_mesh.texture_number",
+        "note": "page exists because at least one art mesh references it; dimensions and image path require model3.json"
+      }
+    }
+  ],
+  "glue": [],
+  "bindings": [
+    {
+      "id": "binding:000000",
+      "keyform_grid_size": 2,
+      "keyform_grid": [
+        2
+      ],
+      "parameters": [
+        {
+          "parameter": "ParamSynthetic_AngleX",
+          "key_values": [
+            -30.0,
+            30.0
+          ]
+        }
+      ],
+      "used_by": [
+        {
+          "kind": "part",
+          "id": "Part_Synthetic_00"
+        },
+        {
+          "kind": "art_mesh",
+          "id": "ArtMesh_Synthetic_00"
+        }
+      ],
+      "provenance": {
+        "confidence": "derived",
+        "source": "moc3:binding",
+        "note": "parameters resolved through the parameter key table ranges; reverse links derived"
+      }
+    }
+  ],
+  "unknowns": {
+    "runtime_sections": [
+      {
+        "name": "part.id_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.id_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.uv_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.position_index_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "art_mesh.drawable_mask_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      },
+      {
+        "name": "parameter.id_runtime",
+        "element_count": 1,
+        "byte_size": 8
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "unmapped_sections",
+      "message": "source sections present but not mapped in AGENT.2: keyform_multiply_colors=2, keyform_screen_colors=2"
+    }
+  ]
+}
