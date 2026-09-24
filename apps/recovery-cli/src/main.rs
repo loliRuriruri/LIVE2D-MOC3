@@ -7,6 +7,8 @@
 //! recovery reconstruct-hierarchy <model.moc3|model.ir.json>
 //!          [--json] [--output file] [--strict] [--allow-heuristic]
 //!          [--explain node-id] [--max-depth N]
+//! recovery recover-keyforms <model.moc3|model.ir.json>
+//!          [--json] [--output file] [--strict] [--explain target]
 //! ```
 //!
 //! Nothing in this binary writes to `.moc3` inputs, and no CMO3/PSD output
@@ -98,6 +100,27 @@ enum Command {
         #[arg(long, value_name = "BYTES")]
         max_file_size: Option<u64>,
     },
+    /// Recover the semantic keyform model (parameter bindings, grids, forms).
+    RecoverKeyforms {
+        /// Path to the input file (.moc3 or .ir.json).
+        input: PathBuf,
+        /// Emit the recovered keyform JSON instead of the human report.
+        #[arg(long)]
+        json: bool,
+        /// Write the recovered keyform JSON to this path.
+        #[arg(long, value_name = "PATH")]
+        output: Option<PathBuf>,
+        /// Exit non-zero on unresolved cardinality, dangling parameters,
+        /// non-finite keys, invalid targets or form-span mismatches.
+        #[arg(long)]
+        strict: bool,
+        /// Explain one target, band or grid id.
+        #[arg(long, value_name = "TARGET")]
+        explain: Option<String>,
+        /// Override the maximum accepted input size in bytes.
+        #[arg(long, value_name = "BYTES")]
+        max_file_size: Option<u64>,
+    },
 }
 
 /// Diagnostic codes that make `--strict` fail.
@@ -149,6 +172,21 @@ fn main() -> ExitCode {
             allow_heuristic,
             explain.as_deref(),
             max_depth,
+            options_with_limit(max_file_size),
+        ),
+        Command::RecoverKeyforms {
+            input,
+            json,
+            output,
+            strict,
+            explain,
+            max_file_size,
+        } => run_recover_keyforms(
+            &input,
+            json,
+            output.as_deref(),
+            strict,
+            explain.as_deref(),
             options_with_limit(max_file_size),
         ),
     }
@@ -576,6 +614,194 @@ fn run_explain(
             }
         }
     } else if let Some(text) = explain_hierarchy(project, query) {
+        print!("{text}");
+    }
+    ExitCode::SUCCESS
+}
+
+// ---------------------------------------------------------------------------
+// recover-keyforms
+// ---------------------------------------------------------------------------
+
+fn run_recover_keyforms(
+    input: &Path,
+    json_output: bool,
+    output: Option<&Path>,
+    strict: bool,
+    explain: Option<&str>,
+    options: InspectOptions,
+) -> ExitCode {
+    log::info!("recovering keyforms for {}", input.display());
+    let is_ir_json = input
+        .extension()
+        .map(|extension| extension.eq_ignore_ascii_case("json"))
+        .unwrap_or(false);
+    let model = if is_ir_json {
+        let text = match read_text_file(input, options.limits.max_file_size) {
+            Ok(text) => text,
+            Err(message) => {
+                report_generic_error(input, "IoError", &message, None, true, None);
+                return ExitCode::FAILURE;
+            }
+        };
+        match import_ir_json(&text) {
+            Ok(model) => model,
+            Err(error) => {
+                report_generic_error(
+                    input,
+                    error.code,
+                    &error.message,
+                    Some("the file is not a valid live2d-ir/1 document"),
+                    true,
+                    None,
+                );
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        match build_ir_from_file(input, &options) {
+            Ok(model) => model,
+            Err(error) => {
+                report_inspect_error(input, &error, true);
+                return ExitCode::FAILURE;
+            }
+        }
+    };
+    if has_fatal(&model.diagnostics) {
+        report_ir_failure(input, &model, true);
+        return ExitCode::FAILURE;
+    }
+
+    let project = reconstruct(&model, &RecoveryPolicy::default());
+    if has_fatal(&project.diagnostics) {
+        report_generic_error(
+            input,
+            "HierarchyValidationFailed",
+            "the recovered project is invalid; keyforms cannot be cross-checked",
+            Some("run reconstruct-hierarchy to inspect the fatal findings first"),
+            true,
+            None,
+        );
+        return ExitCode::FAILURE;
+    }
+
+    let document = recovery_core::recover_keyforms(&model, Some(&project));
+    if has_fatal(&document.diagnostics) {
+        let fatal: Vec<&live2d_ir::Diagnostic> = document
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == Severity::Fatal)
+            .collect();
+        let summary = fatal
+            .first()
+            .map(|diagnostic| format!("{}: {}", diagnostic.code, diagnostic.message))
+            .unwrap_or_else(|| "unknown fatal diagnostic".to_string());
+        report_generic_error(
+            input,
+            "KeyformValidationFailed",
+            &format!(
+                "keyform validation failed with {} fatal diagnostic(s); first: {summary}",
+                fatal.len()
+            ),
+            Some("the recovered keyform document is invalid and was not written; please report a recovery bug"),
+            true,
+            None,
+        );
+        return ExitCode::FAILURE;
+    }
+
+    if let Some(query) = explain {
+        return run_keyform_explain(input, &document, query, json_output || output.is_some());
+    }
+
+    if strict {
+        let violations = keyform_recovery::strict_violations(&document);
+        if !violations.is_empty() {
+            report_generic_error(
+                input,
+                "StrictModeViolation",
+                &format!(
+                    "strict mode: {} condition(s) present ({}); no output written",
+                    violations.len(),
+                    violations.join(", ")
+                ),
+                Some("resolve the reported conditions or rerun without --strict"),
+                output.is_none(),
+                None,
+            );
+            return ExitCode::FAILURE;
+        }
+    }
+
+    match output {
+        Some(path) => {
+            let text = match recovery_core::export_keyforms_json(&document, true) {
+                Ok(text) => text,
+                Err(error) => {
+                    report_generic_error(input, error.code, &error.message, None, false, None);
+                    return ExitCode::FAILURE;
+                }
+            };
+            let mut payload = text;
+            payload.push('\n');
+            if let Err(error) = std::fs::write(path, payload.as_bytes()) {
+                eprintln!("error: could not write '{}': {error}", path.display());
+                return ExitCode::FAILURE;
+            }
+            print!("{}", keyform_recovery::render_human(&document));
+            log::info!("wrote recovered keyforms to {}", path.display());
+        }
+        None if json_output => match recovery_core::export_keyforms_json(&document, true) {
+            Ok(text) => println!("{text}"),
+            Err(error) => {
+                report_generic_error(input, error.code, &error.message, None, true, None);
+                return ExitCode::FAILURE;
+            }
+        },
+        None => {
+            print!("{}", keyform_recovery::render_human(&document));
+            log::info!(
+                "keyforms: {} target(s), {} binding(s), {} stored form(s), {} unresolved",
+                document.statistics.targets,
+                document.statistics.bindings,
+                document.statistics.stored_keyforms,
+                document.statistics.unresolved_entries
+            );
+        }
+    }
+
+    ExitCode::SUCCESS
+}
+
+fn run_keyform_explain(
+    input: &Path,
+    document: &keyform_recovery::RecoveredKeyformModel,
+    query: &str,
+    json_output: bool,
+) -> ExitCode {
+    let trace = document.traces.iter().find(|trace| {
+        trace.target.id_text() == query || trace.band == query || trace.grid == query
+    });
+    let Some(trace) = trace else {
+        report_generic_error(
+            input,
+            "UnknownKeyformTarget",
+            &format!("'{query}' was not found in the recovered keyform model"),
+            Some("use a target id, a band id (band:...) or a grid id (grid:...)"),
+            json_output,
+            None,
+        );
+        return ExitCode::FAILURE;
+    };
+    if json_output {
+        match serde_json::to_string_pretty(trace) {
+            Ok(text) => println!("{text}"),
+            Err(error) => {
+                eprintln!("error: failed to serialize explain output: {error}");
+                return ExitCode::FAILURE;
+            }
+        }
+    } else if let Some(text) = keyform_recovery::explain(document, query) {
         print!("{text}");
     }
     ExitCode::SUCCESS
