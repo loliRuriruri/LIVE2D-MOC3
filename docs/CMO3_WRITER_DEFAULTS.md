@@ -1,4 +1,4 @@
-# CMO3 Writer Defaults and LINEAR Policy (AGENT.5.1)
+# CMO3 Writer Defaults and LINEAR Policy (AGENT.5.1/5.2)
 
 Every writer-produced field must be classifiable (work order section 31):
 
@@ -63,9 +63,20 @@ pipeline. It does not recover, guess or claim original layer names, group
 names, PSD hierarchy or hidden layers. Layer names reuse the recovered mesh
 names (or their deterministic placeholders).
 
-## Not-yet-used defaults (reserved)
+## AGENT.5.2 additions
 
-Deformer/keyform-grid serialization (AGENT.5 continuation) will need its own
-entries (deformer root GUID is already fixed; grid ordering default is
-fastest-first per `docs/CMO3_WRITER.md`). Nothing from AGENT.4 is claimed as
-recovered interpolation.
+| Field | Value | Class | Reason |
+|---|---|---|---|
+| binding keys | copied verbatim from AGENT.4 axes | RECOVERED | never sorted or deduplicated |
+| form sets | AGENT.4 stored forms (dense grids) | RECOVERED | form counts validated against the grid |
+| deformer visibility | recovered `isVisible` | RECOVERED | carried through the writer model |
+| rotation handle length/radius, bone-UI flag | `200.0` / `100.0` / `true` | WRITER_REQUIRED_DEFAULT | editor-only metadata with no MOC3 source (traced per project) |
+| part `defaultOrder_forEditor` | `500` | WRITER_REQUIRED_DEFAULT | editor default; recovered per-form draw orders are written on the forms |
+| draw order / opacity on forms | recovered values | RECOVERED | per-form fields |
+| multiply/screen colors | white `CFloatColor` | WRITER_REQUIRED_DEFAULT | keyform color pools are unmapped in the IR |
+| part `enabled` flag | not serialized | UNKNOWN | no CMO3 field in the pinned schema (recorded as unsupported) |
+| draw-order groups, glue, offscreen | not serialized | UNSUPPORTED / PRESERVED_UNKNOWN | recorded as unsupported notes |
+
+Deformer root GUID stays fixed (`71fae776-...`); multi-axis grid ordering
+remains the traced fastest-first writer default. Nothing from AGENT.4 is
+ever claimed as recovered interpolation.

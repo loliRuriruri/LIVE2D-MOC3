@@ -253,3 +253,21 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
   decision.
 - **No new version PIs or imports needed** for the pipeline; the pinned
   nine PIs and 124-class import list already cover it.
+
+## 13. AGENT.5.2 research (full semantic writer integration)
+
+- **No new external evidence was required.** The full writer reuses the
+  pinned CAFF/XML/image-pipeline facts; AGENT.2/3/4 outputs supply all
+  semantics, and the writer adds no inference.
+- **Serialization order:** a stable parent-before-child DFS over deformers
+  (iterative, cycle-safe) gives deterministic `xs.id`/GUID allocation for
+  identical inputs; the semantic hierarchy is never mutated.
+- **Blend policy:** only Normal/Add/Multiply have verified CMO3 mappings;
+  other enums fail strict mode and fall back to NORMAL with an explicit note
+  in best-effort.
+- **Best-effort semantics:** unresolved grids drop their forms with
+  `BEST_EFFORT` notes (never padding/repairing); strict mode fails with the
+  affected targets and a `recover-keyforms --explain` hint.
+- **Measured:** 1500-mesh model writes a 28.8 MB archive in ~0.5 s,
+  byte-identical across runs; peak memory ~266 MB (documented in
+  LIMITATIONS).

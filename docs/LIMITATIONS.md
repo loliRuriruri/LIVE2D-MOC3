@@ -163,11 +163,19 @@ so nothing is silently dropped.
 
 ## AGENT.5 (CMO3 writer) limitations
 
-- **The writer is minimal only.** CAFF (Gate 5A) and the structural
-  `main.xml`/`.cmo3` gate (Gate 5B) pass for the minimal MODEL_IMAGE-mode
-  document (`write_minimal_cmo3`). Deformers, AGENT.4 keyform grids,
-  draw-order groups, masks beyond the first GUID and all sample/editor
-  metadata are explicitly out of scope; the CLI is not implemented.
+- **The writer covers the recovered semantics but not every editor feature.**
+  Gates 5A-5B and 5D-5I pass structurally (`recovery recover` /
+  `write_minimal_cmo3`): parts, art meshes, deformers, parameters, bindings,
+  grids, forms, the image pipeline, masks and draw orders. Draw-order
+  groups, glue target schema and offscreen surfaces remain unsupported
+  notes; sample/editor metadata is never copied.
+- Output atomicity is best-effort: the temp file is flushed and synced
+  before replacement, but Windows replacement removes the previous output
+  first (small crash window). `--force` is required to overwrite.
+- Peak memory on the large fixture (1500 meshes, 28.8 MB output) measured
+  ~266 MB (~9x); the largest contributors are the XML copy into the CAFF
+  entry and the verification decode. Texture bytes are read with a 256 MiB
+  per-file cap and `inspect-cmo3` with a 512 MiB cap.
 - The layered image is synthetic (one canvas-sized layer per textured mesh),
   never a recovered PSD; layer/group names are recovered mesh names or
   placeholders (`docs/CMO3_WRITER_DEFAULTS.md`).

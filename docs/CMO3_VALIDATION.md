@@ -12,11 +12,12 @@ adding more fidelity.
 | 5B.2 | main.xml well formed, no dangling/duplicate refs | **PASS** | `scan_xml` over generated documents (also golden-tested) |
 | 5B.3 | main.xml + synthetic PNG -> CAFF -> `.cmo3` | **PASS** | `write_minimal_cmo3` packages via the Gate 5A encoder and re-decodes the archive before returning bytes |
 | 5C | minimal CMO3 opens in Cubism Editor | **NOT TESTED** | no Cubism Editor environment; never claimed |
-| 5D | Parts / ArtMeshes serialized | PARTIAL | root/real parts with child GUID lists, one quad per mesh, static forms; AGENT.4 keyform grids deferred |
-| 5E | Deformers serialized | DEFERRED | explicitly out of AGENT.5.1 scope (typed parents exist; emission deferred) |
-| 5F | Full bindings / keyform grids serialized | DEFERRED | only the single synthetic static binding per mesh is emitted |
-| 5G | Textures / masks / draw state serialized | PARTIAL | MODEL_IMAGE pipeline, one layer per mesh, texture inputs; masks limited to the first mask GUID; draw-order groups deferred |
-| 5H | Differential + structural validation | PARTIAL | structural validation PASS; normalized image-pipeline snapshot implemented; reference generator not executable (`REFERENCE_UNSUPPORTED`) |
+| 5D | Parts / ArtMeshes serialized | **PASS (AGENT.5.2)** | full part trees with child GUID lists and recovered draw orders; all art meshes with base geometry, per-form keyed geometry, masks, texture refs; e2e_001/006 |
+| 5E | Warp + rotation deformers serialized | **PASS** | sources with typed parents, checked grid math, all recovered forms (opacity/positions; angle/origin/scale/reflect); stable parent-before-child order; e2e_002/003 |
+| 5F | Parameters / bindings / grids / forms | **PASS** | all recovered parameters (min/max/default/keys/decimals/repeat); binding keys verbatim (never sorted/deduped); grids with KeyformOnGrid/KeyOnParameter; typed forms for Part/Warp/Rotation/ArtMesh; strict fails unresolved grids; e2e_004/005, best-effort regression |
+| 5G | Textures / masks / draw state | **PASS (bounded)** | model3.json/texture-dir loading, multi-page resources with per-page dedup, full mask GUID lists, per-form draw order, blend policy (Normal/Add/Multiply; other enums fail strict, NORMAL+note in best-effort); draw-order groups/glue/offscreen preserved as UNSUPPORTED notes |
+| 5H | Whole-project validation + differential | **PASS (bounded)** | typed + XML validators (ids/refs/GUIDs/cycles/form counts/geometry), CAFF re-decode, independent XML re-parse, semantic inspector; differential: internal semantic snapshot PASS, reference generator `REFERENCE_UNSUPPORTED` (moc2cmo not executable) |
+| 5I | End-to-end CLI | **PASS** | `recovery recover` (moc3/model3.json, textures, strict/best-effort, report, atomic-ish write, --force) and `recovery inspect-cmo3`; release binary smoke PASS |
 
 ## Stop condition status
 

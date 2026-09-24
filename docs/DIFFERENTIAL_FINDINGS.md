@@ -170,14 +170,15 @@ reclassified by AGENT.4.
 
 ## AGENT.5 note (CMO3 differential not yet applicable)
 
-The CMO3 differential harness is now **partially exercised**: the normalized
-image-pipeline snapshot (work order section 45: `layered_images`, `layers`,
-`model_images`, `filter_sets`, `image_resources`, `texture_inputs`,
-`artmesh_to_modelimage`, `layer_selector_relations`) is emitted for the
-minimal fixtures and golden-tested (`fixtures/expected-cmo3/*.pipeline.json`).
-A reference-generator comparison is **REFERENCE_UNSUPPORTED**: `moc2cmo` is
-not executable in this environment (source audit only), and byte equality is
-explicitly not a goal. DF-001..DF-005 remain untouched by AGENT.5.1.
+The CMO3 differential harness is now exercised at two levels: the normalized
+image-pipeline snapshot (work order section 45) is golden-tested
+(`fixtures/expected-cmo3/*.pipeline.json`), and AGENT.5.2 adds internal
+semantic self-checks (inspector counts vs recovered IR/keyform counts across
+ten e2e fixtures). A reference-generator comparison remains
+**REFERENCE_UNSUPPORTED**: `moc2cmo` is not executable in this environment
+(source audit only) and byte equality is explicitly not a goal. No new
+DF-006+ findings arose (no external disagreement observed); DF-001..DF-005
+remain untouched.
 
 ## What did not change
 

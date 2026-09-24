@@ -40,13 +40,12 @@ MOC3 / model3.json / Texture
             |                                         docs/KEYFORM_RECOVERY.md)
    RecoveredKeyformModel    recovered-keyforms/1 (experimental)
             |
-   CMO3 Writer              crates/cmo3-writer        (AGENT.5/5.1:
-            |                                         CAFF + identity + XML +
-            |                                         minimal MODEL_IMAGE
-            |                                         serializer + validators;
-            |                                         deformers/keyform grids
-            |                                         deferred - see
-            |                                         docs/CMO3_VALIDATION.md)
+   CMO3 Writer              crates/cmo3-writer        (AGENT.5.2 complete:
+            |                                         CAFF, identity, full
+            |                                         semantic serializer,
+            |                                         validators, inspector;
+            |                                         gates 5A-5I structural -
+            |                                         see docs/CMO3_VALIDATION.md)
             |
    Validation               crates/project-validator  (AGENT.7, reserved)
 ```

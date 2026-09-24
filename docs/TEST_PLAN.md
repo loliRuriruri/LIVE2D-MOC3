@@ -4,9 +4,9 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**278 tests, all passing** (44 synthetic fixtures + generated CMO3
-documents). AGENT.5.1 gates 5B.1-5B.3 pass for the minimal MODEL_IMAGE
-document (`docs/CMO3_VALIDATION.md`); Cubism open NOT_TESTED. AGENT.5 is PARTIAL: only
+**296 tests, all passing** (44 synthetic fixtures + generated CMO3
+documents). AGENT.5.2 gates 5D-5I pass structurally
+(`docs/CMO3_VALIDATION.md`); Cubism open NOT_TESTED. AGENT.5 is PARTIAL: only
 the CAFF/identity/XML/profile/mapping layers exist (see
 `docs/CMO3_VALIDATION.md`).
 
@@ -70,6 +70,9 @@ cargo run -p reference-harness -- compare fixtures/synthetic/fixture-010-v53.moc
 | CMO3 mapping | `crates/cmo3-writer/tests/mapping.rs` | strict `MissingTextureAsset` failure, strict success with assets, writer-default trace separation, archive entry naming safety, determinism |
 | CMO3 XML/validators | `crates/cmo3-writer/src/validate.rs` tests | XML scanner: duplicate `xs.id`, dangling `xs.ref`, GUID-type mismatch, balanced references |
 | CMO3 gates 5B.1-5B.3 | `crates/cmo3-writer/tests/minimal_cmo3.rs` | single-mesh and multi-mesh (1 layered image / N layers, distinct layer selection) gates, byte determinism, CAFF integration (decode + validate + payload equality), typed/XML negatives without output, golden `main.xml` and normalized pipeline snapshots (`fixtures/expected-cmo3/`) |
+| CMO3 full pipeline (AGENT.5.2) | `crates/recovery-core/tests/e2e_cmo3.rs` | ten e2e cases (part+mesh, warp chain, rotation chain, multi-parameter bindings, 2D keyforms, multiple parts, multiple meshes + multi-texture, mask, 1500-mesh large model, CLI stand-in), determinism (byte equality), input immutability, best-effort labelling of unresolved grids |
+| CMO3 CLI (AGENT.5.2) | `apps/recovery-cli/tests/cli_recover.rs` | `recover` output + report, `--force` policy, byte determinism, `inspect-cmo3 --json` counts, best-effort exit codes, input immutability |
+| CMO3 policy units | `crates/cmo3-writer/tests/mapping.rs` | blend-mode strict failure + best-effort NORMAL note, texture/parameter strict failures, typed deformer parents |
 | Boundary smoke | `tests/workspace-smoke/tests/smoke.rs` | keyform-recovery and cmo3-writer must not depend on `moc3-ingest`/`recovery-core`/`fixture-gen` (manifest + `cargo metadata` graph) |
 
 ## Fixture inventory (synthetic; `fixtures/synthetic/`)
