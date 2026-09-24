@@ -216,6 +216,16 @@ fn version_and_self_test_work() {
     let text = String::from_utf8(version.stdout).unwrap();
     assert!(text.contains("0.1.0-alpha"), "{text}");
     assert!(text.contains("commit"), "long version expected: {text}");
+    // The embedded commit must look like a short hash (or `unknown` in a
+    // source tarball without git), never a stale placeholder.
+    if let Some(rest) = text.split("commit ").nth(1) {
+        let commit: String = rest.chars().take_while(|c| *c != ',').collect();
+        let looks_like_hash = commit.len() >= 7 && commit.chars().all(|c| c.is_ascii_hexdigit());
+        assert!(
+            looks_like_hash || commit == "unknown",
+            "unexpected commit field: {commit}"
+        );
+    }
 
     let self_test = run(&["self-test"]);
     assert!(self_test.status.success(), "{self_test:?}");

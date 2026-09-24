@@ -28,8 +28,9 @@ before any editor test; this is **not** an editor-compatibility claim.
 
 ## Structural precheck evidence
 
-`dist/acceptance/expected/*.inspection.json` (CAFF valid, XML valid,
-0 dangling refs, 0 duplicate ids, texture resources present).
+`dist/Live2DRecovery-0.1.0-alpha-win-x64/acceptance/expected/*.inspection.json`
+(CAFF valid, XML valid, 0 dangling refs, 0 duplicate ids, texture
+resources present).
 
 | File | CAFF | XML | Dangling | Duplicates | Textures |
 |---|---|---|---|---|---|
@@ -60,13 +61,15 @@ Save/reopen:     NOT_TESTED
 
 ```text
 Open:            NOT_TESTED
-Parameter:       NOT_TESTED (min 0 / default 1 / max 2 shape expectations)
+Parameter:       NOT_TESTED (min -30 / default 0 / max 30 expectations)
 Key movement:    NOT_TESTED
 Save/reopen:     NOT_TESTED
 ```
 
-Expected key values for 03: `[0, 1, 2]` (fixture
-`keyform-002-1d-three-keys`); the recovered document stores them verbatim.
+Expected parameter for 03: `Param_AngleX` with keys `[-30, 0, 30]`
+(min -30 / default 0 / max 30; fixture `keyform-002-1d-three-keys`); the
+recovered document stores the key values verbatim, and the three keyed
+forms correspond to those three parameter positions.
 
 ## AGENT.5.4 trigger
 

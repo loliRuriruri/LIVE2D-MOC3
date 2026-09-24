@@ -21,5 +21,10 @@ fn main() {
     println!("cargo:rustc-env=BUILD_PROFILE={profile}");
     let target = std::env::var("TARGET").unwrap_or_else(|_| "unknown".to_string());
     println!("cargo:rustc-env=BUILD_TARGET={target}");
-    println!("cargo:rerun-if-changed=build.rs");
+    // Rerun when the git HEAD moves (commit provenance), in addition to the
+    // default "any package file changed" behaviour.
+    let head = std::path::Path::new("../../.git/HEAD");
+    if head.exists() {
+        println!("cargo:rerun-if-changed=../../.git/HEAD");
+    }
 }
