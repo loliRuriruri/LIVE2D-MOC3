@@ -174,7 +174,7 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
                 format!("mesh {index} has out-of-range indices"),
             ));
         }
-        if let Some(mask) = mesh.mask_refs.first() {
+        for mask in &mesh.mask_refs {
             if *mask >= mesh_count {
                 findings.push(Finding::fatal(
                     "dangling_mask_reference",
@@ -262,6 +262,29 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
                     binding.semantic, binding.parameter_index
                 ),
             ));
+        }
+    }
+    // Part parent cycles: a CMO3 part tree cannot represent them.
+    for (index, part) in project.parts.iter().enumerate() {
+        let mut current = part.parent.clone();
+        let mut depth = 0usize;
+        while let ParentRef::Part(next) = current {
+            if next == index {
+                findings.push(Finding::fatal(
+                    "part_parent_cycle",
+                    format!("part '{index}' is inside a stored parent cycle"),
+                ));
+                break;
+            }
+            depth += 1;
+            if depth > part_count {
+                break;
+            }
+            current = project
+                .parts
+                .get(next)
+                .map(|part| part.parent.clone())
+                .unwrap_or(ParentRef::Root);
         }
     }
     // Deformer parent cycles: stored cycles are preserved by AGENT.3, but a

@@ -124,8 +124,18 @@ fn list_texture_dir(dir: &Path) -> Result<Vec<PathBuf>, String> {
 }
 
 fn load_texture_assets(paths: &[PathBuf]) -> Result<TextureAssets, String> {
+    const MAX_TEXTURE: u64 = 256 * 1024 * 1024;
     let mut assets = TextureAssets::new();
     for (page, path) in paths.iter().enumerate() {
+        if let Ok(metadata) = std::fs::metadata(path) {
+            if metadata.len() > MAX_TEXTURE {
+                return Err(format!(
+                    "texture '{}' is {} bytes which exceeds the texture cap",
+                    path.display(),
+                    metadata.len()
+                ));
+            }
+        }
         let bytes = std::fs::read(path)
             .map_err(|error| format!("cannot read texture '{}': {error}", path.display()))?;
         let (width, height) = match png::png_dimensions(&bytes) {
@@ -340,13 +350,29 @@ fn write_atomic(path: &Path, bytes: &[u8], force: bool) -> Result<(), String> {
             path.display()
         ));
     }
-    let temp = path.with_extension("cmo3.tmp");
-    std::fs::write(&temp, bytes).map_err(|error| {
+    use std::io::Write as _;
+    let temp = path.with_extension(format!("cmo3.{}.tmp", std::process::id()));
+    let mut file = std::fs::File::create(&temp).map_err(|error| {
+        format!(
+            "cannot create temporary output '{}': {error}",
+            temp.display()
+        )
+    })?;
+    file.write_all(bytes).map_err(|error| {
         format!(
             "cannot write temporary output '{}': {error}",
             temp.display()
         )
     })?;
+    file.sync_all().map_err(|error| {
+        format!(
+            "cannot flush temporary output '{}': {error}",
+            temp.display()
+        )
+    })?;
+    drop(file);
+    // Windows cannot rename over an existing file; with --force the previous
+    // output is removed first (small crash window documented in LIMITATIONS).
     if path.exists() {
         std::fs::remove_file(path)
             .map_err(|error| format!("cannot replace '{}': {error}", path.display()))?;
@@ -359,6 +385,22 @@ fn write_atomic(path: &Path, bytes: &[u8], force: bool) -> Result<(), String> {
 
 /// Run `inspect-cmo3`.
 pub fn run_inspect_cmo3(file: &Path, json_output: bool) -> ExitCode {
+    const MAX_INPUT: u64 = 512 * 1024 * 1024;
+    match std::fs::metadata(file) {
+        Ok(metadata) if metadata.len() > MAX_INPUT => {
+            eprintln!(
+                "error: '{}' is {} bytes which exceeds the inspection cap",
+                file.display(),
+                metadata.len()
+            );
+            return ExitCode::FAILURE;
+        }
+        Ok(_) => {}
+        Err(error) => {
+            eprintln!("error: cannot stat '{}': {error}", file.display());
+            return ExitCode::FAILURE;
+        }
+    }
     let bytes = match std::fs::read(file) {
         Ok(bytes) => bytes,
         Err(error) => {

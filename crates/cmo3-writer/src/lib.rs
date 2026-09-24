@@ -135,25 +135,32 @@ pub fn write_minimal_cmo3(
         code: "CaffEncodeFailed",
         message: error.to_string(),
     })?;
-    let decoded = caff::decode_strict_raw(&bytes).map_err(|error| WriteError {
-        code: "CaffVerifyFailed",
-        message: error.to_string(),
-    })?;
-    if decoded.payload(caff::MAIN_XML_PATH) != Some(serialized.xml.as_bytes()) {
-        return Err(WriteError {
+    // Drop the entry payload copies before decoding the archive so the peak
+    // memory stays close to one archive plus one decode.
+    drop(entries);
+    {
+        let validation = caff::validate_archive(&bytes).map_err(|error| WriteError {
             code: "CaffVerifyFailed",
-            message: "decoded main.xml differs from the serialized document".to_string(),
-        });
+            message: error.to_string(),
+        })?;
+        if !validation.is_valid() {
+            return Err(WriteError {
+                code: "CaffVerifyFailed",
+                message: "archive validation reported fatal findings".to_string(),
+            });
+        }
     }
-    let validation = caff::validate_archive(&bytes).map_err(|error| WriteError {
-        code: "CaffVerifyFailed",
-        message: error.to_string(),
-    })?;
-    if !validation.is_valid() {
-        return Err(WriteError {
+    {
+        let decoded = caff::decode_strict_raw(&bytes).map_err(|error| WriteError {
             code: "CaffVerifyFailed",
-            message: "archive validation reported fatal findings".to_string(),
-        });
+            message: error.to_string(),
+        })?;
+        if decoded.payload(caff::MAIN_XML_PATH) != Some(serialized.xml.as_bytes()) {
+            return Err(WriteError {
+                code: "CaffVerifyFailed",
+                message: "decoded main.xml differs from the serialized document".to_string(),
+            });
+        }
     }
 
     let pipeline = validate::pipeline_trace(project);

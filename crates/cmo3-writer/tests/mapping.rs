@@ -374,3 +374,44 @@ fn interleaved_deformer_parents_use_typed_refs() {
         .children
         .contains(&ChildRef::Rotation("Rotation_00".to_string())));
 }
+
+#[test]
+fn unsupported_blend_mode_fails_strict_and_is_noted_in_best_effort() {
+    use live2d_ir::BlendMode;
+
+    let mut model = base_model();
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        mesh.blend_mode = BlendMode::Screen;
+    }
+    let (project, keyforms) = pipeline(&model);
+    let mut assets = TextureAssets::new();
+    assets.push(TextureAsset {
+        page: 0,
+        bytes: vec![1],
+        source_path: None,
+        width: None,
+        height: None,
+    });
+    let strict = build_project(&model, &project, &keyforms, &assets, &MapOptions::default());
+    assert_eq!(
+        strict.err().map(|error| error.code),
+        Some("UnsupportedBlendMode")
+    );
+
+    let best_effort = build_project(
+        &model,
+        &project,
+        &keyforms,
+        &assets,
+        &MapOptions {
+            best_effort: true,
+            model_name: None,
+        },
+    )
+    .expect("best-effort mapping");
+    assert!(best_effort
+        .unsupported
+        .iter()
+        .any(|note| note.reason.contains("NORMAL was written")));
+    assert_eq!(best_effort.meshes[0].composition, "NORMAL");
+}

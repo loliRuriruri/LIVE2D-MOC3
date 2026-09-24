@@ -406,13 +406,14 @@ pub fn art_mesh_source(
 #[allow(clippy::too_many_arguments)]
 fn deformer_super(
     local_name: &str,
+    visible: bool,
     parent_part_pool: usize,
     grid_source_id: Option<usize>,
 ) -> XmlElement {
     let mut super_controllable =
         XmlElement::new("ACParameterControllableSource").attr("xs.n", "super");
     super_controllable.push(string_leaf("localName", local_name));
-    super_controllable.push(bool_leaf("isVisible", true));
+    super_controllable.push(bool_leaf("isVisible", visible));
     super_controllable.push(bool_leaf("isLocked", false));
     super_controllable.push(reference("CPartGuid", "parentGuid", parent_part_pool));
     match grid_source_id {
@@ -473,6 +474,7 @@ pub fn warp_deformer_source(
     };
     source.push(deformer_super(
         &warp.name,
+        warp.visible,
         parent_part_pool,
         ids.grid_source_id,
     ));
@@ -530,6 +532,7 @@ pub fn rotation_deformer_source(
     };
     source.push(deformer_super(
         &rotation.name,
+        rotation.visible,
         parent_part_pool,
         ids.grid_source_id,
     ));

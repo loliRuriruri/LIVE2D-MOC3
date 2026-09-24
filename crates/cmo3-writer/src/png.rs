@@ -28,8 +28,11 @@ pub fn solid_png(width: u32, height: u32, rgba: [u8; 4]) -> Vec<u8> {
 
 /// PNG dimensions from the IHDR chunk, when the bytes are a PNG.
 pub fn png_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
-    if bytes.len() < 24 || bytes.get(..8) != Some(&[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A])
+    if bytes.len() < 33 || bytes.get(..8) != Some(&[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A])
     {
+        return None;
+    }
+    if bytes.get(8..12) != Some(&13u32.to_be_bytes()) || bytes.get(12..16) != Some(b"IHDR") {
         return None;
     }
     let width = u32::from_be_bytes(bytes.get(16..20)?.try_into().ok()?);

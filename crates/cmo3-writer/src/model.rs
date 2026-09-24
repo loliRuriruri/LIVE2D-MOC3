@@ -209,6 +209,8 @@ pub struct WarpOut {
     pub parent: ParentRef,
     /// Children in deterministic order.
     pub children: Vec<ChildRef>,
+    /// Stored visibility flag.
+    pub visible: bool,
     /// Grid columns.
     pub columns: u32,
     /// Grid rows.
@@ -243,6 +245,8 @@ pub struct RotationOut {
     pub parent: ParentRef,
     /// Children in deterministic order.
     pub children: Vec<ChildRef>,
+    /// Stored visibility flag.
+    pub visible: bool,
     /// Base angle.
     pub base_angle: f32,
     /// Forms.

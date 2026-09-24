@@ -312,6 +312,7 @@ pub fn build_project(
                     name,
                     parent,
                     children: Vec::new(),
+                    visible: warp.common.visible,
                     columns: warp.columns,
                     rows: warp.rows,
                     quad_transform: warp.quad_transform,
@@ -343,6 +344,7 @@ pub fn build_project(
                     name,
                     parent: deformer_parent(model, &parent_of, rotation.common.id.as_str()),
                     children: Vec::new(),
+                    visible: rotation.common.visible,
                     base_angle: rotation.base_angle,
                     forms: rotation
                         .keyforms
@@ -654,32 +656,6 @@ pub fn build_project(
         };
         let target_id = entry.target().id_text().to_string();
         let grid_id = entry.grid_id().to_string();
-        let Some(grid) = keyforms.grid(&grid_id) else {
-            if best_effort {
-                unsupported.push(UnsupportedNote {
-                    subject: grid_id.clone(),
-                    reason: "keyform grid is missing from the recovered model".to_string(),
-                });
-                continue;
-            }
-            return Err(error(
-                "UnresolvedKeyformGrid",
-                format!("target '{target_id}' references missing grid '{grid_id}'"),
-            ));
-        };
-        let Some(band) = keyforms.band(&grid.band) else {
-            if best_effort {
-                unsupported.push(UnsupportedNote {
-                    subject: grid_id.clone(),
-                    reason: "keyform band is missing from the recovered model".to_string(),
-                });
-                continue;
-            }
-            return Err(error(
-                "UnresolvedKeyformGrid",
-                format!("grid '{grid_id}' references missing band '{}'", grid.band),
-            ));
-        };
         let target = match entry {
             TargetKeyforms::Part(part) => part_by_id
                 .get(part.target.as_str())
@@ -705,6 +681,34 @@ pub fn build_project(
             });
             continue;
         };
+        let Some(grid) = keyforms.grid(&grid_id) else {
+            if best_effort {
+                unsupported.push(UnsupportedNote {
+                    subject: grid_id.clone(),
+                    reason: "keyform grid is missing from the recovered model; its forms were dropped (BEST_EFFORT)".to_string(),
+                });
+                clear_target_forms(&target, &mut parts, &mut warps, &mut rotations, &mut meshes);
+                continue;
+            }
+            return Err(error(
+                "UnresolvedKeyformGrid",
+                format!("target '{target_id}' references missing grid '{grid_id}'"),
+            ));
+        };
+        let Some(band) = keyforms.band(&grid.band) else {
+            if best_effort {
+                unsupported.push(UnsupportedNote {
+                    subject: grid_id.clone(),
+                    reason: "keyform band is missing from the recovered model; its forms were dropped (BEST_EFFORT)".to_string(),
+                });
+                clear_target_forms(&target, &mut parts, &mut warps, &mut rotations, &mut meshes);
+                continue;
+            }
+            return Err(error(
+                "UnresolvedKeyformGrid",
+                format!("grid '{grid_id}' references missing band '{}'", grid.band),
+            ));
+        };
         if grid.layout != GridLayout::Dense {
             if !best_effort {
                 return Err(error(
@@ -717,8 +721,12 @@ pub fn build_project(
             }
             unsupported.push(UnsupportedNote {
                 subject: grid_id.clone(),
-                reason: format!("grid layout is {:?}; forms are not serialized", grid.layout),
+                reason: format!(
+                    "grid layout is {:?}; its forms were dropped (BEST_EFFORT)",
+                    grid.layout
+                ),
             });
+            clear_target_forms(&target, &mut parts, &mut warps, &mut rotations, &mut meshes);
             continue;
         }
         if band.axes.is_empty() {
@@ -782,9 +790,11 @@ pub fn build_project(
             }
             unsupported.push(UnsupportedNote {
                 subject: grid_id.clone(),
-                reason: "a binding axis parameter is unresolved; forms are not serialized"
-                    .to_string(),
+                reason:
+                    "a binding axis parameter is unresolved; its forms were dropped (BEST_EFFORT)"
+                        .to_string(),
             });
+            clear_target_forms(&target, &mut parts, &mut warps, &mut rotations, &mut meshes);
             continue;
         }
         if band.axes.len() > 1 {
@@ -822,22 +832,26 @@ pub fn build_project(
         });
     }
 
-    // Writer-required keyform/parameter defaults (minimal 5.1 writer).
+    // Writer-required keyform defaults: keys and forms are recovered verbatim
+    // from AGENT.4, so only the interpolation enum is a default.
     for grid in &grids {
         defaults.push(WriterDefault {
             semantic: grid.semantic.clone(),
             field: "keyform.interpolation",
             reason: "MOC3 stores no interpolation type; the editor-required enum is a writer-required LINEAR default",
         });
+    }
+    if !rotations.is_empty() {
         defaults.push(WriterDefault {
-            semantic: grid.semantic.clone(),
-            field: "keyform.keys",
-            reason: "single static form: one synthetic key value [0.0]",
+            semantic: "$rotation_handles".to_string(),
+            field: "rotation.handle_lengths",
+            reason: "editor-only handle length/radius and bone-UI flag have no MOC3 source; pinned writer constants are used",
         });
-        defaults.push(WriterDefault {
-            semantic: grid.semantic.clone(),
-            field: "keyform.forms",
-            reason: "AGENT.4 keyform grids are out of AGENT.5.1 scope; one static form per target",
+    }
+    if project_parts_have_disabled(&parts) {
+        unsupported.push(UnsupportedNote {
+            subject: "$parts".to_string(),
+            reason: "part enabled flags are recovered but CMO3 has no isEnabled field in the pinned schema (PRESERVED_UNKNOWN)".to_string(),
         });
     }
     if parameters.is_empty() {
@@ -1072,6 +1086,43 @@ fn attach_child(
                 if let Some(rotation) = rotations.get_mut(index) {
                     rotation.children.push(child);
                 }
+            }
+        }
+    }
+}
+
+fn project_parts_have_disabled(parts: &[PartOut]) -> bool {
+    parts.iter().any(|part| !part.enabled)
+}
+
+/// Drop the stored forms of a target whose grid could not be serialized
+/// (best-effort only; strict mode fails before this point).
+fn clear_target_forms(
+    target: &TargetOut,
+    parts: &mut [PartOut],
+    warps: &mut [WarpOut],
+    rotations: &mut [RotationOut],
+    meshes: &mut [ArtMeshOut],
+) {
+    match target {
+        TargetOut::Part(index) => {
+            if let Some(part) = parts.get_mut(*index) {
+                part.draw_orders.clear();
+            }
+        }
+        TargetOut::Warp(index) => {
+            if let Some(warp) = warps.get_mut(*index) {
+                warp.forms.clear();
+            }
+        }
+        TargetOut::Rotation(index) => {
+            if let Some(rotation) = rotations.get_mut(*index) {
+                rotation.forms.clear();
+            }
+        }
+        TargetOut::ArtMesh(index) => {
+            if let Some(mesh) = meshes.get_mut(*index) {
+                mesh.forms.clear();
             }
         }
     }

@@ -189,3 +189,49 @@ fn cli_recover_smoke() {
     assert_eq!(inspection.parameters, 1);
     assert!(inspection.forms >= 6, "part + mesh forms from a 3-key grid");
 }
+
+#[test]
+fn best_effort_labels_unresolved_grids_instead_of_failing() {
+    // keyform-014 stores more forms than the grid expects (unknown layout).
+    let path = support::fixtures_dir().join("keyform-014-cardinality-mismatch.moc3");
+    let model = build_ir_from_file(&path, &InspectOptions::default()).unwrap();
+    let hierarchy = reconstruct(&model, &RecoveryPolicy::default());
+    let keyforms = recover(&model, Some(&hierarchy));
+    let canvas = (
+        model.canvas.width.round() as u32,
+        model.canvas.height.round() as u32,
+    );
+    let assets = assets_for(canvas, 1);
+
+    let strict = build_project(
+        &model,
+        &hierarchy,
+        &keyforms,
+        &assets,
+        &MapOptions::default(),
+    );
+    assert!(
+        strict.is_err(),
+        "strict mode must fail on an unknown layout"
+    );
+
+    let best_effort = build_project(
+        &model,
+        &hierarchy,
+        &keyforms,
+        &assets,
+        &MapOptions {
+            best_effort: true,
+            model_name: None,
+        },
+    )
+    .expect("best-effort mapping must succeed");
+    assert!(best_effort.best_effort);
+    assert!(best_effort
+        .unsupported
+        .iter()
+        .any(|note| note.reason.contains("BEST_EFFORT")));
+    let written = write_minimal_cmo3(&best_effort, &IdentityOptions::default(), &assets)
+        .expect("best-effort write must succeed");
+    assert_structural("best-effort", &written);
+}
