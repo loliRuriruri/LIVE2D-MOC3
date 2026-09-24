@@ -10,12 +10,16 @@ Starting HEAD:
 a5b8d19  docs: add agent2 completion report
 
 Ending HEAD:
-53e38bf  docs: clarify diagnostic caps and analyze_graph usage
+f5d4cab  fix: correct cross-tier candidate dedupe and harden guard tests
 (chain: 032f0b0 feat: add hierarchy recovery graph and deterministic
  resolver, ce3dfc9 test: add hierarchy reconstruction fixtures,
  c8d4553 docs: document hierarchy recovery rules,
  5592b58 fix: gate hierarchy output on validation and bound resolver
- complexity, 53e38bf doc clarification; this report is committed on top)
+ complexity (review round 1), 53e38bf doc clarification,
+ 877801f agent3 report draft, 6d7b176 fix: index hierarchy hot paths and
+ bound renderer complexity (review round 2),
+ f5d4cab fix: cross-tier dedupe + guard hardening (round 3 LOWs); this
+ final report revision is committed on top)
 
 Supervision:
 spec_locked (master spec v0.1 authoritative; no SPEC CONFLICT encountered)
@@ -130,8 +134,8 @@ Hierarchy statistics:  (measured, not accuracy)
 
 Tests:
 previous: 113 (all retained)
-current: 161
-passed: 161
+current: 163
+passed: 163
 failed: 0
 (cargo test --workspace; clippy -D warnings and fmt clean)
 
@@ -164,9 +168,10 @@ Security review:
 - deep chains cannot overflow the stack (no recursion; 20k fixture test)
 - diagnostics amplification bounded (256/code per stage + summaries; CLI
   fatal list capped at 50)
-- pathological complexity fixed: 20k-deep chain 160.3s -> 2.02s after
-  memoization/indexing (reviewer-measured); wide-flat validator O(deg^2)
-  removed
+- pathological complexity fixed (reviewer-measured, release): 20k-deep
+  chain 160.3s -> 0.19s; orphan-x-binding probe 40k 1.72s -> 0.25s (linear);
+  heuristic candidate probe 20k 0.95s -> 0.16s; cycle-60k human render
+  4.45s -> 1.37s; wide-flat validator O(deg^2) removed
 - malicious node counts: mocs path bounded by parser Limits; IR JSON path
   bounded by the file-size cap (documented residual risk)
 - JSON depth: deeply nested JSON fails structurally (JsonSyntax, no crash)
@@ -176,23 +181,35 @@ JEV REVIEW verdict:
 PASS  (independent jev-review subagent; baseline PARTIAL with 2 HIGH, 2
        MEDIUM, 7 LOW; all fixed; follow-up verification PASS)
 
-Review findings:
-HIGH: 2
-MEDIUM: 2
-LOW: 7
+Review findings (across all review rounds):
+HIGH: 3   (fatal-gate bypass, quadratic binding scan, quadratic resolver
+           paths)
+MEDIUM: 4 (diagnostics amplification, validator O(deg^2), candidate dedupe
+           + tier marking O(k^2), renderer O(cycle * nodes))
+LOW: 13   (fixed or explicitly documented; see below)
 
 Findings fixed:
 - fatal hierarchy findings now gate output (structured error, nothing
   written) in every mode,
 - effective-part walk memoized + index-aligned candidates + prebuilt kind
-  map (quadratic CPU path removed),
+  map (first quadratic CPU path removed; 20k-deep chain 160.3s -> 0.2s),
+- HR-010 binding lookup indexed with a BTreeMap (default-path
+  O(meshes * bindings) removed; 40k probe 1.72s -> 0.25s, now linear),
+- candidate dedupe uses a seen-parent set (correct across confidence tiers,
+  cross-tier regression test) and ambiguous-tier marking skips the sorted
+  lower prefix (O(k)),
+- cycle member labels use the prebuilt node index (cycle-60k human render
+  4.45s -> 1.37s, now linear),
 - diagnostic budget keys by exact code (no "other" bucket) and is used by
   guard and validator stages; CLI error list capped,
-- validator reciprocal check uses a prebuilt children index (no O(deg^2)),
+- validator reciprocal check uses a prebuilt children index (no O(deg^2);
+  wide-flat 6000 ~1s),
 - strict gating moved before output writing; --max-file-size applies to IR
-  JSON; UTF-8 BOM accepted; explain documented as diagnostic-only; rule doc
-  sync test added; vacuous filter test replaced with real analyze_graph
-  assertions; unused parameter removed.
+  JSON; UTF-8 BOM accepted and stray BOMs removed from sources; explain
+  documented as diagnostic-only; rule doc sync test added; vacuous filter
+  test replaced with real analyze_graph assertions; unused parameter and
+  dead allocation removed; guard-test thresholds tightened to catch the
+  original regressions.
 
 IR schema changes:
 NONE (AGENT.3 consumes the IR read-only; its own document is
