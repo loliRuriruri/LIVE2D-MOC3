@@ -83,6 +83,17 @@ fn first_non_finite(document: &RecoveredKeyformModel) -> Option<String> {
             }
         }
     }
+    for trace in &document.traces {
+        for axis in &trace.axes {
+            if axis.keys.iter().any(|key| !key.is_finite()) {
+                return Some(format!(
+                    "trace axis '{}' key value for target '{}'",
+                    axis.parameter.as_str(),
+                    trace.target.id_text()
+                ));
+            }
+        }
+    }
     for entry in &document.target_keyforms {
         let check = |field: &str, index: usize, value: f32| {
             (!value.is_finite()).then(|| format!("{field}[{index}]"))

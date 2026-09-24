@@ -4,7 +4,7 @@ Scope: AGENT.0-AGENT.4 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit, semantic keyform
 recovery). Test types follow master spec section 14: unit, integration,
 snapshot/golden, corruption, fuzz (smoke), regression. Current total:
-**234 tests, all passing** (44 synthetic fixtures).
+**239 tests, all passing** (44 synthetic fixtures).
 
 AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
 placement tolerance) and `tools/reference-harness` (dev-only differential

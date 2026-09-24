@@ -363,3 +363,56 @@ pub fn strict_violations(document: &RecoveredKeyformModel) -> Vec<&str> {
 pub fn count_severity(diagnostics: &[Diagnostic], severity: Severity) -> usize {
     live2d_ir::count_severity(diagnostics, severity)
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    fn diagnostic(code: &str) -> Diagnostic {
+        Diagnostic::new(Severity::Warning, code, "test")
+    }
+
+    #[test]
+    fn diagnostics_are_capped_per_code_with_a_summary() {
+        let mut diagnostics: Vec<Diagnostic> = Vec::new();
+        for _ in 0..300 {
+            diagnostics.push(diagnostic("cap_test_code"));
+        }
+        diagnostics.push(diagnostic("other_code"));
+        let capped = cap_diagnostics(diagnostics);
+        assert_eq!(
+            capped.len(),
+            MAX_DIAGNOSTICS_PER_CODE + 1 /* other_code */ + 1, /* summary */
+            "unexpected capped length"
+        );
+        assert!(capped
+            .iter()
+            .any(|entry| entry.code == codes::DIAGNOSTIC_CAP_REACHED));
+        assert_eq!(
+            capped
+                .iter()
+                .filter(|entry| entry.code == "cap_test_code")
+                .count(),
+            MAX_DIAGNOSTICS_PER_CODE
+        );
+    }
+
+    #[test]
+    fn unresolved_entries_are_capped_with_a_summary() {
+        let entry = |index: usize| UnresolvedEntry {
+            code: "cap_test".to_string(),
+            target: None,
+            band: None,
+            grid: None,
+            detail: index.to_string(),
+        };
+        let unresolved: Vec<UnresolvedEntry> = (0..MAX_UNRESOLVED_ENTRIES + 5).map(entry).collect();
+        let capped = cap_unresolved(unresolved);
+        assert_eq!(capped.len(), MAX_UNRESOLVED_ENTRIES + 1);
+        assert_eq!(
+            capped.last().map(|entry| entry.code.as_str()),
+            Some(codes::UNRESOLVED_CAP_REACHED)
+        );
+    }
+}

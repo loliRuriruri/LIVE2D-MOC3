@@ -340,8 +340,22 @@ pub fn validate_recovered_keyforms(
             ));
         }
 
-        // Layout must agree with its own counts (KF-003/KF-004).
+        // Layout must agree with its own counts (KF-003/KF-004). Non-contiguous
+        // form indices always imply UnknownLayout, exactly like the producer.
+        let span_ok = document
+            .target_keyforms
+            .iter()
+            .find(|entry| entry.grid_id() == grid.id)
+            .map(|entry| {
+                entry
+                    .form_indices()
+                    .iter()
+                    .enumerate()
+                    .all(|(expected, actual)| expected == *actual)
+            })
+            .unwrap_or(true);
         let expected_layout = match grid.expected_cardinality {
+            _ if !span_ok => GridLayout::UnknownLayout,
             Cardinality::Exact { value } if grid.stored_form_count == value => GridLayout::Dense,
             Cardinality::Exact { value } if grid.stored_form_count < value => GridLayout::Sparse,
             _ => GridLayout::UnknownLayout,

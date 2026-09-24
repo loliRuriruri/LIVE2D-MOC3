@@ -800,3 +800,101 @@ fn explain_survives_tampered_non_finite_positions() {
     assert!(text.is_some());
     assert!(text.unwrap_or_default().contains("non-finite"));
 }
+
+#[test]
+fn validator_checks_target_band_and_binding_identity() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "Mesh",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Mesh")),
+    );
+    let mut document = recover(&model, None);
+
+    // Band identity mismatch between the target entry and its grid: Fatal.
+    if let Some(keyform_recovery::TargetKeyforms::ArtMesh(entry)) =
+        document.target_keyforms.first_mut()
+    {
+        entry.band = "band:missing".to_string();
+    }
+    let validation = keyform_recovery::validate_recovered_keyforms(&document, &model, None);
+    assert!(validation.iter().any(|diagnostic| {
+        diagnostic.code == codes::UNRESOLVED_ACCOUNTING_MISMATCH
+            && diagnostic.severity == Severity::Fatal
+    }));
+
+    // Binding identity mismatch between entry and band: Warning.
+    let mut document = recover(&model, None);
+    if let Some(keyform_recovery::TargetKeyforms::ArtMesh(entry)) =
+        document.target_keyforms.first_mut()
+    {
+        entry.binding = Some(live2d_ir::BindingId::new("binding:wrong"));
+    }
+    let validation = keyform_recovery::validate_recovered_keyforms(&document, &model, None);
+    assert!(validation.iter().any(|diagnostic| {
+        diagnostic.code == codes::CONFIDENCE_PROVENANCE_INCONSISTENT
+            && diagnostic.severity == Severity::Warning
+    }));
+}
+
+#[test]
+fn non_contiguous_indices_do_not_trigger_a_false_layout_finding() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 0.5, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 0.5, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "Gap",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Gap")),
+    );
+    if let Some(mesh) = model.art_meshes.first_mut() {
+        if let Some(form) = mesh.keyforms.get_mut(2) {
+            form.index = 9;
+        }
+    }
+    let document = recover(&model, None);
+    assert!(!document
+        .diagnostics
+        .iter()
+        .any(|diagnostic| { diagnostic.code == codes::LAYOUT_INCONSISTENT }));
+}
+
+#[test]
+fn non_finite_trace_keys_are_refused_at_export() {
+    let mut model = base();
+    support::add_parameter(&mut model, "P", &[0.0, 1.0], ParameterKind::Normal);
+    support::add_binding(&mut model, "binding:000000", &[("P", &[0.0, 1.0])]);
+    support::add_mesh(
+        &mut model,
+        "Mesh",
+        Some("binding:000000"),
+        &[(1.0, 0.0, 4), (1.0, 0.0, 4)],
+    );
+    support::bind_used_by(
+        &mut model,
+        "binding:000000",
+        BindingTarget::ArtMesh(live2d_ir::ArtMeshId::new("Mesh")),
+    );
+    let mut document = recover(&model, None);
+    if let Some(trace) = document.traces.first_mut() {
+        if let Some(axis) = trace.axes.first_mut() {
+            axis.keys.push(f32::NAN);
+        }
+    }
+    let export = to_json_str(&document, true);
+    assert_eq!(export.err().map(|error| error.code), Some("NonFiniteValue"));
+}

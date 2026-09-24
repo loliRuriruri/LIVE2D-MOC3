@@ -206,9 +206,11 @@ Structural corruption is Fatal and blocks export; expected unresolved
 states (dangling parameters, cardinality mismatches, experimental blend
 shapes, non-finite values that are reported positionally) stay non-fatal.
 
-Amplification guards: diagnostics are capped per code
-(`MAX_DIAGNOSTICS_PER_CODE = 256`, with an info summary when suppressed) and
-the unresolved list is capped at `MAX_UNRESOLVED_ENTRIES = 4096`.
+Amplification guards: `recover()` applies the caps at its boundary -
+diagnostics per code (`MAX_DIAGNOSTICS_PER_CODE = 256`, with an info summary
+when suppressed) and unresolved entries (`MAX_UNRESOLVED_ENTRIES = 4096`).
+The standalone validator does not cap its own findings; callers that feed it
+untrusted documents must apply the same discipline.
 
 ## 11. CLI
 
