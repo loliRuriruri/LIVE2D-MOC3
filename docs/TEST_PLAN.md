@@ -2,7 +2,7 @@
 
 Scope: AGENT.0/AGENT.1 (bootstrap + read-only inspector) and AGENT.2
 (normalized IR). Test types follow master spec section 14: unit, integration,
-snapshot/golden, corruption, fuzz (smoke), regression. Current total: **112
+snapshot/golden, corruption, fuzz (smoke), regression. Current total: **113
 tests, all passing** (13 synthetic fixtures).
 
 ## How to run
