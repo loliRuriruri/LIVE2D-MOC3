@@ -9,12 +9,18 @@
 //!          [--explain node-id] [--max-depth N]
 //! recovery recover-keyforms <model.moc3|model.ir.json>
 //!          [--json] [--output file] [--strict] [--explain target]
+//! recovery recover <model3.json|model.moc3> [--moc file] [--textures dir]
+//!          [--output recovered.cmo3] [--report report.json] [--best-effort]
+//!          [--random-guids] [--force]
+//! recovery inspect-cmo3 recovered.cmo3 [--json]
 //! ```
 //!
-//! Nothing in this binary writes to `.moc3` inputs, and no CMO3/PSD output
-//! exists yet (later phases).
+//! Nothing in this binary writes to `.moc3` inputs; `.cmo3` output is
+//! produced only by the explicit `recover` command.
 
 #![forbid(unsafe_code)]
+
+mod recover;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -99,6 +105,49 @@ enum Command {
         /// Override the maximum accepted input size in bytes.
         #[arg(long, value_name = "BYTES")]
         max_file_size: Option<u64>,
+    },
+    /// End-to-end recovery: MOC3 (+ textures) -> recovered .cmo3.
+    Recover {
+        /// Input: model3.json or model.moc3.
+        input: Option<PathBuf>,
+        /// Explicit MOC3 path (overrides model3.json).
+        #[arg(long, value_name = "PATH")]
+        moc: Option<PathBuf>,
+        /// model3.json used for texture resolution.
+        #[arg(long, value_name = "PATH")]
+        model_json: Option<PathBuf>,
+        /// Texture directory (PNG files, page order = name order).
+        #[arg(long, value_name = "DIR")]
+        textures: Option<PathBuf>,
+        /// Output .cmo3 path (default `recovered.cmo3`).
+        #[arg(long, value_name = "PATH")]
+        output: Option<PathBuf>,
+        /// Recovery report path (default `<output>.report.json`).
+        #[arg(long, value_name = "PATH")]
+        report: Option<PathBuf>,
+        /// Allow unresolved required semantics (output labelled BEST_EFFORT).
+        #[arg(long)]
+        best_effort: bool,
+        /// Random GUIDs instead of deterministic ones.
+        #[arg(long)]
+        random_guids: bool,
+        /// CAFF obfuscation key (default 42).
+        #[arg(long, value_name = "INT")]
+        obfuscation_key: Option<i32>,
+        /// Overwrite an existing output file.
+        #[arg(long)]
+        force: bool,
+        /// Override the maximum accepted input size in bytes.
+        #[arg(long, value_name = "BYTES")]
+        max_file_size: Option<u64>,
+    },
+    /// Inspect a generated .cmo3 (archive + semantic counts).
+    InspectCmo3 {
+        /// Path to the .cmo3 file.
+        file: PathBuf,
+        /// Emit JSON instead of the text report.
+        #[arg(long)]
+        json: bool,
     },
     /// Recover the semantic keyform model (parameter bindings, grids, forms).
     RecoverKeyforms {
@@ -189,6 +238,32 @@ fn main() -> ExitCode {
             explain.as_deref(),
             options_with_limit(max_file_size),
         ),
+        Command::Recover {
+            input,
+            moc,
+            model_json,
+            textures,
+            output,
+            report,
+            best_effort,
+            random_guids,
+            obfuscation_key,
+            force,
+            max_file_size,
+        } => recover::run_recover(
+            input.as_deref(),
+            moc.as_deref(),
+            model_json.as_deref(),
+            textures.as_deref(),
+            output.as_deref(),
+            report.as_deref(),
+            best_effort,
+            random_guids,
+            obfuscation_key,
+            force,
+            max_file_size,
+        ),
+        Command::InspectCmo3 { file, json } => recover::run_inspect_cmo3(&file, json),
     }
 }
 

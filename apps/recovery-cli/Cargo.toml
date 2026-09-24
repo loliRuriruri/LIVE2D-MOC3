@@ -15,6 +15,7 @@ clap.workspace = true
 env_logger.workspace = true
 log.workspace = true
 serde_json.workspace = true
+cmo3-writer.workspace = true
 hierarchy-recovery.workspace = true
 keyform-recovery.workspace = true
 live2d-ir.workspace = true

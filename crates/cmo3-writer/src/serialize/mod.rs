@@ -1013,14 +1013,14 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         }
         let _ = (pool, guids);
     };
-    for index in 0..project.parts.len() {
-        emit_target_keyforms(&part_plans[index], &pool, &mut guids, &mut shared);
+    for plan in &part_plans {
+        emit_target_keyforms(plan, &pool, &mut guids, &mut shared);
     }
-    for index in 0..deformer_order.len() {
-        emit_target_keyforms(&deformer_plans[index], &pool, &mut guids, &mut shared);
+    for plan in &deformer_plans {
+        emit_target_keyforms(plan, &pool, &mut guids, &mut shared);
     }
-    for index in 0..project.meshes.len() {
-        emit_target_keyforms(&mesh_plans[index], &pool, &mut guids, &mut shared);
+    for plan in &mesh_plans {
+        emit_target_keyforms(plan, &pool, &mut guids, &mut shared);
     }
 
     // ---- main tree --------------------------------------------------------
@@ -1098,12 +1098,14 @@ pub fn serialize(project: &Cmo3Project, options: &IdentityOptions) -> Serialized
         None => empty_carray("_rawImages"),
     };
     texture_manager.push(raw_images);
-    texture_manager.push(
-        XmlElement::new("carray_list")
+    let model_image_groups = match layered_image_id {
+        Some(_) => XmlElement::new("carray_list")
             .attr("xs.n", "_modelImageGroups")
             .attr("count", "1")
             .child(reference_anon("CModelImageGroup", group_id)),
-    );
+        None => empty_carray("_modelImageGroups"),
+    };
+    texture_manager.push(model_image_groups);
     texture_manager.push(empty_carray("_textureAtlases"));
     texture_manager.push(bool_leaf("isTextureInputModelImageMode", true));
     texture_manager.push(int_leaf("previewReductionRatio", 1));

@@ -22,6 +22,7 @@ pub mod caff;
 pub mod ids;
 pub mod map;
 pub mod model;
+pub mod png;
 pub mod profile;
 pub mod serialize;
 pub mod textures;

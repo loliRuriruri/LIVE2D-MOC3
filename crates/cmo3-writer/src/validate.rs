@@ -60,26 +60,28 @@ pub fn validate_typed(project: &Cmo3Project) -> Vec<Finding> {
             "the typed project must start with the synthetic root part",
         ));
     }
-    if mesh_count > 0 && project.layered_images.len() != 1 {
-        findings.push(Finding::fatal(
-            "missing_layered_image",
-            format!(
-                "{mesh_count} mesh(es) require exactly one layered image, found {}",
-                project.layered_images.len()
-            ),
-        ));
-    }
-    if mesh_count > 0 && layer_count != mesh_count {
-        findings.push(Finding::fatal(
-            "layer_count_mismatch",
-            format!("{mesh_count} mesh(es) require one layer each, found {layer_count}"),
-        ));
-    }
     let textured_meshes = project
         .meshes
         .iter()
         .filter(|mesh| mesh.model_image.is_some())
         .count();
+    if textured_meshes > 0 && project.layered_images.len() != 1 {
+        findings.push(Finding::fatal(
+            "missing_layered_image",
+            format!(
+                "{textured_meshes} textured mesh(es) require exactly one layered image, found {}",
+                project.layered_images.len()
+            ),
+        ));
+    }
+    if textured_meshes > 0 && layer_count != textured_meshes {
+        findings.push(Finding::fatal(
+            "layer_count_mismatch",
+            format!(
+                "{textured_meshes} textured mesh(es) require one layer each, found {layer_count}"
+            ),
+        ));
+    }
     if model_image_count != textured_meshes {
         findings.push(Finding::fatal(
             "model_image_count_mismatch",
@@ -472,6 +474,81 @@ pub fn scan_xml(xml: &str) -> XmlScan {
         }
     }
     scan
+}
+
+/// Entity counts for the semantic CMO3 inspector (work order section 45).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Cmo3Inspection {
+    /// Parts (`CPartSource` objects).
+    pub parts: usize,
+    /// Art meshes (`CArtMeshSource` objects).
+    pub art_meshes: usize,
+    /// Warp deformers.
+    pub warps: usize,
+    /// Rotation deformers.
+    pub rotations: usize,
+    /// Parameters.
+    pub parameters: usize,
+    /// Keyform binding sources.
+    pub bindings: usize,
+    /// Keyform grid sources.
+    pub keyform_grids: usize,
+    /// Stored forms (all four form kinds).
+    pub forms: usize,
+    /// Texture image resources (`file imageFileBuf`).
+    pub textures: usize,
+    /// Mask references across all `clipGuidList` entries.
+    pub masks: usize,
+    /// Layers.
+    pub layers: usize,
+    /// Model images.
+    pub model_images: usize,
+}
+
+/// Count semantic entities in a generated `main.xml`.
+pub fn inspect_xml(xml: &str) -> Cmo3Inspection {
+    let scan = scan_xml(xml);
+    let objects = |tag: &str| {
+        scan.id_tags
+            .values()
+            .filter(|candidate| candidate.as_str() == tag)
+            .count()
+    };
+    let occurrences = |needle: &str| xml.matches(needle).count();
+    let mut masks = 0usize;
+    let mut cursor = 0usize;
+    while let Some(found) = xml[cursor..].find("clipGuidList") {
+        let at = cursor + found;
+        if let Some(count_at) = xml[at..].find("count=\"") {
+            let value_at = at + count_at + "count=\"".len();
+            let value: String = xml[value_at..]
+                .chars()
+                .take_while(|character| character.is_ascii_digit())
+                .collect();
+            masks += value.parse::<usize>().unwrap_or(0);
+        }
+        cursor = at + "clipGuidList".len();
+    }
+    // `<main>` objects carry no `xs.id`; count their exact opening tags
+    // (references always carry attributes, so the bare tag is unambiguous).
+    let main_objects = |tag: &str| occurrences(&format!("<{tag}>"));
+    Cmo3Inspection {
+        parts: main_objects("CPartSource"),
+        art_meshes: main_objects("CArtMeshSource"),
+        warps: main_objects("CWarpDeformerSource"),
+        rotations: main_objects("CRotationDeformerSource"),
+        parameters: main_objects("CParameterSource"),
+        bindings: objects("KeyformBindingSource"),
+        keyform_grids: objects("KeyformGridSource"),
+        forms: occurrences("<CArtMeshForm>")
+            + occurrences("<CPartForm>")
+            + occurrences("<CWarpDeformerForm>")
+            + occurrences("<CRotationDeformerForm>"),
+        textures: occurrences("xs.n=\"imageFileBuf\""),
+        masks,
+        layers: objects("CLayer"),
+        model_images: occurrences("<CModelImage "),
+    }
 }
 
 /// One step of the image-pipeline trace (work order section 37).
