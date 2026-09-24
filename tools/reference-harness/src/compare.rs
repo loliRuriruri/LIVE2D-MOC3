@@ -540,3 +540,45 @@ pub fn group_rollup(report: &ComparisonReport) -> Vec<(String, FieldStatus, usiz
         .map(|(group, (status, total, matched))| (group, status, matched, total))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::is_unsupported;
+    use crate::snapshot::{DifferentialSnapshot, InputInfo};
+    use std::collections::BTreeMap;
+
+    fn snapshot_with_unsupported(key: &str) -> DifferentialSnapshot {
+        let mut unsupported = BTreeMap::new();
+        unsupported.insert(key.to_string(), "test".to_string());
+        DifferentialSnapshot {
+            schema: "test".to_string(),
+            provider: "test".to_string(),
+            input: InputInfo {
+                file_name: "t".to_string(),
+                size: 0,
+                fnv1a64: "0".to_string(),
+            },
+            moc3_version: None,
+            endian: None,
+            canvas: None,
+            counts: BTreeMap::new(),
+            parameters: Vec::new(),
+            parts: Vec::new(),
+            deformers: Vec::new(),
+            art_meshes: Vec::new(),
+            hierarchy_edges: Vec::new(),
+            diagnostics: Vec::new(),
+            unsupported,
+        }
+    }
+
+    #[test]
+    fn unsupported_keys_require_a_segment_boundary() {
+        let exact = snapshot_with_unsupported("counts.parameter");
+        assert!(is_unsupported(&exact, "counts.parameter"));
+        assert!(is_unsupported(&exact, "counts.parameter.values"));
+        assert!(!is_unsupported(&exact, "counts.parameter_bindings"));
+        let group = snapshot_with_unsupported("counts");
+        assert!(is_unsupported(&group, "counts.anything.else"));
+    }
+}

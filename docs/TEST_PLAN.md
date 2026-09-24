@@ -3,13 +3,14 @@
 Scope: AGENT.0-AGENT.3.5 (bootstrap, read-only inspector, normalized IR,
 hierarchy reconstruction, external reference audit). Test types follow master
 spec section 14: unit, integration, snapshot/golden, corruption, fuzz
-(smoke), regression. Current total: **179 tests, all passing** (27 synthetic
+(smoke), regression. Current total: **182 tests, all passing** (27 synthetic
 fixtures).
 
 AGENT.3.5 additions: `crates/moc3-ingest/tests/layout_interop.rs` (body
 placement tolerance) and `tools/reference-harness` (dev-only differential
-harness, 15 offline tests). External requirements are never part of the
-default run:
+harness, 18 offline tests including `read_capped` output-limit boundaries and
+`is_unsupported` key-segment boundaries). External requirements are never
+part of the default run:
 
 ## How to run
 

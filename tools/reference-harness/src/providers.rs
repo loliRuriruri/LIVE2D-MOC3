@@ -870,3 +870,24 @@ pub fn mock_mutation_by_name(name: &str) -> Option<MockMutation> {
         _ => return None,
     })
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::read_capped;
+    use std::io::Cursor;
+
+    #[test]
+    fn read_capped_accepts_exactly_the_limit() {
+        let (kept, exceeded) = read_capped(Cursor::new(vec![7u8; 100]), 100).unwrap();
+        assert_eq!(kept.len(), 100);
+        assert!(!exceeded, "exactly output_limit bytes must not be flagged");
+    }
+
+    #[test]
+    fn read_capped_flags_actual_overflow() {
+        let (kept, exceeded) = read_capped(Cursor::new(vec![7u8; 101]), 100).unwrap();
+        assert_eq!(kept.len(), 100);
+        assert!(exceeded, "dropped bytes must be flagged");
+    }
+}
