@@ -164,10 +164,10 @@ so nothing is silently dropped.
 ## AGENT.5 (CMO3 writer) limitations
 
 - **The writer is PARTIAL.** CAFF (Gate 5A) passes; `main.xml` serialization
-  (Gate 5B) is not reached because the image/filter/layer chain required by
-  both pinned minimal generators lacks field-level evidence
-  (`docs/CMO3_VALIDATION.md`, `docs/CMO3_MINIMAL_REQUIREMENTS.md`). No
-  `.cmo3` is produced today.
+  (Gate 5B) is in progress under AGENT.5.1: the image/filter/layer chain is
+  now fully evidenced (`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`) and modelled,
+  but the XML emission/validation is not finished. No `.cmo3` is produced
+  yet.
 - Cubism Editor open is `NOT_TESTED`; structural success is never called
   editor compatibility.
 - CAFF writing supports RAW entries only; ZIP modes 33/37 are recognised

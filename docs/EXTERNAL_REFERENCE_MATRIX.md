@@ -40,6 +40,8 @@ any of them a role in the shipped tool.
 | `Quadrism` | `cb3f8557bd` | LGPL-3.0 | behavioral audit only (not executed) | failure-mode checklist for CMO3 writers (ordering, duplication, obfuscation) | no |
 | `caff-archive` | 0.1.0 / `76f208cf01` | MIT (per repository README; no detected license file) | reference-only | CMO3/CAFF archival notes | no |
 | `StretchyStudio` (pelmentor) | head, pushed 2026-06-19 | MIT | reference-only | CMO3 export reference in `docs/live2d/README.md` | no |
+| `StretchyStudio` (image pipeline, AGENT.5.1) | `5fd958def9ed` | MIT ("Copyright (c) 2026 Nguyen Phan"), retrieved 2026-09-24 | source audit | `cmo3_generate.py`, `cmo3_multi_test.py`, `CMO3_FORMAT.md` - ModelImage/LayeredImage field evidence | no |
+| `moc2cmo` (image pipeline, AGENT.5.1) | `2527e24e93` | MIT ("Copyright (c) 2026 Eatgrapes"), retrieved 2026-09-24 | source audit | `src/decompiler/xml/texture/*` - filter graph, layers, model image | no |
 | `fixture-gen` (first-party) | in-repo | project | executed | synthetic fixtures and differential baseline (`ours`) | n/a |
 
 Pinned metadata is stored once in

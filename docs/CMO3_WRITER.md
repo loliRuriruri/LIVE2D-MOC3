@@ -1,8 +1,11 @@
 # CMO3 Writer (AGENT.5)
 
-Status: **PARTIAL** (Gate 5A PASS; Gate 5B NOT REACHED for an editor-open
-document; see `docs/CMO3_VALIDATION.md` for the gate ledger and the active
-stop condition). No other AGENT.5 phase is claimed.
+Status: **PARTIAL, IN PROGRESS under AGENT.5.1** (Gate 5A PASS; Gate 5B
+not reached yet). The image-pipeline evidence blocker is resolved
+(`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`) and the typed image-pipeline model
+plus writer-defaults policy (`docs/CMO3_WRITER_DEFAULTS.md`, including the
+LINEAR decision) have landed; the XML emission and validators are the
+remaining AGENT.5.1 work. See `docs/CMO3_VALIDATION.md`.
 
 ## Scope
 

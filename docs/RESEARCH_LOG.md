@@ -231,3 +231,25 @@ extracted from these sources are consolidated in `FORMAT_NOTES.md`.
 - **License discipline:** all facts come from MIT sources (Stretchy Studio
   `5fd958def9ed`, moc2cmo `2527e24e93`) by source reading only; no code was
   copied, and the LGPL Quadrism project remained behavioral-only.
+
+## 12. AGENT.5.1 research (image pipeline evidence recovery)
+
+- **Blocker resolved at field level.** The ModelImage filter graph,
+  LayeredImage chain and CTextureManager linkage are now documented
+  identifier-by-identifier from two independent MIT sources
+  (`docs/CMO3_IMAGE_PIPELINE_EVIDENCE.md`): fixed filter GUIDs, the eight
+  `FilterValueId` strings, the nine `FilterValue` names (two with inline
+  ids), selector/layer-filter instance wiring, `FilterSet` maps, the
+  two-entry `ModelImageFilterEnv`, `CLayerSelectorMap`/`CLayerInputData`
+  layer selection, the full `CModelImage`/`CCachedImageManager` field order,
+  the layered-image/layer/group field order, `LayeredImageWrapper`, and the
+  MODEL_IMAGE-mode `CTextureManager` flags.
+- **Multi-mesh invariant confirmed:** one `CLayeredImage` with N `CLayer`s,
+  one `CModelImage` per mesh; N layered images = no textures (documented
+  known-bad structure).
+- **Contradictions isolated to writer constants** (mipmapLevel 1 vs 64,
+  mode flag true vs false); resolutions and all writer-required defaults are
+  recorded in `docs/CMO3_WRITER_DEFAULTS.md`, including the explicit LINEAR
+  decision.
+- **No new version PIs or imports needed** for the pipeline; the pinned
+  nine PIs and 124-class import list already cover it.

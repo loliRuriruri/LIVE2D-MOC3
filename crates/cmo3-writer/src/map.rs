@@ -1,4 +1,4 @@
-//! Semantic -> writer-model mapping (serialization only, no inference).
+﻿//! Semantic -> writer-model mapping (serialization only, no inference).
 //!
 //! Every required semantic that is unresolved fails in strict mode (default)
 //! and is reported as unsupported in best-effort mode (work order sections
@@ -15,8 +15,9 @@ use live2d_ir::{Deformer, Live2DModel};
 
 use crate::model::{
     ArtMeshFormOut, ArtMeshOut, BindingOut, CanvasOut, ChildRef, Cmo3Project, GridFormOut, GridOut,
-    ParameterOut, ParentRef, PartOut, RotationFormOut, RotationOut, TargetOut, TextureOut,
-    UnsupportedNote, WarpFormOut, WarpOut, WriterDefault,
+    ImageResourceOut, LayerOut, LayeredImageOut, ModelImageOut, ParameterOut, ParentRef, PartOut,
+    RotationFormOut, RotationOut, TargetOut, TextureOut, UnsupportedNote, WarpFormOut, WarpOut,
+    WriterDefault,
 };
 use crate::textures::TextureAssets;
 
@@ -458,6 +459,7 @@ pub fn build_project(
             name,
             parent: mesh_parent(model, &parent_of, mesh),
             texture,
+            model_image: None,
             positions: base_positions,
             uvs,
             indices: mesh.indices.clone(),
@@ -470,6 +472,102 @@ pub fn build_project(
             mask_refs,
             grid: None,
             synthetic_name,
+        });
+    }
+
+    // ---- image pipeline (MODEL_IMAGE mode, one layered image) ------------
+    let canvas_w = round_i32(model.canvas.width, "$canvas", "width")?;
+    let canvas_h = round_i32(model.canvas.height, "$canvas", "height")?;
+    let mut image_resources: Vec<ImageResourceOut> = Vec::new();
+    let mut layered_images: Vec<LayeredImageOut> = Vec::new();
+    let mut model_images: Vec<ModelImageOut> = Vec::new();
+    let mut resource_by_page: BTreeMap<u32, usize> = BTreeMap::new();
+    let mut layers: Vec<LayerOut> = Vec::new();
+    for mesh in meshes.iter_mut() {
+        let Some(asset_index) = mesh.texture else {
+            continue;
+        };
+        let Some(asset) = textures.assets.get(asset_index) else {
+            continue;
+        };
+        if let (Some(width), Some(height)) = (asset.width, asset.height) {
+            if width != canvas_w as u32 || height != canvas_h as u32 {
+                if !best_effort {
+                    return Err(error(
+                        "LayerImageSizeMismatch",
+                        format!(
+                            "texture page {} is {width}x{height} but canvas-sized layers are required ({canvas_w}x{canvas_h})",
+                            asset.page
+                        ),
+                    ));
+                }
+                unsupported.push(UnsupportedNote {
+                    subject: format!("texture:{}", asset.page),
+                    reason: format!(
+                        "asset is {width}x{height}, not canvas-sized; the synthetic layered image reuses it verbatim"
+                    ),
+                });
+            }
+        } else {
+            defaults.push(WriterDefault {
+                semantic: format!("texture:{}", asset.page),
+                field: "image_resource.dimensions",
+                reason: "asset dimensions unknown; canvas size is assumed for the resource",
+            });
+        }
+        let resource_index = *resource_by_page.entry(asset.page).or_insert_with(|| {
+            let index = image_resources.len();
+            image_resources.push(ImageResourceOut {
+                semantic: format!("image_resource:{index:06}"),
+                width: canvas_w,
+                height: canvas_h,
+                byte_len: asset.bytes.len(),
+                archive_name: TextureAssets::archive_name(asset.page),
+            });
+            index
+        });
+        let layer_index = layers.len();
+        layers.push(LayerOut {
+            semantic: format!("layer:{layer_index:06}"),
+            name: mesh.name.clone(),
+            layer_id: format!("00-00-{layer_index:02}-01"),
+            layer_id_value: layer_index as i32 + 1,
+            width: canvas_w,
+            height: canvas_h,
+            resource: resource_index,
+            synthetic_name: mesh.synthetic_name,
+        });
+        let model_image_index = model_images.len();
+        model_images.push(ModelImageOut {
+            semantic: format!("model_image:{model_image_index:06}"),
+            name: mesh.name.clone(),
+            layer: layer_index,
+            resource: resource_index,
+        });
+        mesh.model_image = Some(model_image_index);
+    }
+    if !layers.is_empty() {
+        layered_images.push(LayeredImageOut {
+            semantic: "layered_image:000000".to_string(),
+            psd_name: "RecoveredLayeredImage.psd".to_string(),
+            width: canvas_w,
+            height: canvas_h,
+            layers,
+        });
+        defaults.push(WriterDefault {
+            semantic: "layered_image:000000".to_string(),
+            field: "layered_image.psd_name",
+            reason: "no original PSD exists; a synthetic PSD file name is used",
+        });
+        defaults.push(WriterDefault {
+            semantic: "layered_image:000000".to_string(),
+            field: "layered_image.group_name",
+            reason: "no original image name exists; `RecoveredLayeredImage` is used",
+        });
+        defaults.push(WriterDefault {
+            semantic: "layered_image:000000".to_string(),
+            field: "texture.mipmap_level",
+            reason: "independent sources disagree (1 vs 64); the pure MODEL_IMAGE reference uses 1",
         });
     }
 
@@ -712,8 +810,8 @@ pub fn build_project(
         profile_id: crate::profile::EDITOR_5_PROFILE.id.to_string(),
         model_name,
         canvas: CanvasOut {
-            width: round_i32(model.canvas.width, "$canvas", "width")?,
-            height: round_i32(model.canvas.height, "$canvas", "height")?,
+            width: canvas_w,
+            height: canvas_h,
             pixels_per_unit: finite(model.canvas.pixels_per_unit, "$canvas", "pixels_per_unit")?,
             origin_x: round_i32(model.canvas.origin.x, "$canvas", "origin_x")?,
             origin_y: round_i32(model.canvas.origin.y, "$canvas", "origin_y")?,
@@ -726,6 +824,9 @@ pub fn build_project(
         warps,
         rotations,
         textures: textures_out,
+        image_resources,
+        layered_images,
+        model_images,
         defaults,
         unsupported,
         best_effort,
@@ -963,3 +1064,4 @@ fn texture_page_of(model: &Live2DModel, texture_id: &str) -> Option<u32> {
         .find(|texture| texture.id.as_str() == texture_id)
         .map(|texture| texture.page_index)
 }
+

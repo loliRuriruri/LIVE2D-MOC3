@@ -156,6 +156,8 @@ pub struct ArtMeshOut {
     pub parent: ParentRef,
     /// Texture page index.
     pub texture: Option<usize>,
+    /// Model image index when the mesh has a texture (MODEL_IMAGE mode).
+    pub model_image: Option<usize>,
     /// Base vertex positions (editor space, verbatim).
     pub positions: Vec<[f32; 2]>,
     /// UVs (verbatim).
@@ -284,6 +286,70 @@ pub struct TextureOut {
     pub hash: String,
 }
 
+/// One synthetic layered-image layer (one visible mesh).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LayerOut {
+    /// Deterministic layer semantic id (`layer:{index}`).
+    pub semantic: String,
+    /// Layer name (mesh name; synthetic when the mesh name is synthetic).
+    pub name: String,
+    /// `layerId` string (`00-00-{index:02}-01`).
+    pub layer_id: String,
+    /// `layerIdValue_testImpl`.
+    pub layer_id_value: i32,
+    /// Canvas width.
+    pub width: i32,
+    /// Canvas height.
+    pub height: i32,
+    /// Resource index into [`Cmo3Project::image_resources`].
+    pub resource: usize,
+    /// Whether the layer name is a writer placeholder.
+    pub synthetic_name: bool,
+}
+
+/// One synthetic layered image (always exactly one in this phase).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LayeredImageOut {
+    /// Semantic id (`layered_image:000000`).
+    pub semantic: String,
+    /// Synthetic PSD file name (never claimed as the original).
+    pub psd_name: String,
+    /// Canvas width.
+    pub width: i32,
+    /// Canvas height.
+    pub height: i32,
+    /// Layers in deterministic order.
+    pub layers: Vec<LayerOut>,
+}
+
+/// One model image (one mesh's texture input).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelImageOut {
+    /// Semantic id (`model_image:{index}`).
+    pub semantic: String,
+    /// Display name (mesh name).
+    pub name: String,
+    /// Selected layer index.
+    pub layer: usize,
+    /// Shared image resource index.
+    pub resource: usize,
+}
+
+/// One image resource (one PNG archive entry).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImageResourceOut {
+    /// Semantic id (`image_resource:000000`).
+    pub semantic: String,
+    /// Canvas width.
+    pub width: i32,
+    /// Canvas height.
+    pub height: i32,
+    /// PNG byte length.
+    pub byte_len: usize,
+    /// Archive entry name.
+    pub archive_name: String,
+}
+
 /// A writer-required default (never presented as recovered data).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WriterDefault {
@@ -329,6 +395,12 @@ pub struct Cmo3Project {
     pub rotations: Vec<RotationOut>,
     /// Texture pages.
     pub textures: Vec<TextureOut>,
+    /// Image resources (one per archive PNG).
+    pub image_resources: Vec<ImageResourceOut>,
+    /// Synthetic layered images (exactly one in AGENT.5.1).
+    pub layered_images: Vec<LayeredImageOut>,
+    /// Model images (one per textured mesh).
+    pub model_images: Vec<ModelImageOut>,
     /// Writer-required defaults.
     pub defaults: Vec<WriterDefault>,
     /// Unsupported/omitted concepts.
