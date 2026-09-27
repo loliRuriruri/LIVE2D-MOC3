@@ -153,6 +153,7 @@ Cubism Editor에서의 Open/Save/Reopen 결과는 아직 없다
 ## 바깥 고리
 
 * 저장소: https://github.com/loliRuriruri/LIVE2D-MOC3
+* 인수인계(Codex): `docs/HANDOFF_CODEX.md`
 * 상세 문서: `docs/` (`ARCHITECTURE.md`, `CMO3_WRITER.md`,
   `CMO3_VALIDATION.md`, `DIFFERENTIAL_FINDINGS.md`, `LIMITATIONS.md`,
   `docs/reports/AGENT*.md`)
